@@ -1,9 +1,53 @@
 import React, { useState } from "react";
+import { set } from "mongoose";
 import { FcGoogle } from 'react-icons/fc';
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link } from 'react-router-dom'
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
+
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const navigate =useNavigate();
+  const [formData, setFormData] = useState({});
+
+  const handleChange = (e) =>{
+    setFormData({ ...formData, [e.target.id]: e.target.value});
+    console.log(formData);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+      const res = await fetch("/backend/auth/signup",{
+        method: "POST",
+        headers:{
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      console.log(data);
+
+      if (data.success == false){
+        setLoading(false);
+        setError(data.message);
+        return;
+      }
+      setLoading(false);
+      setError(null);
+      navigate("/sign-in");
+      
+    } catch (error) {
+      setLoading(false);
+      setError(error.message);
+    }
+  }
+
+
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -12,29 +56,35 @@ const Signup = () => {
         <h2 className="text-3xl font-bold text-center">Sign Up</h2>
         <p className="text-center text-gray-600 mt-2">Hi, 👋</p>
 
-        <form className="mt-4">
-          {/* First Name */}
-          <label className="block font-medium">First Name</label>
+        <form onSubmit={handleSubmit} className="mt-4">
+          {/*Name */}
+          <label className="block font-medium">Full Name</label>
           <input
             type="text"
-            placeholder="First Name"
+            placeholder="Full Name"
             className="w-full border rounded-md p-2 mt-1"
+            id="fullname"
+            onChange={handleChange}
           />
 
-          {/* Last Name */}
-          <label className="block font-medium mt-3">Last Name</label>
+          {/* userName */}
+          <label className="block font-medium mt-3">Username</label>
           <input
             type="text"
-            placeholder="Last Name"
+            placeholder="Username"
             className="w-full border rounded-md p-2 mt-1"
+            id="username"
+            onChange={handleChange}
           />
 
           {/* Email */}
           <label className="block font-medium mt-3">Email</label>
           <input
             type="email"
-            placeholder="Enter your email id"
+            placeholder="Email"
             className="w-full border rounded-md p-2 mt-1"
+            id="email"
+            onChange={handleChange}
           />
 
           {/* Password */}
@@ -42,8 +92,10 @@ const Signup = () => {
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
+              placeholder="Password"
               className="w-full border rounded-md p-2 mt-1 pr-10"
+              id="password"
+              onChange={handleChange}
             />
             <button
               type="button"
@@ -56,7 +108,7 @@ const Signup = () => {
 
           {/* Signup Button */}
           <button className="w-full bg-#d90965 text-white py-2 rounded-md mt-4 bg-pink-700 hover:bg-pink-900">
-            Sign up
+            {loading ? "Loading..." : "Sign up"}
           </button>
 
           {/* Divider */}
@@ -80,6 +132,7 @@ const Signup = () => {
           </a>
           </Link>
         </p>
+        {error && <p classname="text-red-500">{error}</p>}
       </div>
     </div>
   );
