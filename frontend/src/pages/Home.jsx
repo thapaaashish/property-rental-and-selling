@@ -1,10 +1,50 @@
 import React from 'react';
 import { FaSearch, FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa';
+import CitySection from '../components/CitySection';
+import Features from '../components/Features';
+import Footer from '../components/Footer';
+import PropertySection from '../components/PropertySection';
 
 const Home = () => {
+  const properties = [
+    {
+      id: 1,
+      imageUrl: 'https://crm.roongtadevelopers.com/app/admin/assets/images/blog/1723200045.jpg',
+      title: 'Luxury Apartment',
+      description: 'A beautiful 2-bedroom apartment.',
+      price: 1500000,
+      location: 'Kathmandu',
+      bedrooms: 2,
+      bathrooms: 2,
+      sqft: 1200,
+    },
+    {
+      id: 2,
+      imageUrl: 'https://cdn.architecturendesign.net/wp-content/uploads/2014/07/2-white-modern-studio-design.jpeg',
+      title: 'Modern Studio',
+      description: 'Compact studio in the city center.',
+      price: 800000,
+      location: 'Kathmandu',
+      bedrooms: 1,
+      bathrooms: 1,
+      sqft: 500,
+    },
+    {
+      id: 3,
+      imageUrl: 'https://cdn.architecturendesign.net/wp-content/uploads/2014/07/2-white-modern-studio-design.jpeg',
+      title: 'Modern Studio',
+      description: 'Compact studio in the city center.',
+      price: 800000,
+      location: 'Kathmandu',
+      bedrooms: 1,
+      bathrooms: 1,
+      sqft: 500,
+    },
+    // Add more properties here
+  ];
   return (
     <div className="bg-gray-100">
-      <section className="h-[600px] flex flex-col justify-center items-center text-center bg-gray-300 bg-[url('/images/bgww.jpg')] bg-cover bg-center bg-no-repeat">
+      <section className="h-[600px] flex flex-col justify-center items-center text-center bg-gray-300 bg-[url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center bg-no-repeat">
       <button className="bg-gray-500 text-white px-4 py-2 rounded-full mb-4">Live happy</button>
       <h2 className="text-5xl font-bold">Find your perfect place</h2>
       <div className="flex space-x-4 mt-4">
@@ -23,28 +63,10 @@ const Home = () => {
       </div>
     </section>
 
-      {/* Featured Listings */}
-      <section className="py-10">
-        <h3 className="text-center text-2xl font-semibold">Homes For You</h3>
-        <div className="flex justify-center space-x-4 mt-6">
-          <div className="bg-white p-4 shadow-lg w-64">
-            <h4 className="text-lg font-bold">Apartment</h4>
-            <p>Rs 100000</p>
-            <p>Kathmandu</p>
-          </div>
-          <div className="bg-white p-4 shadow-lg w-64">
-            <h4 className="text-lg font-bold">Room 11</h4>
-            <p>Rs 10000/month</p>
-            <p>Kathmandu</p>
-          </div>
-          <div className="bg-white p-4 shadow-lg w-64">
-            <h4 className="text-lg font-bold">House</h4>
-            <p>Rs 5000000</p>
-            <p>Kathmandu</p>
-          </div>
-        </div>
-      </section>
-
+      <PropertySection properties={properties} />
+    <CitySection />
+    <Features />
+    <Footer />
     </div>
   );
 };

@@ -5,6 +5,8 @@ import SignUp from './pages/SignUp'
 import About from './pages/About'
 import Profile from './pages/Profile'
 import Header from './components/Header'
+import VerifyEmail from './pages/VerifyEmail'
+import CitySection from './components/CitySection'
 
 export const App = () => {
   return (
@@ -14,6 +16,7 @@ export const App = () => {
       <Route path='/' element={<Home/>}/>
       <Route path='/sign-in' element={<SignIn/>}></Route>
       <Route path='/sign-up' element={<SignUp/>}></Route>
+      <Route path='/verify-email' element={<VerifyEmail/>}></Route>
       <Route path='/about' element={<About/>}></Route>
       <Route path='/profile' element={<Profile/>}></Route>
     </Routes>
