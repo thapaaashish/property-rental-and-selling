@@ -12,25 +12,25 @@ export default function PropertySection({ properties }) {
         </div>
 
         <div className="flex justify-center space-x-4 mb-8">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-full">
+          <button className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-full">
             All Properties
           </button>
-          <button className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-full">
+          <button className="cursor-pointer px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-full">
             For Sale
           </button>
-          <button className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-full">
+          <button className="cursor-pointer px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-full">
             For Rent
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="cursor-pointer grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {properties.map((property) => (
             <PropertyCard key={property.id} property={property} />
           ))}
         </div>
 
         <div className="text-center mt-12">
-          <button className="px-6 py-3 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors">
+          <button className="cursor-pointer px-6 py-3 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors">
             See all listings
           </button>
         </div>
