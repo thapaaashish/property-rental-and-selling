@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import OAuth from "../components/OAuth";
 
 const Signup = () => {
   const [error, setError] = useState(null);
@@ -93,7 +94,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+    <div className="flex justify-center items-center min-h-screen  bg-gray-100 mt-[-60px]">
       <div className="bg-white p-8 rounded-lg shadow-md w-96">
         <h2 className="text-3xl font-bold text-center">Sign Up</h2>
         <p className="text-center text-gray-600 mt-2">Hi, 👋</p>
@@ -149,7 +150,7 @@ const Signup = () => {
             {/* Signup Button */}
             <button
               type="submit"
-              className="w-full bg-pink-700 text-white py-2 rounded-md mt-4 hover:bg-pink-900"
+              className="w-full bg-teal-500 text-white py-2 rounded-md mt-4 hover:bg-teal-400"
               disabled={loading}
             >
               {loading ? "Loading..." : "Sign up"}
@@ -162,12 +163,8 @@ const Signup = () => {
               <hr className="flex-grow border-gray-300" />
             </div>
 
-            <button
-              type="button"
-              className="flex items-center justify-center w-full bg-gray-200 text-gray-700 p-2 rounded mb-4"
-            >
-              <FcGoogle className="mr-2 text-xl" /> Sign up with Google
-            </button>
+            <OAuth />
+            
           </form>
         ) : (
           // OTP Form

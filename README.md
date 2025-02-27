@@ -1,13 +1,1 @@
-"# property-rental-and-selling" 
-
-
-
-
-
-
-
-
-
-
-
-npm install cors
+"# property-rental-and-selling"

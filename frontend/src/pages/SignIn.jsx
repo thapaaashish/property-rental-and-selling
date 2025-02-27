@@ -1,12 +1,15 @@
 import React, { useState } from "react";
-import { FcGoogle } from 'react-icons/fc';
+
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link } from 'react-router-dom';
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { signInFailure, signInStart,signInSuccess } from "../redux/user/userSlice";
+import OAuth from "../components/OAuth";
 
 const SignIn = () => {
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const {loading, error } =  useSelector((state) => state.user);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({});
   const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
@@ -21,8 +24,8 @@ const SignIn = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      setLoading(true);
-      const res = await fetch("/backend/auth/signin", {
+      dispatch(signInStart());
+      const res = await fetch("http://localhost:3000/backend/auth/signin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -33,17 +36,14 @@ const SignIn = () => {
       console.log(data);
 
       if (data.success === false) {
-        setLoading(false);
-        setError(data.message);
+        dispatch(signInFailure(data.message));
         return;
       }
-      setLoading(false);
-      setError(null);
+      dispatch(signInSuccess(data));
       navigate("/");
 
     } catch (error) {
-      setLoading(false);
-      setError(error.message);
+      dispatch(signInFailure(error.message));
     }
   };
 
@@ -52,7 +52,7 @@ const SignIn = () => {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
+    <div className="flex items-center justify-center h-screen bg-gray-100 mt-[-60px]">
       <div className="bg-white p-8 rounded-lg shadow-md w-96">
         <h2 className="text-3xl font-semibold text-center mb-2">Login now</h2>
         <p className="text-center text-gray-600 mb-4">Hi, Welcome back 👋</p>
@@ -96,7 +96,7 @@ const SignIn = () => {
             </Link>
           </div>
 
-          <button type="submit" className="w-full text-white p-2 rounded bg-pink-900 hover:bg-blue-200 hover:text-black">
+          <button type="submit" className="w-full text-white p-2 rounded bg-teal-500 hover:bg-teal-400">
             {loading ? "Loading..." : "Sign in"}
           </button>
         </form>
@@ -107,9 +107,9 @@ const SignIn = () => {
           <hr className="flex-grow border-gray-300" />
         </div>
 
-        <button className="cursor-pointer hover:bg-gray-400 hover:text-white flex items-center justify-center w-full bg-gray-200 text-gray-700 p-2 rounded mb-4">
-          <FcGoogle className="mr-2 text-xl" /> Sign in with Google
-        </button>
+        <OAuth />
+
+
 
         <Link to="/sign-up">
   <p className="text-center text-sm text-gray-600 mt-4">

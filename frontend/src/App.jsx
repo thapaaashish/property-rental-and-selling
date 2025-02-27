@@ -4,28 +4,38 @@ import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import About from './pages/About'
 import Profile from './pages/Profile'
-import Header from './components/Header'
 import VerifyEmail from './pages/VerifyEmail'
-import CitySection from './components/CitySection'
 import AddListing from './pages/AddListing'
 import ForgotPassword from './pages/ForgotPassword'
-
+import PropertyListing from './components/PropertyListing'
+import Layout from './components/Layout'
+import PrivateRoute from './components/PrivateRoute'
+import Listings from './pages/Listings'
 
 export const App = () => {
   return (
     <BrowserRouter>
-    <Header />
-    <Routes>
-      <Route path='/' element={<Home/>}/>
-      <Route path='/sign-in' element={<SignIn/>}></Route>
-      <Route path='/forgot-password' element={<ForgotPassword/>}></Route>
-      <Route path='/sign-up' element={<SignUp/>}></Route>
-      <Route path='/verify-email' element={<VerifyEmail/>}></Route>
-      <Route path='/about' element={<About/>}></Route>
-      <Route path='/profile' element={<Profile/>}></Route>
-      <Route path='/add-listing' element={<AddListing/>}></Route>
-    </Routes>
+      <Routes>
+        {/* Wrap all pages that should include Header inside Layout */}
+        <Route element={<Layout />}>
+          <Route path='/' element={<Home />} />
+          <Route path='/sign-in' element={<SignIn />} />
+          <Route path='/forgot-password' element={<ForgotPassword />} />
+          <Route path='/sign-up' element={<SignUp />} />
+          <Route path='/verify-email' element={<VerifyEmail />} />
+          <Route path='/about' element={<About />} />
+          <Route element={<PrivateRoute/>} >
+            <Route path='/profile' element={<Profile />} />
+          </Route>
+          <Route path='/property/:id' element={<PropertyListing />} />
+          <Route path='/listings' element={<Listings />} />
+        </Route>
+
+        {/* Keep 'Add Listing' page outside Layout (No Header Here) */}
+        <Route path='/add-listing' element={<AddListing />} />
+      </Routes>
     </BrowserRouter>
   )
 }
+
 export default App

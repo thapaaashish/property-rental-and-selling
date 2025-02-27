@@ -28,6 +28,7 @@ app.use(express.json());
 app.use('/backend/user', userRouter);
 app.use('/backend/auth', authRouter);
 
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error("Backend Error:", err); // Log the actual error
@@ -39,7 +40,6 @@ app.use((err, req, res, next) => {
     message,
   });
 });
-
 
 // Start the server
 const PORT = process.env.PORT || 3000;
