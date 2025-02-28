@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FormInput from './FormInput';
+import GoogleMapComponent  from "./GoogleMap";
+
 
 const steps = [
   'Listing Type',
@@ -139,7 +141,21 @@ const AddListingForm = () => {
               )}
               {step === 3 && (
                 <>
-                  <FormInput label="Location" name="location" type="text" value={formData.location} onChange={handleChange} required />
+                  <FormInput
+                    label="Location"
+                    name="location"
+                    type="text"
+                    value={formData.location}
+                    onChange={handleChange}
+                    required
+                  />
+
+                  {/* Google Maps Section */}
+                  <div className="mt-6">
+                    <h3 className="text-md font-medium text-gray-700 mb-2">Property Location</h3>
+                    <GoogleMapComponent  />
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">Upload Images</label>
                     <input
@@ -153,6 +169,7 @@ const AddListingForm = () => {
                   </div>
                 </>
               )}
+
               {step === 4 && (
                 <div>
                   <h3 className="text-xl font-semibold mb-4 text-gray-800">Review Your Listing</h3>

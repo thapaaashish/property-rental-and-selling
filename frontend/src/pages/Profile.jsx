@@ -10,7 +10,13 @@ const { currentUser } = useSelector((state) => state.user);
       <h1 className="text-2xl font-bold mb-6">Profile</h1>
       
       {/* Profile Picture */}
-      <div className="w-24 h-24 rounded-full bg-gray-300 mb-6">A</div>
+      <div  id="photo">
+      <img
+          src={currentUser.avatar}
+          alt="User Avatar"
+          className="w-24 h-24 rounded-full bg-gray-300 mb-6"
+        />
+      </div>
 
       {/* Profile Details */}
       <div className="bg-white shadow-lg rounded-2xl p-6 w-80">
@@ -29,7 +35,7 @@ const { currentUser } = useSelector((state) => state.user);
           <label className="block text-gray-600 text-sm mb-1">Email</label>
           <input
             type="email"
-            className="w-full border-b border-gray-300 focus:outline-none py-1" defaultValue= { currentUser.email } id="email"
+            className="w-full border-b border-gray-300 focus:outline-none py-1 cursor-not-allowed" defaultValue= { currentUser.email } id="email"
             readOnly
           />
         </div>
