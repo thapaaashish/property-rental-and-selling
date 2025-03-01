@@ -92,7 +92,7 @@ const SignIn = () => {
 
           <div className="flex items-center justify-between mb-4">
           <Link to="/forgot-password" className="text-sm text-blue-500 hover:underline">
-            <a href="#" className="text-sm text-blue-500 hover:underline">Forgot Password?</a>
+            Forgot Password?
             </Link>
           </div>
 
@@ -112,10 +112,10 @@ const SignIn = () => {
 
 
         <Link to="/sign-up">
-  <p className="text-center text-sm text-gray-600 mt-4">
-    Don't have an account? <span className="text-blue-500">Sign up</span>
-  </p>
-</Link>
+          <p className="text-center text-sm text-gray-600 mt-4">
+            Don't have an account? <span className="text-blue-500">Sign up</span>
+          </p>
+        </Link>
 
       </div>
       {error && <p className="text-red-500">{error}</p>}

@@ -1,9 +1,31 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { deleteUserFailure, deleteUserStart, deleteUserSuccess } from '../redux/user/userSlice';
 
 const Profile = () => {
 const { currentUser } = useSelector((state) => state.user);
+const dispatchEvent = useDispatch();
 
+const handleDeleteUser = async()=>{
+  try {
+    dispatchEvent(deleteUserStart());
+    const res = await fetch(`http://localhost:3000/backend/user/delete/${currentUser._id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = await res.json();
+    if(data.sucess=== false){
+      dispatchEvent(deleteUserFailure(data.message));
+      return;
+    }
+
+    dispatchEvent(deleteUserSuccess(data));
+
+  } catch (error) {
+    dispatchEvent(deleteUserFailure(error.message));
+
+  }
+}
 
   return (
     <div className="flex flex-col items-center p-6 bg-gray-100 min-h-screen">
@@ -47,7 +69,7 @@ const { currentUser } = useSelector((state) => state.user);
 
         {/* Delete Account & Sign Out */}
         <div className="flex justify-between text-red-500 text-sm">
-          <button className="hover:underline">Delete My Account</button>
+          <button onClick={handleDeleteUser} className="hover:underline">Delete My Account</button>
           <button className="hover:underline">Sign Out</button>
         </div>
       </div>

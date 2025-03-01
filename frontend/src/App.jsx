@@ -11,6 +11,7 @@ import PropertyListing from './components/PropertyListing'
 import Layout from './components/Layout'
 import PrivateRoute from './components/PrivateRoute'
 import Listings from './pages/Listings'
+import SavedListings from './pages/SavedListings'
 
 export const App = () => {
   return (
@@ -25,13 +26,14 @@ export const App = () => {
           <Route path='/verify-email' element={<VerifyEmail />} />
           <Route path='/about' element={<About />} />
           <Route element={<PrivateRoute/>} >
-            <Route path='/profile' element={<Profile />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path='/property/:id' element={<PropertyListing />} />
           <Route path='/listings' element={<Listings />} />
+          <Route path='/saved-listings' element={<SavedListings />} />
         </Route>
 
-        {/* Keep 'Add Listing' page outside Layout (No Header Here) */}
+        {/* Keep pages outside Layout (No Header Here) */}
         <Route path='/add-listing' element={<AddListing />} />
       </Routes>
     </BrowserRouter>
