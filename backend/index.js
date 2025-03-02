@@ -5,6 +5,7 @@ import cors from "cors";  // Import cors
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
+import listingRouter from "./routes/listing.route.js";
 
 
 dotenv.config();
@@ -30,7 +31,7 @@ app.use(cookieParser());
 // Use routes
 app.use('/backend/user', userRouter);
 app.use('/backend/auth', authRouter);
-
+app.use("/backend/listing", listingRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {

@@ -5,7 +5,7 @@ import SignUp from './pages/SignUp'
 import About from './pages/About'
 import Profile from './pages/Profile'
 import VerifyEmail from './pages/VerifyEmail'
-import AddListing from './pages/AddListing'
+import CreateListing from './pages/CreateListing'
 import ForgotPassword from './pages/ForgotPassword'
 import PropertyListing from './components/PropertyListing'
 import Layout from './components/Layout'
@@ -27,6 +27,7 @@ export const App = () => {
           <Route path='/about' element={<About />} />
           <Route element={<PrivateRoute/>} >
             <Route path="/profile" element={<Profile />} />
+            <Route path='/create-listing' element={<CreateListing />} />
           </Route>
           <Route path='/property/:id' element={<PropertyListing />} />
           <Route path='/listings' element={<Listings />} />
@@ -34,7 +35,6 @@ export const App = () => {
         </Route>
 
         {/* Keep pages outside Layout (No Header Here) */}
-        <Route path='/add-listing' element={<AddListing />} />
       </Routes>
     </BrowserRouter>
   )

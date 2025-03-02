@@ -105,7 +105,7 @@ const Header = () => {
               </Link>
             </ul>
             <div className="flex space-x-4 items-center">
-              <Link to="/add-listing">
+              <Link to="/create-listing">
                 <button className="px-4 py-2 text-sm font-medium text-black hover:bg-black hover:text-white rounded-lg transition duration-300 cursor-pointer">
                   Host your Property
                 </button>
