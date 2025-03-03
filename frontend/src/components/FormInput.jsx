@@ -1,34 +1,35 @@
-import React from 'react';
+import React from "react";
 
-const FormInput = ({ label, name, type, value, onChange, placeholder, options, required }) => {
+const FormInput = ({
+  label,
+  name,
+  type = "text",
+  value,
+  onChange,
+  options = [],
+  error,
+  required = false,
+}) => {
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-      {type === 'textarea' ? (
-        <textarea
-          name={name}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          required={required}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      ) : type === 'select' ? (
+    <div className="mb-4">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {type === "select" ? (
         <select
           name={name}
           value={value}
           onChange={onChange}
-          required={required}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
         >
-          <option value="">Select {label}</option>
+          <option value="">Select an option</option>
           {options.map((option, index) => (
             <option key={index} value={option}>
               {option}
             </option>
           ))}
         </select>
-      ) : type === 'radio' ? (
+      ) : type === "radio" ? (
         <div className="flex space-x-4">
           {options.map((option, index) => (
             <label key={index} className="flex items-center">
@@ -38,10 +39,9 @@ const FormInput = ({ label, name, type, value, onChange, placeholder, options, r
                 value={option}
                 checked={value === option}
                 onChange={onChange}
-                required={required}
                 className="mr-2"
               />
-              {option.charAt(0).toUpperCase() + option.slice(1)}
+              {option}
             </label>
           ))}
         </div>
@@ -51,11 +51,10 @@ const FormInput = ({ label, name, type, value, onChange, placeholder, options, r
           name={name}
           value={value}
           onChange={onChange}
-          placeholder={placeholder}
-          required={required}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
       )}
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   );
 };

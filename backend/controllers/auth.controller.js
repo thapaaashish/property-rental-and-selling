@@ -4,11 +4,11 @@ import { errorHandler } from "../utils/error.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/user.model.js";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
 dotenv.config();
 
-// Set up nodemailer transporter (Gmail configuration here, adjust as needed)
+// Set up nodemailer transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -24,7 +24,7 @@ const generateOTP = () => {
 
 // Send OTP to email
 const sendOTP = (email, otp) => {
-  console.log("Sending OTP to:", email);  // Debug log
+  console.log("Sending OTP to:", email); // Debug log
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -55,7 +55,10 @@ export const signin = async (req, res, next) => {
     const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET);
     const { password: pass, ...rest } = validUser._doc;
 
-    res.cookie("access_token", token, { httpOnly: true }).status(200).json(rest);
+    res
+      .cookie("access_token", token, { httpOnly: true })
+      .status(200)
+      .json(rest);
   } catch (error) {
     next(error);
   }
@@ -73,15 +76,15 @@ export const verifyOTP = async (req, res, next) => {
       console.log("User not found for email:", email);
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
-    console.log("Found user:", { 
+    console.log("Found user:", {
       email: user.email,
       storedOTP: user.otp,
       otpExpires: user.otpExpires,
-      currentTime: new Date()
+      currentTime: new Date(),
     });
 
     // Check if OTP exists
@@ -89,7 +92,7 @@ export const verifyOTP = async (req, res, next) => {
       console.log("No OTP found for user");
       return res.status(400).json({
         success: false,
-        message: "No OTP found. Please request a new OTP"
+        message: "No OTP found. Please request a new OTP",
       });
     }
 
@@ -100,7 +103,7 @@ export const verifyOTP = async (req, res, next) => {
     console.log("Comparing OTPs:", {
       providedOTP,
       storedOTP,
-      match: providedOTP === storedOTP
+      match: providedOTP === storedOTP,
     });
 
     // Check if OTP matches
@@ -108,7 +111,7 @@ export const verifyOTP = async (req, res, next) => {
       console.log("OTP mismatch");
       return res.status(400).json({
         success: false,
-        message: "Invalid OTP"
+        message: "Invalid OTP",
       });
     }
 
@@ -116,11 +119,11 @@ export const verifyOTP = async (req, res, next) => {
     if (user.otpExpires < Date.now()) {
       console.log("OTP expired:", {
         expiryTime: user.otpExpires,
-        currentTime: Date.now()
+        currentTime: Date.now(),
       });
       return res.status(400).json({
         success: false,
-        message: "OTP has expired. Please request a new OTP"
+        message: "OTP has expired. Please request a new OTP",
       });
     }
 
@@ -134,14 +137,13 @@ export const verifyOTP = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Email successfully verified!"
+      message: "Email successfully verified!",
     });
-
   } catch (error) {
     console.error("Error during OTP verification:", error);
     return res.status(500).json({
       success: false,
-      message: "An error occurred during OTP verification"
+      message: "An error occurred during OTP verification",
     });
   }
 };
@@ -163,12 +165,13 @@ export const signup = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: "User created successfully! Please verify your email with the OTP."
+      message:
+        "User created successfully! Please verify your email with the OTP.",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message || "Error creating user"
+      message: error.message || "Error creating user",
     });
   }
 };
@@ -181,7 +184,7 @@ export const forgotPassword = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
@@ -196,7 +199,7 @@ export const forgotPassword = async (req, res, next) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Password Reset OTP",
-      text: `Your OTP for password reset is: ${otp}. This OTP will expire in 5 minutes.`
+      text: `Your OTP for password reset is: ${otp}. This OTP will expire in 5 minutes.`,
     };
 
     transporter.sendMail(mailOptions, (err, info) => {
@@ -204,7 +207,7 @@ export const forgotPassword = async (req, res, next) => {
         console.log("Error sending reset OTP:", err);
         return res.status(500).json({
           success: false,
-          message: "Error sending OTP"
+          message: "Error sending OTP",
         });
       }
       console.log("Reset OTP sent:", info.response);
@@ -212,14 +215,13 @@ export const forgotPassword = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Password reset OTP sent to your email"
+      message: "Password reset OTP sent to your email",
     });
-
   } catch (error) {
     console.error("Forgot password error:", error);
     res.status(500).json({
       success: false,
-      message: "An error occurred"
+      message: "An error occurred",
     });
   }
 };
@@ -228,16 +230,16 @@ export const resetPassword = async (req, res, next) => {
   const { email, otp, newPassword } = req.body;
 
   try {
-    const user = await User.findOne({ 
+    const user = await User.findOne({
       email,
       resetPasswordOTP: otp,
-      resetPasswordOTPExpires: { $gt: Date.now() }
+      resetPasswordOTPExpires: { $gt: Date.now() },
     });
 
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: "Invalid or expired OTP"
+        message: "Invalid or expired OTP",
       });
     }
 
@@ -252,14 +254,13 @@ export const resetPassword = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "Password reset successful"
+      message: "Password reset successful",
     });
-
   } catch (error) {
     console.error("Reset password error:", error);
     res.status(500).json({
       success: false,
-      message: "An error occurred"
+      message: "An error occurred",
     });
   }
 };
@@ -312,9 +313,9 @@ export const google = async (req, res, next) => {
   }
 };
 
-export const signOut = async (req, res, next) => {  
+export const signOut = async (req, res, next) => {
   try {
-    res.clearCookie('access_token');
+    res.clearCookie("access_token");
     res.status(200).json("User has been logged out!");
   } catch (error) {
     next(error);

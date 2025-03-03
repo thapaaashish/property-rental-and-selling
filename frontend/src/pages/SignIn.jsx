@@ -1,20 +1,24 @@
 import React, { useState } from "react";
 
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { signInFailure, signInStart,signInSuccess } from "../redux/user/userSlice";
+import {
+  signInFailure,
+  signInStart,
+  signInSuccess,
+} from "../redux/user/userSlice";
 import OAuth from "../components/OAuth";
 
 const SignIn = () => {
   const dispatch = useDispatch();
-  const {loading, error } =  useSelector((state) => state.user);
+  const { loading, error } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({});
   const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -23,6 +27,16 @@ const SignIn = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!email || !password) {
+      dispatch(signInFailure("Please fill in all fields"));
+      return;
+    }
+    // Basic email validation
+    const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!emailPattern.test(email)) {
+      dispatch(signInFailure("Please enter a valid email address"));
+      return;
+    }
     try {
       dispatch(signInStart());
       const res = await fetch("http://localhost:3000/backend/auth/signin", {
@@ -39,16 +53,18 @@ const SignIn = () => {
         dispatch(signInFailure(data.message));
         return;
       }
+      // Store access and refresh tokens (e.g., using cookies or localStorage)
+      document.cookie = `access_token=${data.accessToken}; path=/; HttpOnly`; // Store access token securely
+      localStorage.setItem("refreshToken", data.refreshToken); // Optionally store refresh token in localStorage or HTTPOnly cookie
       dispatch(signInSuccess(data));
       navigate("/");
-
     } catch (error) {
       dispatch(signInFailure(error.message));
     }
   };
 
   const togglePasswordVisibility = () => {
-    setShowPassword(prevState => !prevState);
+    setShowPassword((prevState) => !prevState);
   };
 
   return (
@@ -59,7 +75,9 @@ const SignIn = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
             <input
               type="email"
               required
@@ -71,10 +89,12 @@ const SignIn = () => {
           </div>
 
           <div className="mb-4 relative">
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
             <div className="relative">
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 required
                 placeholder="Enter your password"
                 className="w-full p-2 border rounded mt-1 focus:outline-sky-500"
@@ -91,32 +111,39 @@ const SignIn = () => {
           </div>
 
           <div className="flex items-center justify-between mb-4">
-          <Link to="/forgot-password" className="text-sm text-blue-500 hover:underline">
-            Forgot Password?
+            <Link
+              to="/forgot-password"
+              className="text-sm text-blue-500 hover:underline"
+            >
+              Forgot Password?
             </Link>
           </div>
 
-          <button type="submit" className="w-full text-white p-2 rounded bg-teal-500 hover:bg-teal-400">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full text-white p-2 rounded bg-teal-500 hover:bg-teal-400"
+          >
             {loading ? "Loading..." : "Sign in"}
           </button>
         </form>
 
         <div className="flex items-center my-4">
           <hr className="flex-grow border-gray-300" />
-          <span className="px-2 text-gray-500 text-sm">Or Sign in with Google</span>
+          <span className="px-2 text-gray-500 text-sm">
+            Or Sign in with Google
+          </span>
           <hr className="flex-grow border-gray-300" />
         </div>
 
         <OAuth />
 
-
-
         <Link to="/sign-up">
           <p className="text-center text-sm text-gray-600 mt-4">
-            Don't have an account? <span className="text-blue-500">Sign up</span>
+            Don't have an account?{" "}
+            <span className="text-blue-500">Sign up</span>
           </p>
         </Link>
-
       </div>
       {error && <p className="text-red-500">{error}</p>}
     </div>

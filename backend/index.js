@@ -31,7 +31,7 @@ app.use(cookieParser());
 // Use routes
 app.use('/backend/user', userRouter);
 app.use('/backend/auth', authRouter);
-app.use("/backend/listing", listingRouter);
+app.use("/backend/listings", listingRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {
