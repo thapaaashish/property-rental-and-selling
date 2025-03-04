@@ -1,8 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import logo from '../Images/Logo.png';
-import { useSelector, useDispatch } from 'react-redux';
-import { signOutUserStart, signOutUserFailure, signOutUserSuccess } from '../redux/user/userSlice';
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import logo from "../Images/Logo.png";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  signOutUserStart,
+  signOutUserFailure,
+  signOutUserSuccess,
+} from "../redux/user/userSlice";
 
 const Header = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -24,10 +28,10 @@ const Header = () => {
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -49,10 +53,10 @@ const Header = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -71,7 +75,7 @@ const Header = () => {
       dispatch(signOutUserStart());
       dispatch(signOutUserSuccess());
       setIsProfilePopupOpen(false);
-      navigate('/');
+      navigate("/");
     } catch (error) {
       dispatch(signOutUserFailure(error.message));
     }
@@ -80,28 +84,30 @@ const Header = () => {
   return (
     <header
       className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 ${
-        isScrolled ? 'bg-white/90 backdrop-blur-md shadow-lg' : 'bg-transparent backdrop-blur-xs'
+        isScrolled
+          ? "bg-white/90 backdrop-blur-md shadow-lg"
+          : "bg-transparent backdrop-blur-xs"
       }`}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img
-              src={logo}
-              alt="HomeFinder Logo"
-              className="h-16 w-auto"
-            />
+            <img src={logo} alt="HomeFinder Logo" className="h-16 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <ul className="flex space-x-4">
               <Link to="/">
-                <li className="text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">Home</li>
+                <li className="text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
+                  Home
+                </li>
               </Link>
               <Link to="/listings">
-                <li className="text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">Listings</li>
+                <li className="text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
+                  Listings
+                </li>
               </Link>
             </ul>
             <div className="flex space-x-4 items-center">
@@ -124,16 +130,15 @@ const Header = () => {
                         className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    <span className="ml-2 text-sm font-medium hidden sm:block">
-                    </span>
+                    <span className="ml-2 text-sm font-medium hidden sm:block"></span>
                   </button>
                 ) : (
                   <Link to="/sign-in">
                     <button
                       className={`px-4 py-2 text-sm font-medium rounded-lg transition duration-300 ${
                         isScrolled
-                          ? 'border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white'
-                          : 'border border-black text-black hover:bg-black hover:text-white'
+                          ? "border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                          : "border border-black text-black hover:bg-black hover:text-white"
                       }`}
                     >
                       Sign In
@@ -147,7 +152,7 @@ const Header = () => {
                     <ul className="py-2">
                       <li>
                         <div
-                          onClick={() => handleMenuItemClick('/profile')}
+                          onClick={() => handleMenuItemClick("/profile")}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                         >
                           Profile
@@ -155,7 +160,7 @@ const Header = () => {
                       </li>
                       <li>
                         <div
-                          onClick={() => handleMenuItemClick('/saved-listings')}
+                          onClick={() => handleMenuItemClick("/saved-listings")}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                         >
                           Saved
@@ -163,7 +168,7 @@ const Header = () => {
                       </li>
                       <li>
                         <div
-                          onClick={() => handleMenuItemClick('/messages')}
+                          onClick={() => handleMenuItemClick("/messages")}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                         >
                           Messages
@@ -265,35 +270,65 @@ const Header = () => {
           <div className="md:hidden bg-white/95 backdrop-blur-md shadow-lg rounded-lg mt-2 py-4 box-border z-50">
             <ul className="flex flex-col space-y-4 px-4">
               {currentUser ? (
-                <div onClick={() => { toggleMobileMenu(); navigate('/profile'); }}>
+                <div
+                  onClick={() => {
+                    toggleMobileMenu();
+                    navigate("/profile");
+                  }}
+                >
                   <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
                     Profile
                   </li>
                 </div>
               ) : (
-                <div onClick={() => { toggleMobileMenu(); navigate('/sign-in'); }}>
+                <div
+                  onClick={() => {
+                    toggleMobileMenu();
+                    navigate("/sign-in");
+                  }}
+                >
                   <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
                     Sign In
                   </li>
                 </div>
               )}
-              <div onClick={() => { toggleMobileMenu(); navigate('/'); }}>
+              <div
+                onClick={() => {
+                  toggleMobileMenu();
+                  navigate("/");
+                }}
+              >
                 <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
                   Home
                 </li>
               </div>
-              <div onClick={() => { toggleMobileMenu(); navigate('/listings'); }}>
+              <div
+                onClick={() => {
+                  toggleMobileMenu();
+                  navigate("/listings");
+                }}
+              >
                 <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
                   Listings
                 </li>
               </div>
-              <div onClick={() => { toggleMobileMenu(); navigate('/add-listing'); }}>
+              <div
+                onClick={() => {
+                  toggleMobileMenu();
+                  navigate("/create-listing");
+                }}
+              >
                 <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
                   Host your Property
                 </li>
               </div>
               {currentUser && (
-                <div onClick={() => { toggleMobileMenu(); navigate('/saved-listings'); }}>
+                <div
+                  onClick={() => {
+                    toggleMobileMenu();
+                    navigate("/saved-listings");
+                  }}
+                >
                   <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
                     Saved
                   </li>

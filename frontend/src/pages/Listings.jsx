@@ -1,263 +1,77 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import PropertyGrid from '../components/PropertyGrid';
-import SearchFilters from '../components/SearchFilters';
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import PropertyGrid from "../components/PropertyGrid";
+import SearchFilters from "../components/SearchFilters";
 
 const Listings = () => {
   const [searchParams] = useSearchParams();
-  const listingType = searchParams.get('listing') || 'all';
-  const propertyType = searchParams.get('type') || 'all';
-  
+  const listingType = searchParams.get("listing") || "all";
+  const propertyType = searchParams.get("type") || "all";
+
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Handle filter submissions
   const handleFilterSubmit = (filters) => {
-    console.log('Filters submitted:', filters);
+    console.log("Filters submitted:", filters);
     // In a real app, you would update the URL or fetch filtered properties
   };
-  
-  // Fetch properties (simulated)
+
+  // Fetch properties from the backend
   useEffect(() => {
-    const fetchProperties = () => {
+    const fetchProperties = async () => {
       setLoading(true);
-      
-      setTimeout(() => {
-        const allProperties = [
-          {
-            id: '1',
-            title: 'Modern Apartment with City View',
-            description: 'Luxurious apartment with stunning city views and modern amenities.',
-            price: 2500,
-            priceUnit: 'monthly',
-            address: {
-              street: '123 Downtown Ave',
-              city: 'New York',
-              state: 'NY',
-              zip: '10001',
-              country: 'USA',
-            },
-            bedrooms: 2,
-            bathrooms: 2,
-            area: 1200,
-            images: [
-              'https://images.unsplash.com/photo-1564597195-c999d5b347fd',  // Image from Unsplash
-              'https://images.unsplash.com/photo-1564597195-d4984c80162d',  // Image from Unsplash
-            ],
-            type: 'apartment',
-            listingType: 'rent',
-            features: ['City View', 'Modern Design', 'High Ceiling'],
-            amenities: ['Gym', 'Pool', 'Parking', 'Security'],
-            isFeatured: true,
-            isNew: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            agent: {
-              id: 'agent1',
-              name: 'John Doe',
-              photo: 'https://randomuser.me/api/portraits/men/1.jpg',  // Random user image
-              phone: '555-123-4567',
-              email: 'john@example.com',
-            },
+
+      try {
+        const response = await fetch(
+          `http://localhost:3000/backend/listings/listings?type=${propertyType}&listingType=${listingType}`
+        );
+        const data = await response.json();
+
+        // Map the fetched data to match the expected frontend format
+        const mappedProperties = data.map((listing) => ({
+          id: listing._id,
+          title: listing.title,
+          description: listing.description,
+          price: listing.price,
+          priceUnit: listing.rentOrSale === "Rent" ? "monthly" : "total",
+          address: {
+            street: listing.location, // Assuming location is a string
+            city: "", // You can add city if available
+            state: "", // You can add state if available
+            zip: "", // You can add zip if available
+            country: "", // You can add country if available
           },
-          {
-            id: '2',
-            title: 'Spacious Family Home',
-            description: 'Beautiful family home with large backyard in quiet neighborhood.',
-            price: 750000,
-            priceUnit: 'total',
-            address: {
-              street: '456 Suburban St',
-              city: 'Los Angeles',
-              state: 'CA',
-              zip: '90001',
-              country: 'USA',
-            },
-            bedrooms: 4,
-            bathrooms: 3,
-            area: 2800,
-            images: [
-              'https://images.unsplash.com/photo-1594722007400-c04e45bc1a8f',  // Image from Unsplash
-              'https://images.unsplash.com/photo-1594735486804-50147b4470c3',  // Image from Unsplash
-            ],
-            type: 'house',
-            listingType: 'sale',
-            features: ['Backyard', 'Quiet Neighborhood', 'Family Friendly'],
-            amenities: ['Garden', 'Garage', 'Patio', 'Fireplace'],
-            isFeatured: true,
-            isNew: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            agent: {
-              id: 'agent2',
-              name: 'Jane Smith',
-              photo: 'https://randomuser.me/api/portraits/women/2.jpg',  // Random user image
-              phone: '555-987-6543',
-              email: 'jane@example.com',
-            },
+          bedrooms: listing.bedrooms,
+          bathrooms: listing.bathrooms,
+          area: listing.area,
+          images: listing.imageUrls,
+          type: listing.listingType.toLowerCase(),
+          listingType: listing.rentOrSale.toLowerCase(),
+          features: [], // You can add features if available
+          amenities: [], // You can add amenities if available
+          isFeatured: false, // You can add isFeatured if available
+          isNew:
+            new Date(listing.createdAt).getTime() >
+            Date.now() - 30 * 24 * 60 * 60 * 1000, // Assuming new listings are less than 30 days old
+          createdAt: listing.createdAt,
+          updatedAt: listing.updatedAt,
+          agent: {
+            id: listing.userRef,
+            name: "Agent Name", // You can add agent name if available
+            photo: "https://randomuser.me/api/portraits/men/1.jpg", // You can add agent photo if available
+            phone: "555-123-4567", // You can add agent phone if available
+            email: "agent@example.com", // You can add agent email if available
           },
-          {
-            id: '3',
-            title: 'Downtown Condo',
-            description: 'Modern condo in the heart of downtown with amazing amenities.',
-            price: 1800,
-            priceUnit: 'monthly',
-            address: {
-              street: '789 City Center',
-              city: 'Chicago',
-              state: 'IL',
-              zip: '60601',
-              country: 'USA',
-            },
-            bedrooms: 1,
-            bathrooms: 1,
-            area: 850,
-            images: [
-              'https://images.unsplash.com/photo-1574158622685-cf1b92eaf3c0',  // Image from Unsplash
-              'https://images.unsplash.com/photo-1581276872177-9b56b4f5b0c5',  // Image from Unsplash
-            ],
-            type: 'condo',
-            listingType: 'rent',
-            features: ['Downtown', 'Modern', 'Convenient'],
-            amenities: ['Gym', 'Rooftop Deck', 'Doorman', 'Laundry'],
-            isFeatured: false,
-            isNew: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            agent: {
-              id: 'agent3',
-              name: 'Robert Johnson',
-              photo: 'https://randomuser.me/api/portraits/men/3.jpg',  // Random user image
-              phone: '555-456-7890',
-              email: 'robert@example.com',
-            },
-          },
-          {
-            id: '4',
-            title: 'Luxury Villa with Pool',
-            description: 'Stunning luxury villa with private pool and ocean views.',
-            price: 1200000,
-            priceUnit: 'total',
-            address: {
-              street: '101 Beachfront Dr',
-              city: 'Miami',
-              state: 'FL',
-              zip: '33101',
-              country: 'USA',
-            },
-            bedrooms: 5,
-            bathrooms: 4,
-            area: 4500,
-            images: [
-              'https://images.unsplash.com/photo-1531297494163-f019433c3a98',  // Image from Unsplash
-              'https://images.unsplash.com/photo-1520880867055-dc6e0e6e1de4',  // Image from Unsplash
-            ],
-            type: 'villa',
-            listingType: 'sale',
-            features: ['Ocean View', 'Private Pool', 'Luxury'],
-            amenities: ['Pool', 'Beach Access', 'Home Theater', 'Wine Cellar'],
-            isFeatured: true,
-            isNew: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            agent: {
-              id: 'agent4',
-              name: 'Sarah Wilson',
-              photo: 'https://randomuser.me/api/portraits/women/4.jpg',  // Random user image
-              phone: '555-234-5678',
-              email: 'sarah@example.com',
-            },
-          },
-          {
-            id: '5',
-            title: 'Commercial Office Space',
-            description: 'Prime location office space perfect for small businesses.',
-            price: 3500,
-            priceUnit: 'monthly',
-            address: {
-              street: '555 Business Blvd',
-              city: 'San Francisco',
-              state: 'CA',
-              zip: '94105',
-              country: 'USA',
-            },
-            bedrooms: 0,
-            bathrooms: 2,
-            area: 1800,
-            images: [
-              'https://images.unsplash.com/photo-1565575813-38f10d8b5c73',  // Image from Unsplash
-              'https://images.unsplash.com/photo-1574181073704-9b56bca38c42',  // Image from Unsplash
-            ],
-            type: 'office',
-            listingType: 'rent',
-            features: ['Prime Location', 'Modern Building', 'Corner Unit'],
-            amenities: ['Conference Room', 'Reception', 'Kitchen', 'Parking'],
-            isFeatured: false,
-            isNew: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            agent: {
-              id: 'agent5',
-              name: 'Michael Brown',
-              photo: 'https://randomuser.me/api/portraits/men/5.jpg',  // Random user image
-              phone: '555-876-5432',
-              email: 'michael@example.com',
-            },
-          },
-          {
-            id: '6',
-            title: 'Charming Studio Apartment',
-            description: 'Cozy studio apartment in trendy neighborhood with great amenities.',
-            price: 1200,
-            priceUnit: 'monthly',
-            address: {
-              street: '222 Hipster Lane',
-              city: 'Portland',
-              state: 'OR',
-              zip: '97201',
-              country: 'USA',
-            },
-            bedrooms: 0,
-            bathrooms: 1,
-            area: 550,
-            images: [
-              'https://images.unsplash.com/photo-1601748364402-55cf16d15cbe',  // Image from Unsplash
-              'https://images.unsplash.com/photo-1600715425032-3eaf8d9a3bb9',  // Image from Unsplash
-            ],
-            type: 'apartment',
-            listingType: 'rent',
-            features: ['Trendy Neighborhood', 'Cozy', 'Modern'],
-            amenities: ['Bike Storage', 'Rooftop', 'Pet Friendly', 'Laundry'],
-            isFeatured: false,
-            isNew: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            agent: {
-              id: 'agent6',
-              name: 'Emily Davis',
-              photo: 'https://randomuser.me/api/portraits/women/6.jpg',  // Random user image
-              phone: '555-345-6789',
-              email: 'emily@example.com',
-            },
-          },
-        ];
-        
-        
-        // Filter properties based on URL parameters
-        let filteredProperties = allProperties;
-        
-        if (listingType !== 'all') {
-          const mappedListingType = listingType === 'buy' ? 'sale' : listingType;
-          filteredProperties = filteredProperties.filter(p => p.listingType === mappedListingType);
-        }
-        
-        if (propertyType !== 'all') {
-          filteredProperties = filteredProperties.filter(p => p.type === propertyType);
-        }
-        
-        setProperties(filteredProperties);
+        }));
+
+        // Set the mapped properties to the state
+        setProperties(mappedProperties);
+      } catch (error) {
+        console.error("Error fetching properties:", error);
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
 
     fetchProperties();
@@ -265,32 +79,32 @@ const Listings = () => {
 
   // Filter label based on URL parameters
   const getFilterLabel = () => {
-    let label = 'All Properties';
-    
-    if (listingType === 'buy') {
-      label = 'Properties for Sale';
-    } else if (listingType === 'rent') {
-      label = 'Properties for Rent';
+    let label = "All Properties";
+
+    if (listingType === "buy") {
+      label = "Properties for Sale";
+    } else if (listingType === "rent") {
+      label = "Properties for Rent";
     }
-    
-    if (propertyType !== 'all') {
+
+    if (propertyType !== "all") {
       const propertyTypeMap = {
-        apartment: 'Apartments',
-        house: 'Houses',
-        condo: 'Condos',
-        villa: 'Villas',
-        office: 'Commercial Properties'
+        apartment: "Apartments",
+        house: "Houses",
+        condo: "Condos",
+        villa: "Villas",
+        office: "Commercial Properties",
       };
-      
+
       label = propertyTypeMap[propertyType] || label;
-      
-      if (listingType === 'buy') {
-        label += ' for Sale';
-      } else if (listingType === 'rent') {
-        label += ' for Rent';
+
+      if (listingType === "buy") {
+        label += " for Sale";
+      } else if (listingType === "rent") {
+        label += " for Rent";
       }
     }
-    
+
     return label;
   };
 
@@ -304,7 +118,7 @@ const Listings = () => {
               Find your perfect property from our carefully curated listings
             </p>
           </div>
-          
+
           {/* Main content area with search, properties, and map placeholder */}
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Left side: Search and Properties */}
@@ -312,7 +126,7 @@ const Listings = () => {
               <div className="mb-8">
                 <SearchFilters onFilter={handleFilterSubmit} />
               </div>
-              
+
               {loading ? (
                 <div className="flex justify-center items-center min-h-[400px]">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -321,19 +135,20 @@ const Listings = () => {
                 <PropertyGrid properties={properties} />
               ) : (
                 <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-                  <h3 className="text-xl font-semibold mb-2">No properties found</h3>
+                  <h3 className="text-xl font-semibold mb-2">
+                    No properties found
+                  </h3>
                   <p className="text-gray-600 max-w-md">
-                    We couldn't find any properties matching your criteria. Try adjusting your filters or check back later.
+                    We couldn't find any properties matching your criteria. Try
+                    adjusting your filters or check back later.
                   </p>
                 </div>
               )}
             </div>
-            
+
             {/* Right side: Map Placeholder */}
             <div className="w-full lg:w-1/3 bg-gray-100 rounded-lg p-6 flex items-center justify-center">
-              <p className="text-gray-500 text-center">
-                Map will go here
-              </p>
+              <p className="text-gray-500 text-center">Map will go here</p>
             </div>
           </div>
         </div>

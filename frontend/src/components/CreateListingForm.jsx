@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import FormInput from "./FormInput"; // Updated import path
+import FormInput from "./FormInput";
 import GoogleMapComponent from "./GoogleMap";
 import { useSelector } from "react-redux";
 
@@ -123,7 +123,7 @@ const CreateListingForm = () => {
 
     if (isValid) {
       try {
-        const response = await fetch("/backend/listing/create", {
+        const response = await fetch("/backend/listings/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
