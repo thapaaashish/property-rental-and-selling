@@ -1,3 +1,4 @@
+// pages/Listings.js
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import PropertyGrid from "../components/PropertyGrid";
@@ -21,13 +22,19 @@ const Listings = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       setLoading(true);
-
+    
       try {
         const response = await fetch(
           `http://localhost:3000/backend/listings/listings?type=${propertyType}&listingType=${listingType}`
         );
+    
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+    
         const data = await response.json();
-
+        console.log("Fetched data:", data); // Log fetched data for debugging
+    
         // Map the fetched data to match the expected frontend format
         const mappedProperties = data.map((listing) => ({
           id: listing._id,
@@ -35,36 +42,30 @@ const Listings = () => {
           description: listing.description,
           price: listing.price,
           priceUnit: listing.rentOrSale === "Rent" ? "monthly" : "total",
-          address: {
-            street: listing.location, // Assuming location is a string
-            city: "", // You can add city if available
-            state: "", // You can add state if available
-            zip: "", // You can add zip if available
-            country: "", // You can add country if available
-          },
+          address: listing.address, // Use the address object directly from the backend
           bedrooms: listing.bedrooms,
           bathrooms: listing.bathrooms,
           area: listing.area,
           images: listing.imageUrls,
           type: listing.listingType.toLowerCase(),
           listingType: listing.rentOrSale.toLowerCase(),
-          features: [], // You can add features if available
-          amenities: [], // You can add amenities if available
-          isFeatured: false, // You can add isFeatured if available
+          features: [], // Add features if available
+          amenities: listing.amenities || [], // Use amenities from the backend
+          isFeatured: false, // Add isFeatured if available
           isNew:
             new Date(listing.createdAt).getTime() >
-            Date.now() - 30 * 24 * 60 * 60 * 1000, // Assuming new listings are less than 30 days old
+            Date.now() - 30 * 24 * 60 * 60 * 1000, // New listings are less than 30 days old
           createdAt: listing.createdAt,
           updatedAt: listing.updatedAt,
           agent: {
             id: listing.userRef,
-            name: "Agent Name", // You can add agent name if available
-            photo: "https://randomuser.me/api/portraits/men/1.jpg", // You can add agent photo if available
-            phone: "555-123-4567", // You can add agent phone if available
-            email: "agent@example.com", // You can add agent email if available
+            name: "Agent Name", // Add agent name if available
+            photo: "https://randomuser.me/api/portraits/men/1.jpg", // Add agent photo if available
+            phone: "555-123-4567", // Add agent phone if available
+            email: "agent@example.com", // Add agent email if available
           },
         }));
-
+    
         // Set the mapped properties to the state
         setProperties(mappedProperties);
       } catch (error) {
@@ -76,7 +77,7 @@ const Listings = () => {
 
     fetchProperties();
   }, [listingType, propertyType]);
-
+  
   // Filter label based on URL parameters
   const getFilterLabel = () => {
     let label = "All Properties";

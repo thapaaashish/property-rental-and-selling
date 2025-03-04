@@ -49,8 +49,9 @@ export const updateListing = async (req, res, next) => {
 export const getListing = async (req, res, next) => {
   try {
     const listing = await Listing.findById(req.params.id);
-    if (!listing) return next(errorHandler(404, "Listing not found!"));
-
+    if (!listing) {
+      return next(errorHandler(404, "Listing not found!"));
+    }
     res.status(200).json(listing);
   } catch (error) {
     next(error);
@@ -67,10 +68,12 @@ export const getListings = async (req, res, next) => {
 
     let query = {};
 
+    // Filter by listing type (rent or sale)
     if (listingType !== "all") {
       query.rentOrSale = listingType === "buy" ? "Sale" : "Rent";
     }
 
+    // Filter by property type (apartment, house, etc.)
     if (propertyType !== "all") {
       query.listingType =
         propertyType.charAt(0).toUpperCase() + propertyType.slice(1);

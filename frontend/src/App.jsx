@@ -7,7 +7,7 @@ import Profile from "./pages/Profile";
 import VerifyEmail from "./pages/VerifyEmail";
 import CreateListing from "./pages/CreateListing";
 import ForgotPassword from "./pages/ForgotPassword";
-import PropertyListing from "./components/PropertyListing";
+import PropertyDetails from "./components/PropertyDetails";
 import Layout from "./components/Layout";
 import PrivateRoute from "./components/PrivateRoute";
 import Listings from "./pages/Listings";
@@ -27,9 +27,8 @@ export const App = () => {
           <Route path="/about" element={<About />} />
           <Route element={<PrivateRoute />}>
             <Route path="/profile" element={<Profile />} />
-            <Route path="/create-listing" element={<CreateListing />} />
           </Route>
-          <Route path="/property/:id" element={<PropertyListing />} />
+          <Route path="/property/:id" element={<PropertyDetails />} />
           <Route path="/listings" element={<Listings />} />
           <Route path="/saved-listings" element={<SavedListings />} />
         </Route>

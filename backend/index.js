@@ -1,36 +1,38 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import cors from "cors";  // Import cors
+import cors from "cors"; // Import cors
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
 import listingRouter from "./routes/listing.route.js";
 
-
 dotenv.config();
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO)
+mongoose
+  .connect(process.env.MONGO)
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.log("Error: " + err));
 
 const app = express();
 
 // Enable CORS Middleware
-app.use(cors({
-  origin: "http://localhost:5173",  // Allow frontend access
-  methods: "GET,POST,PUT,DELETE",
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Allow frontend access
+    methods: "GET,POST,PUT,DELETE",
+    credentials: true,
+  })
+);
 
 // Middleware to parse JSON bodies
 app.use(express.json());
 app.use(cookieParser());
 
 // Use routes
-app.use('/backend/user', userRouter);
-app.use('/backend/auth', authRouter);
+app.use("/backend/user", userRouter);
+app.use("/backend/auth", authRouter);
 app.use("/backend/listings", listingRouter);
 
 // Global error handler

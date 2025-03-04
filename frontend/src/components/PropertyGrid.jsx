@@ -1,35 +1,36 @@
-import PropertyCard from './PropertyCard';
+import { Link } from "react-router-dom";
 
-const PropertyGrid = ({ properties, title, subtitle, featured = false }) => {
+const PropertyGrid = ({ properties }) => {
   return (
-    <section className="py-16 md:py-24">
-      <div className="container mx-auto px-4 md:px-6">
-        {(title || subtitle) && (
-          <div className="text-center mb-12 md:mb-16 animate-fade-in">
-            {title && (
-              <h2 className="text-3xl md:text-4xl font-bold mb-4 text-balance">
-                {title}
-              </h2>
-            )}
-            {subtitle && (
-              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                {subtitle}
-              </p>
-            )}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {properties.map((property) => (
+        <Link
+          key={property.id}
+          to={`/property/${property.id}`} // Use the correct URL path
+          className="border rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 no-underline text-gray-900"
+        >
+          <img
+            src={property.images[0]} // Use the first image as the thumbnail
+            alt={property.title}
+            className="w-full h-48 object-cover"
+          />
+          <div className="p-4">
+            <h2 className="text-xl font-bold">{property.title}</h2>
+            <p className="text-gray-600">{property.description}</p>
+            <p className="text-lg font-semibold">
+              ${property.price} {property.priceUnit}
+            </p>
+            <p className="text-sm text-gray-500">
+              {property.bedrooms} Beds | {property.bathrooms} Baths |{" "}
+              {property.area} sqft
+            </p>
+            <p className="text-sm text-gray-500">
+              {property.address.street}, {property.address.city}
+            </p>
           </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {properties.map((property) => (
-            <PropertyCard 
-              key={property.id} 
-              property={property} 
-              featured={featured && property.isFeatured}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
+        </Link>
+      ))}
+    </div>
   );
 };
 

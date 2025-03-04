@@ -8,7 +8,9 @@ const steps = [
   "Choose Property Type",
   "Rent or Sale",
   "Property Details",
-  "Location & Images",
+  "Location & Address",
+  "Amenities",
+  "Upload Images",
   "Review & Submit",
 ];
 
@@ -24,7 +26,14 @@ const CreateListingForm = () => {
     bedrooms: "",
     bathrooms: "",
     area: "",
-    location: "",
+    address: {
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "",
+    },
+    amenities: [],
     imageUrls: [],
   });
   const [imageUploadError, setImageUploadError] = useState(false);
@@ -44,8 +53,31 @@ const CreateListingForm = () => {
     setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
   };
 
+  const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      address: { ...prev.address, [name]: value },
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      address: { ...prev.address, [name]: "" },
+    }));
+  };
+
+  const handleAmenitiesChange = (e) => {
+    const { value, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      amenities: checked
+        ? [...prev.amenities, value]
+        : prev.amenities.filter((item) => item !== value),
+    }));
+    setErrors((prev) => ({ ...prev, amenities: "" }));
+  };
+
   const handleImageSubmit = async () => {
-    if (files.length > 0 && files.length + formData.imageUrls.length < 7) {
+    if (files.length > 0 && files.length + formData.imageUrls.length <= 6) {
       setUploading(true);
       setImageUploadError(false);
 
@@ -95,9 +127,7 @@ const CreateListingForm = () => {
         setUploading(false);
       }
     } else {
-      setImageUploadError(
-        "Please upload at least one image and no more than six images."
-      );
+      setImageUploadError("Please upload between 1 and 6 images.");
       setUploading(false);
     }
   };
@@ -173,9 +203,36 @@ const CreateListingForm = () => {
     }
 
     if (step === 3) {
-      if (!formData.location) newErrors.location = "Location is required.";
-      if (formData.imageUrls.length === 0)
-        newErrors.images = "Please upload at least one image.";
+      if (!formData.address.street)
+        newErrors.address = {
+          ...newErrors.address,
+          street: "Street is required.",
+        };
+      if (!formData.address.city)
+        newErrors.address = { ...newErrors.address, city: "City is required." };
+      if (!formData.address.state)
+        newErrors.address = {
+          ...newErrors.address,
+          state: "State is required.",
+        };
+      if (!formData.address.zip)
+        newErrors.address = {
+          ...newErrors.address,
+          zip: "ZIP code is required.",
+        };
+      if (!formData.address.country)
+        newErrors.address = {
+          ...newErrors.address,
+          country: "Country is required.",
+        };
+    }
+
+    if (step === 4 && formData.amenities.length === 0) {
+      newErrors.amenities = "Please select at least one amenity.";
+    }
+
+    if (step === 5 && formData.imageUrls.length === 0) {
+      newErrors.images = "Please upload at least one image.";
     }
 
     setErrors(newErrors);
@@ -193,7 +250,7 @@ const CreateListingForm = () => {
   const prevStep = () => setStep((prev) => prev - 1);
 
   const handleGoBack = () => {
-    navigate(-1); // Go back to the previous page
+    navigate(-1);
   };
 
   return (
@@ -394,35 +451,137 @@ const CreateListingForm = () => {
 
               {step === 3 && (
                 <>
-                  {/* Location Input */}
+                  {/* Address Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <FormInput
+                        label="Street"
+                        name="street"
+                        type="text"
+                        value={formData.address.street}
+                        onChange={handleAddressChange}
+                        required
+                      />
+                      {errors.address?.street && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address.street}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <FormInput
+                        label="City"
+                        name="city"
+                        type="text"
+                        value={formData.address.city}
+                        onChange={handleAddressChange}
+                        required
+                      />
+                      {errors.address?.city && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address.city}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <FormInput
+                        label="State"
+                        name="state"
+                        type="text"
+                        value={formData.address.state}
+                        onChange={handleAddressChange}
+                        required
+                      />
+                      {errors.address?.state && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address.state}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <FormInput
+                        label="ZIP Code"
+                        name="zip"
+                        type="text"
+                        value={formData.address.zip}
+                        onChange={handleAddressChange}
+                        required
+                      />
+                      {errors.address?.zip && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address.zip}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <FormInput
+                        label="Country"
+                        name="country"
+                        type="text"
+                        value={formData.address.country}
+                        onChange={handleAddressChange}
+                        required
+                      />
+                      {errors.address?.country && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.address.country}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {step === 4 && (
+                <>
+                  {/* Amenities Selection */}
                   <div>
-                    <FormInput
-                      label="Location"
-                      name="location"
-                      type="text"
-                      value={formData.location}
-                      onChange={handleChange}
-                      required
-                    />
-                    {errors.location && (
+                    <label className="block text-lg font-medium text-gray-700 mb-2">
+                      Amenities
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        "Wifi",
+                        "Balcony",
+                        "Parking",
+                        "Pool",
+                        "Gym",
+                        "Air Conditioning",
+                      ].map((amenity) => (
+                        <div key={amenity} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={amenity}
+                            name="amenities"
+                            value={amenity}
+                            checked={formData.amenities.includes(amenity)}
+                            onChange={handleAmenitiesChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                          />
+                          <label
+                            htmlFor={amenity}
+                            className="ml-2 text-gray-700"
+                          >
+                            {amenity}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    {errors.amenities && (
                       <p className="text-red-500 text-sm mt-1">
-                        {errors.location}
+                        {errors.amenities}
                       </p>
                     )}
                   </div>
+                </>
+              )}
 
-                  {/* Google Map Location Selector */}
-                  <div className="mt-6">
-                    <h3 className="text-md font-medium text-gray-700 mb-2">
-                      Property Location
-                    </h3>
-                    <GoogleMapComponent
-                      onLocationSelect={(location) =>
-                        setFormData({ ...formData, location })
-                      }
-                    />
-                  </div>
-
+              {step === 5 && (
+                <>
                   {/* Image Upload Section */}
                   <div className="mt-4">
                     <label className="flex gap-3.5 text-sm font-medium text-gray-700 mb-3">
@@ -475,7 +634,7 @@ const CreateListingForm = () => {
                 </>
               )}
 
-              {step === 4 && (
+              {step === 6 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-800">
                     Review Your Listing
@@ -509,7 +668,13 @@ const CreateListingForm = () => {
                       <strong>Area:</strong> {formData.area} sqft
                     </p>
                     <p>
-                      <strong>Location:</strong> {formData.location}
+                      <strong>Address:</strong> {formData.address.street},{" "}
+                      {formData.address.city}, {formData.address.state},{" "}
+                      {formData.address.zip}, {formData.address.country}
+                    </p>
+                    <p>
+                      <strong>Amenities:</strong>{" "}
+                      {formData.amenities.join(", ")}
                     </p>
                   </div>
                 </div>
