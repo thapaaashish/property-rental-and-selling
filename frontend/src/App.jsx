@@ -12,6 +12,8 @@ import Layout from "./components/Layout";
 import PrivateRoute from "./components/PrivateRoute";
 import Listings from "./pages/Listings";
 import SavedListings from "./pages/SavedListings";
+import AdminDashboard from "./pages/AdminDashboard";
+
 
 export const App = () => {
   return (
@@ -36,6 +38,7 @@ export const App = () => {
         {/* Keep pages outside Layout (No Header Here) */}
         <Route element={<PrivateRoute />}>
           <Route path="/create-listing" element={<CreateListing />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>

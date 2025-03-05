@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import FormInput from "./FormInput";
-import GoogleMapComponent from "./GoogleMap";
 import { useSelector } from "react-redux";
 
 const steps = [
@@ -75,6 +74,49 @@ const CreateListingForm = () => {
     }));
     setErrors((prev) => ({ ...prev, amenities: "" }));
   };
+
+  const handleImageChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    const validFiles = selectedFiles.filter((file) => {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("File size should be less than 5MB.");
+        return false;
+      }
+      if (!file.type.startsWith("image/")) {
+        alert("Only image files are allowed.");
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setFiles((prev) => [...prev, ...validFiles]);
+    }
+  };
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    const validFiles = droppedFiles.filter((file) => {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("File size should be less than 5MB.");
+        return false;
+      }
+      if (!file.type.startsWith("image/")) {
+        alert("Only image files are allowed.");
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setFiles((prev) => [...prev, ...validFiles]);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+  }, []);
 
   const handleImageSubmit = async () => {
     if (files.length > 0 && files.length + formData.imageUrls.length <= 6) {
@@ -256,17 +298,17 @@ const CreateListingForm = () => {
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       {/* Fixed Steps Header */}
-      <div className="fixed top-0 left-0 right-0 bg-white z-50 outline outline-offset-2 ">
+      <div className="fixed top-0 left-0 right-0 bg-white z-50 outline-offset-2 ">
         <div className="max-w-4xl mx-auto p-4">
           <div className="flex items-center justify-between">
             {/* Go Back Button */}
             <button
               onClick={handleGoBack}
-              className="flex items-center cursor-pointer hover:outline-1 rounded-2xl p-2.5 text-gray-600 hover:text-gray-800 transition duration-300"
+              className="flex items-center gap-2 px-4 py-2 cursor-pointer text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition duration-300 shadow-sm"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 mr-2"
+                className="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -278,7 +320,7 @@ const CreateListingForm = () => {
                   d="M10 19l-7-7m0 0l7-7m-7 7h18"
                 />
               </svg>
-              Go Back
+              <span className="text-sm font-medium">Go Back</span>
             </button>
 
             {/* Step Indicator */}
@@ -302,13 +344,13 @@ const CreateListingForm = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto mb-24">
+      <div className="max-w-4xl mx-auto mb-24 mt-16">
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
             Add a New Listing
           </h1>
           <p className="text-lg text-gray-600">
-            Fill out the form below to list your property for rent or sale.
+            Fill out the form below to list your property.
           </p>
         </header>
 
@@ -581,57 +623,105 @@ const CreateListingForm = () => {
               )}
 
               {step === 5 && (
-                <>
+                <div className="mt-6 space-y-4">
                   {/* Image Upload Section */}
-                  <div className="mt-4">
-                    <label className="flex gap-3.5 text-sm font-medium text-gray-700 mb-3">
-                      Upload Images
+                  <div
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-600 transition duration-300"
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                  >
+                    <label className="block text-sm font-medium text-gray-700">
+                      Drag & Drop Images or{" "}
+                      <span className="text-blue-600 hover:text-blue-800 cursor-pointer">
+                        Browse
+                      </span>
+                      <input
+                        type="file"
+                        name="images"
+                        onChange={handleImageChange}
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                      />
                     </label>
-                    <input
-                      type="file"
-                      name="images"
-                      onChange={(e) => setFiles(e.target.files)}
-                      accept="image/*"
-                      multiple
-                      required
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
-                    {imageUploadError && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {imageUploadError}
-                      </p>
-                    )}
+                    <p className="text-xs text-gray-500 mt-2">
+                      Supported formats: JPG, PNG. Max file size: 5MB.
+                    </p>
+                  </div>
 
+                  {/* Display Selected Images Before Uploading */}
+                  {files.length > 0 && (
+                    <div className="flex flex-wrap gap-3">
+                      {files.map((file, index) => (
+                        <div
+                          key={index}
+                          className="relative w-24 h-24 rounded-md overflow-hidden shadow-md"
+                        >
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Selected ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 text-xs hover:bg-red-700 transition"
+                            onClick={() =>
+                              setFiles((prev) =>
+                                prev.filter((_, i) => i !== index)
+                              )
+                            }
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload Button */}
+                  <div className="flex justify-end">
                     <button
-                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition duration-300 disabled:bg-blue-300"
                       type="button"
                       onClick={handleImageSubmit}
-                      disabled={uploading}
+                      disabled={uploading || files.length === 0}
                     >
-                      {uploading ? "Uploading..." : "Upload"}
+                      {uploading ? "Uploading..." : "Upload Images"}
                     </button>
                   </div>
 
                   {/* Display Uploaded Images */}
-                  <div className="mt-4 flex gap-3 flex-wrap">
-                    {formData.imageUrls.map((url, index) => (
-                      <div key={index} className="relative w-24 h-24">
-                        <img
-                          src={url}
-                          alt="Property"
-                          className="w-full h-full rounded-md object-cover"
-                        />
-                        <button
-                          type="button"
-                          className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 text-xs"
-                          onClick={() => handleRemoveImage(index)}
+                  {formData.imageUrls.length > 0 && (
+                    <div className="flex flex-wrap gap-3">
+                      {formData.imageUrls.map((url, index) => (
+                        <div
+                          key={index}
+                          className="relative w-24 h-24 rounded-md overflow-hidden shadow-md"
                         >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </>
+                          <img
+                            src={url}
+                            alt="Property"
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 text-xs hover:bg-red-700 transition"
+                            onClick={() => handleRemoveImage(index)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Error Message */}
+                  {imageUploadError && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {imageUploadError}
+                    </p>
+                  )}
+                </div>
               )}
 
               {step === 6 && (
@@ -685,14 +775,14 @@ const CreateListingForm = () => {
       </div>
 
       {/* Fixed Back and Next Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white z-50 outline outline-offset-2 ">
+      <div className="fixed bottom-0 left-0 right-0 bg-white z-50">
         <div className="max-w-4xl mx-auto p-4">
           <div className="flex justify-between">
             {step > 0 && (
               <button
                 type="button"
                 onClick={prevStep}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-300"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition duration-300 cursor-pointer"
               >
                 Back
               </button>
@@ -702,7 +792,7 @@ const CreateListingForm = () => {
                 type="button"
                 onClick={nextStep}
                 disabled={!isValid}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 cursor-pointer"
               >
                 Next
               </button>
@@ -711,7 +801,7 @@ const CreateListingForm = () => {
                 type="submit"
                 disabled={!isValid}
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-300"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-300 cursor-pointer"
               >
                 Submit Listing
               </button>
