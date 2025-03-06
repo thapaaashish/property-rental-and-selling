@@ -324,7 +324,22 @@ export const signOut = async (req, res, next) => {
 
 export const changePassword = async (req, res, next) => {
   const { currentPassword, newPassword } = req.body;
-  const token = req.cookies.access_token; // Extract the token from cookies
+  const token = req.cookies.access_token;
+
+  // Input validation
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Current password and new password are required",
+    });
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({
+      success: false,
+      message: "New password must be at least 8 characters long",
+    });
+  }
 
   if (!token) {
     return res.status(401).json({
@@ -366,18 +381,34 @@ export const changePassword = async (req, res, next) => {
     user.password = hashedPassword;
     await user.save();
 
+    // Clear the access_token cookie
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Ensure secure cookies in production
+      sameSite: "strict",
+    });
+
     res.status(200).json({
       success: true,
-      message: "Password changed successfully",
+      message: "Password changed successfully. Please log in again.",
     });
   } catch (error) {
-    console.error("Change password error:", error);
+    console.error("Change password error:", error.message); // Avoid logging sensitive data
+
     if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
         success: false,
         message: "Unauthorized: Invalid token",
       });
     }
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: Token has expired",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "An error occurred while changing the password",

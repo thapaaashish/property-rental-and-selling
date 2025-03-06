@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   signInFailure,
@@ -15,47 +13,44 @@ const SignIn = () => {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.user);
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({});
-  const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
-    console.log(formData);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const { email, password } = formData;
+
     if (!email || !password) {
       dispatch(signInFailure("Please fill in all fields"));
       return;
     }
-    // Basic email validation
+
     const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     if (!emailPattern.test(email)) {
       dispatch(signInFailure("Please enter a valid email address"));
       return;
     }
+
     try {
       dispatch(signInStart());
-      const res = await fetch("http://localhost:3000/backend/auth/signin", {
+      const res = await fetch("/backend/auth/signin", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      console.log(data);
 
       if (data.success === false) {
         dispatch(signInFailure(data.message));
         return;
       }
-      // Store access and refresh tokens (e.g., using cookies or localStorage)
-      document.cookie = `access_token=${data.accessToken}; path=/; HttpOnly`; // Store access token securely
-      localStorage.setItem("refreshToken", data.refreshToken); // Optionally store refresh token in localStorage or HTTPOnly cookie
+
+      document.cookie = `access_token=${data.accessToken}; path=/; HttpOnly`;
+      localStorage.setItem("refreshToken", data.refreshToken);
       dispatch(signInSuccess(data));
       navigate("/");
     } catch (error) {
@@ -73,6 +68,8 @@ const SignIn = () => {
         <h2 className="text-3xl font-semibold text-center mb-2">Login now</h2>
         <p className="text-center text-gray-600 mb-4">Hi, Welcome back 👋</p>
 
+        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
@@ -84,6 +81,7 @@ const SignIn = () => {
               placeholder="Enter your email id"
               className="w-full p-2 border rounded mt-1 focus:border-sky-500 focus:outline-sky-500 disabled:border-gray-200 disabled:bg-gray-50"
               id="email"
+              value={formData.email}
               onChange={handleChange}
             />
           </div>
@@ -99,6 +97,7 @@ const SignIn = () => {
                 placeholder="Enter your password"
                 className="w-full p-2 border rounded mt-1 focus:outline-sky-500"
                 id="password"
+                value={formData.password}
                 onChange={handleChange}
               />
               <span
@@ -122,7 +121,7 @@ const SignIn = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full text-white p-2 rounded bg-teal-500 hover:bg-teal-400"
+            className="w-full text-white p-2 rounded bg-teal-500 hover:bg-teal-400 disabled:bg-teal-300"
           >
             {loading ? "Loading..." : "Sign in"}
           </button>
@@ -145,7 +144,6 @@ const SignIn = () => {
           </p>
         </Link>
       </div>
-      {error && <p className="text-red-500">{error}</p>}
     </div>
   );
 };

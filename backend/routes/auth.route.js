@@ -3,6 +3,7 @@ import { signup, signin, verifyOTP, forgotPassword, resetPassword, google, signO
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import { errorHandler } from "../utils/error.js";
+import { verifyToken } from "../utils/verifyUser.js";
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ router.post("/signin", signin);
 router.post("/google", google);
 router.get("/signout", signOut);
 router.post("/forgot-password", forgotPassword);
-router.post("/change-password", changePassword);
+router.put("/change-password", verifyToken, changePassword);
 router.post("/reset-password", resetPassword);
 router.post("/verify-otp", (req, res, next) => {
   console.log("Incoming OTP request:", req.body); // Log request body
