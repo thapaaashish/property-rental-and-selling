@@ -195,7 +195,7 @@ const CreateListingForm = () => {
 
     if (isValid) {
       try {
-        const response = await fetch("/backend/listings/create", {
+        const response = await fetch("/api/listings/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -304,7 +304,7 @@ const CreateListingForm = () => {
             {/* Go Back Button */}
             <button
               onClick={handleGoBack}
-              className="flex items-center gap-2 px-4 py-2 cursor-pointer text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition duration-300 shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 cursor-pointer text-white hover:text-gray-900 bg-teal-500 hover:bg-gray-200 rounded-xl transition duration-300 shadow-sm"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -681,7 +681,7 @@ const CreateListingForm = () => {
                   {/* Upload Button */}
                   <div className="flex justify-end">
                     <button
-                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition duration-300 disabled:bg-blue-300"
+                      className="px-4 py-2 text-white hover:text-gray-900 bg-teal-500 hover:bg-gray-200 text-sm font-medium rounded-md transition duration-300 disabled:bg-blue-300"
                       type="button"
                       onClick={handleImageSubmit}
                       disabled={uploading || files.length === 0}
@@ -792,7 +792,7 @@ const CreateListingForm = () => {
                 type="button"
                 onClick={nextStep}
                 disabled={!isValid}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 cursor-pointer"
+                className="px-4 py-2 text-white hover:text-gray-900 bg-teal-500 hover:bg-gray-200 rounded-lg transition duration-300 cursor-pointer"
               >
                 Next
               </button>

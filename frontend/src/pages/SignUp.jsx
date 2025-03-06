@@ -27,7 +27,7 @@ const Signup = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:3000/backend/auth/signup", {
+      const res = await fetch("http://localhost:3000/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -58,7 +58,7 @@ const Signup = () => {
       setLoading(true);
       console.log("Submitting OTP:", { email: formData.email, otp }); // Debug log
       
-      const res = await fetch("http://localhost:3000/backend/auth/verify-otp", {
+      const res = await fetch("http://localhost:3000/api/auth/verify-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

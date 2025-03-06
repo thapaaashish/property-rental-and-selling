@@ -15,7 +15,7 @@ const DeleteAccount = ({ onClose }) => {
       dispatch(deleteUserStart());
 
       const res = await fetch(
-        `http://localhost:3000/backend/user/delete/${currentUser._id}`,
+        `/api/user/delete/${currentUser._id}`,
         {
           method: "DELETE",
           credentials: "include",

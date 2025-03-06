@@ -6,7 +6,7 @@ import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfil
 export default defineConfig({
   server: {
     proxy: {
-      "/backend": {
+      "/api": {
         target: "http://localhost:3000",
         secure: false,
       },

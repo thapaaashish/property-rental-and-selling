@@ -14,7 +14,7 @@ const UserSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: "..images/default-avatar.png",
+      default: "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1741280259/default-avatar_oabgol.png",
     },
     password: {
       type: String,
@@ -38,6 +38,16 @@ const UserSchema = new mongoose.Schema(
     },
     resetPasswordOTPExpires: {
       type: Date,
+      required: false,
+    },
+    phone: { type: String },
+    address: { type: String, default: "None" },
+    city: { type: String, default: "None" },
+    province: { type: String, default: "None" },
+    zipCode: { type: String, default: "None" },
+    profileCompleted: { type: Boolean, default: false },
+    refreshToken: { // for refresh token storage
+      type: String,
       required: false,
     },
   },

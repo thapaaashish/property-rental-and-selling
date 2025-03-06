@@ -25,7 +25,7 @@ const Listings = () => {
     
       try {
         const response = await fetch(
-          `http://localhost:3000/backend/listings/listings?type=${propertyType}&listingType=${listingType}`
+          `http://localhost:3000/api/listings/listings?type=${propertyType}&listingType=${listingType}`
         );
     
         if (!response.ok) {

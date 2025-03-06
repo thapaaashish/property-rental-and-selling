@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { CheckCircle, Camera, Edit2, Mail } from "lucide-react";
+import { CheckCircle, Camera, Edit2, Mail, Phone, MapPin } from "lucide-react";
 import ChangePassword from "../components/user/ChangePassword";
 import { useNavigate } from "react-router-dom";
 import DeleteAccount from "../components/user/DeleteAccount";
+import { updateUser } from "../redux/user/userSlice";
+import heic2any from "heic2any";
 
 const Profile = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -13,10 +15,140 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("personal");
   const [userProfile, setUserProfile] = useState(currentUser || {});
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [showDeleteAccount, setshowDeleteAccount] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setUserProfile((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const response = await fetch(`/api/user/update/${currentUser._id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userProfile),
+      });
+
+      // Check if the response is OK (status code 200-299)
+      if (!response.ok) {
+        const errorData = await response.json(); // Parse the error response
+        throw new Error(errorData.message || "Failed to update profile");
+      }
+
+      const data = await response.json(); // Parse the success response
+      dispatch(updateUser(data)); // Update Redux store
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating profile:", error.message);
+    }
+  };
+
+  const handleProfilePictureChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        let imageFile = file;
+
+        // Check the file type
+        console.log("File type:", file.type);
+
+        // Convert .heic to .jpg if the file is in .heic format
+        if (file.name.toLowerCase().endsWith(".heic")) {
+          const conversionResult = await heic2any({
+            blob: file,
+            toType: "image/jpeg", // Convert to JPEG
+            quality: 0.8, // Adjust quality (0 to 1)
+          });
+          console.log("Conversion result:", conversionResult);
+
+          imageFile = new File(
+            [conversionResult],
+            file.name.replace(/\.heic$/i, ".jpg"),
+            {
+              type: "image/jpeg",
+            }
+          );
+        }
+
+        // Show the selected image in the profile frame immediately
+        const localImageUrl = URL.createObjectURL(imageFile);
+        console.log("Local image URL:", localImageUrl);
+        setUserProfile((prev) => ({
+          ...prev,
+          avatar: localImageUrl, // Temporarily set the local image URL
+        }));
+
+        // Upload the image to Cloudinary
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        formData.append(
+          "upload_preset",
+          import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+        );
+        formData.append("folder", "HomeFinder/profile_picture/users"); // Specify the folder in Cloudinary
+
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${
+            import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+          }/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!response.ok) {
+          const errorResponse = await response.json();
+          console.error("Cloudinary API Error:", errorResponse);
+          throw new Error("Failed to upload image to Cloudinary");
+        }
+
+        // Get the secure URL from Cloudinary
+        const result = await response.json();
+        const imageUrl = result.secure_url;
+
+        // Save the image URL to the database
+        const saveResponse = await fetch("/api/user/upload-profile-picture", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ imageUrl }),
+        });
+
+        if (!saveResponse.ok) {
+          const errorData = await saveResponse.json();
+          throw new Error(
+            errorData.message || "Failed to save profile picture"
+          );
+        }
+
+        // Update the user profile in the state and Redux store
+        const updatedUser = { ...userProfile, avatar: imageUrl };
+        setUserProfile(updatedUser);
+        dispatch(updateUser(updatedUser)); // Update Redux store
+      } catch (error) {
+        console.error("Error uploading profile picture:", error);
+        // Revert to the previous avatar if the upload fails
+        setUserProfile((prev) => ({
+          ...prev,
+          avatar: currentUser.avatar, // Revert to the original avatar
+        }));
+      }
+    }
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen pb-16">
+      {/* Header */}
       <div className="bg-teal-500 py-16">
         <div className="max-w-7xl mx-auto px-4">
           <h1 className="text-4xl font-bold text-white mb-4 text-center">
@@ -28,6 +160,7 @@ const Profile = () => {
         </div>
       </div>
 
+      {/* Profile Content */}
       <div className="max-w-7xl mx-auto px-4 -mt-8">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Profile Header */}
@@ -35,11 +168,13 @@ const Profile = () => {
             <div className="absolute -bottom-16 left-8 flex items-end">
               <div className="relative">
                 <img
-                  src={currentUser.avatar || "default-avatar-url"}
+                  src={
+                    currentUser.avatar ||
+                    "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1741280259/default-avatar_oabgol.png"
+                  }
                   alt="User Avatar"
                   className="w-32 h-32 rounded-full border-4 border-white object-cover"
                 />
-                {/* Profile Picture Upload (Commented Out) */}
                 {isEditing && (
                   <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer">
                     <Camera className="h-5 w-5" />
@@ -47,7 +182,7 @@ const Profile = () => {
                       type="file"
                       className="hidden"
                       accept="image/*"
-                      // onChange={handleProfilePictureChange}
+                      onChange={handleProfilePictureChange}
                     />
                   </label>
                 )}
@@ -63,25 +198,25 @@ const Profile = () => {
               </div>
             </div>
             <div className="absolute top-4 right-4">
-              {/* Edit Button (Commented Out) */}
               {isEditing ? (
                 <div className="flex space-x-2">
                   <button
-                    // onClick={() => setIsEditing(false)}
+                    onClick={() => setIsEditing(false)}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
-                    // onClick={handleSaveProfile}
+                    onClick={handleSaveProfile}
+                    disabled={isLoading}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   >
-                    Save Changes
+                    {isLoading ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               ) : (
                 <button
-                  // onClick={() => setIsEditing(true)}
+                  onClick={() => setIsEditing(true)}
                   className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
                   <Edit2 className="h-4 w-4 mr-2" />
@@ -91,7 +226,7 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Profile Tabs */}
+          {/* Tabs and Content */}
           <div className="pt-20 px-8">
             <div className="border-b border-gray-200">
               <nav className="flex space-x-8">
@@ -136,9 +271,17 @@ const Profile = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Full Name
                     </label>
-                    <p className="text-gray-900">
-                      {currentUser.fullname || "N/A"}
-                    </p>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="fullname"
+                        value={userProfile.fullname}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{userProfile.fullname}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -150,6 +293,108 @@ const Profile = () => {
                         {currentUser.email || "N/A"}
                       </p>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "contact" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address
+                    </label>
+                    <div className="flex items-center">
+                      <Mail className="h-5 w-5 text-gray-400 mr-2" />
+                      <p className="text-gray-900">
+                        {currentUser.email || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number
+                    </label>
+                    <div className="flex items-center">
+                      <Phone className="h-5 w-5 text-gray-400 mr-2" />
+                      {isEditing ? (
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={userProfile.phone}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900">{userProfile.phone}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Address
+                    </label>
+                    <div className="flex items-center">
+                      <MapPin className="h-5 w-5 text-gray-400 mr-2" />
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="address"
+                          value={userProfile.address}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <p className="text-gray-900">{userProfile.address}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="city"
+                        value={userProfile.city}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{userProfile.city}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      State / Province
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="province"
+                        value={userProfile.province}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{userProfile.province}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Zip Code
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="zipCode"
+                        value={userProfile.zipCode}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{userProfile.zipCode}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -190,7 +435,7 @@ const Profile = () => {
                           </p>
                         </div>
                         <button
-                          onClick={() => setshowDeleteAccount(true)}
+                          onClick={() => setShowDeleteAccount(true)}
                           className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
                         >
                           Delete
@@ -205,17 +450,23 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Render ChangePassword component */}
+      {/* Modals */}
       {showChangePassword && (
-        <div className="fixed inset-0  bg-opacity-100 backdrop-blur-[1px] flex items-center justify-center">
+        <div className="fixed inset-0 bg-opacity-100 backdrop-blur-[1px] flex items-center justify-center">
           <ChangePassword onClose={() => setShowChangePassword(false)} />
         </div>
       )}
 
-      {/* Render DeleteAccount component */}
       {showDeleteAccount && (
-        <div className="fixed inset-0  bg-opacity-100 backdrop-blur-[1px] flex items-center justify-center">
-          <DeleteAccount onClose={() => setshowDeleteAccount(false)} />
+        <div className="fixed inset-0 bg-opacity-100 backdrop-blur-[1px] flex items-center justify-center">
+          <DeleteAccount onClose={() => setShowDeleteAccount(false)} />
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-md">
+          {error}
         </div>
       )}
     </div>

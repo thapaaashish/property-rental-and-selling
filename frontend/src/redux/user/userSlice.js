@@ -59,6 +59,9 @@ const userSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
+    updateUser: (state, action) => {
+      state.currentUser = action.payload;
+    },
   },
 });
 
@@ -75,6 +78,7 @@ export const {
   updatePasswordStart,
   updatePasswordSuccess,
   updatePasswordFailure,
+  updateUser,
 } = userSlice.actions;
 
 export default userSlice.reducer;

@@ -1,30 +1,29 @@
 import jwt from "jsonwebtoken";
 import { errorHandler } from "./error.js";
-import User from "../models/user.model.js"; // Assuming you have a User model for DB operations
+import User from "../models/user.model.js";
 
-// Middleware to verify the access token and refresh it if expired
 export const verifyToken = async (req, res, next) => {
   const token = req.cookies.access_token;
-  const refreshToken = req.cookies.refresh_token; // Get the refresh token from cookies
+  const refreshToken = req.cookies.refresh_token;
 
-  if (!token) return next(errorHandler(401, "Unauthorized"));
+  if (!token)
+    return next(errorHandler(401, "Unauthorized: No access token provided"));
 
   try {
     // Verify the access token
     const user = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = user; // Attach the decoded user to the request object
-    next(); // Proceed with the request
+    req.user = user;
+    next();
   } catch (err) {
     if (err.name === "TokenExpiredError" && refreshToken) {
-      // If access token is expired and refresh token exists
       try {
         // Verify the refresh token
         const refreshUser = jwt.verify(refreshToken, process.env.JWT_SECRET);
 
-        // Check if refresh token is valid (optionally, verify against the DB if you store refresh tokens)
+        // Check if refresh token is valid in the database
         const user = await User.findById(refreshUser.id);
         if (!user || user.refreshToken !== refreshToken) {
-          return next(errorHandler(403, "Forbidden"));
+          return next(errorHandler(403, "Forbidden: Invalid refresh token"));
         }
 
         // Issue a new access token
@@ -37,16 +36,24 @@ export const verifyToken = async (req, res, next) => {
         // Send the new access token as a response
         res.cookie("access_token", newAccessToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production", // Set to true in production
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 15 * 60 * 1000, // 15 minutes
         });
 
-        req.user = refreshUser; // Attach the refresh user to the request object
-        next(); // Proceed with the request
+        req.user = refreshUser;
+        next();
       } catch (err) {
-        return next(errorHandler(403, "Forbidden"));
+        console.error("Refresh token error:", err);
+        return next(
+          errorHandler(403, "Forbidden: Invalid or expired refresh token")
+        );
       }
     } else {
-      return next(errorHandler(403, "Forbidden"));
+      console.error("Access token error:", err);
+      return next(
+        errorHandler(403, "Forbidden: Invalid or expired access token")
+      );
     }
   }
 };

@@ -31,9 +31,9 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Use routes
-app.use("/backend/user", userRouter);
-app.use("/backend/auth", authRouter);
-app.use("/backend/listings", listingRouter);
+app.use("/api/user", userRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/listings", listingRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {
