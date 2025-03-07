@@ -22,19 +22,19 @@ const Listings = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       setLoading(true);
-    
+
       try {
         const response = await fetch(
           `http://localhost:3000/api/listings/listings?type=${propertyType}&listingType=${listingType}`
         );
-    
+
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-    
+
         const data = await response.json();
         console.log("Fetched data:", data); // Log fetched data for debugging
-    
+
         // Map the fetched data to match the expected frontend format
         const mappedProperties = data.map((listing) => ({
           id: listing._id,
@@ -65,7 +65,7 @@ const Listings = () => {
             email: "agent@example.com", // Add agent email if available
           },
         }));
-    
+
         // Set the mapped properties to the state
         setProperties(mappedProperties);
       } catch (error) {
@@ -77,7 +77,7 @@ const Listings = () => {
 
     fetchProperties();
   }, [listingType, propertyType]);
-  
+
   // Filter label based on URL parameters
   const getFilterLabel = () => {
     let label = "All Properties";
@@ -123,7 +123,7 @@ const Listings = () => {
           {/* Main content area with search, properties, and map placeholder */}
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Left side: Search and Properties */}
-            <div className="flex-1">
+            <div className="flex-2">
               <div className="mb-8">
                 <SearchFilters onFilter={handleFilterSubmit} />
               </div>
@@ -147,8 +147,8 @@ const Listings = () => {
               )}
             </div>
 
-            {/* Right side: Map Placeholder */}
-            <div className="w-full lg:w-1/3 bg-gray-100 rounded-lg p-6 flex items-center justify-center">
+            {/* Right side: Fixed-size Map Placeholder */}
+            <div className="w-full lg:w-1/3 bg-gray-100 rounded-lg p-6 flex items-center justify-center h-[550px] flex-shrink-0 overflow-hidden lg:overflow-auto lg:sticky lg:top-40">
               <p className="text-gray-500 text-center">Map will go here</p>
             </div>
           </div>

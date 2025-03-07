@@ -6,8 +6,9 @@ export const verifyToken = async (req, res, next) => {
   const token = req.cookies.access_token;
   const refreshToken = req.cookies.refresh_token;
 
-  if (!token)
+  if (!token) {
     return next(errorHandler(401, "Unauthorized: No access token provided"));
+  }
 
   try {
     // Verify the access token
@@ -37,7 +38,7 @@ export const verifyToken = async (req, res, next) => {
         res.cookie("access_token", newAccessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
+          sameSite: "lax",
           maxAge: 15 * 60 * 1000, // 15 minutes
         });
 

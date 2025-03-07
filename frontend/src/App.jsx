@@ -11,9 +11,8 @@ import PropertyDetails from "./components/PropertyDetails";
 import Layout from "./components/Layout";
 import PrivateRoute from "./components/PrivateRoute";
 import Listings from "./pages/Listings";
-import SavedListings from "./pages/SavedListings";
 import AdminDashboard from "./pages/AdminDashboard";
-
+// import Wistlists from "./pages/Wishlists";
 
 export const App = () => {
   return (
@@ -32,7 +31,7 @@ export const App = () => {
           </Route>
           <Route path="/property/:id" element={<PropertyDetails />} />
           <Route path="/listings" element={<Listings />} />
-          <Route path="/saved-listings" element={<SavedListings />} />
+          {/* <Route path="/wishlists" element={<Wistlists />} /> */}
         </Route>
 
         {/* Keep pages outside Layout (No Header Here) */}

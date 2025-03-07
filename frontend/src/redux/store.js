@@ -3,10 +3,11 @@ import userReducer from './user/userSlice';
 import { combineReducers } from '@reduxjs/toolkit';
 import { persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-
+import wishlistReducer from './wishlist/wishlistSlice';
 
 const rootReducer = combineReducers({
-    user: userReducer
+    user: userReducer,
+    wishlist: wishlistReducer,
 });
 
 const persistConfig = {

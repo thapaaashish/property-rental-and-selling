@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import AddToWishlist from "../components/AddToWishlist";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -28,9 +29,7 @@ const PropertyDetails = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(
-          `/api/listings/listings/${id}`
-        );
+        const response = await fetch(`/api/listings/listings/${id}`);
 
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
@@ -115,8 +114,8 @@ const PropertyDetails = () => {
             Home
           </a>
           <span className="mx-2">›</span>
-          <a href="/properties" className="hover:text-blue-600">
-            Properties
+          <a href="/listings" className="hover:text-blue-600">
+            Listings
           </a>
           <span className="mx-2">›</span>
           <span className="text-gray-900 font-medium">{property.title}</span>
@@ -172,16 +171,7 @@ const PropertyDetails = () => {
                 <button className="rounded-full bg-white/80 p-2.5 shadow-md text-gray-600 hover:bg-white hover:text-blue-600 transition-colors">
                   <Share2 className="h-5 w-5" />
                 </button>
-                <button
-                  className={`rounded-full ${
-                    liked
-                      ? "bg-red-500 text-white"
-                      : "bg-white/80 text-gray-600"
-                  } p-2.5 shadow-md hover:bg-red-500 hover:text-white transition-colors`}
-                  onClick={() => setLiked((prev) => !prev)}
-                >
-                  <Heart className="h-5 w-5" />
-                </button>
+                <AddToWishlist propertyId={property._id} />
               </div>
 
               <div className="absolute left-4 top-4">

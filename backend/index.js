@@ -6,6 +6,7 @@ import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
 import listingRouter from "./routes/listing.route.js";
+import wishlistRouter from "./routes/wishlist.route.js";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(
     origin: "http://localhost:5173", // Allow frontend access
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
+    optionsSuccessStatus: 200,
   })
 );
 
@@ -34,6 +36,7 @@ app.use(cookieParser());
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/listings", listingRouter);
+app.use("/api/wishlist", wishlistRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {

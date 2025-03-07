@@ -83,7 +83,11 @@ const Header = () => {
 
   return (
     <header
-      className="fixed top-0 left-0 w-full z-40 transition-all duration-300 bg-white/90 backdrop-blur-md shadow-lg"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "glass-effect border-b border-gray-100 py-3"
+          : "bg-transparent py-5"
+      }`}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -96,12 +100,12 @@ const Header = () => {
           <nav className="hidden md:flex items-center space-x-6">
             <ul className="flex space-x-4">
               <Link to="/">
-                <li className="text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
+                <li className="text-sm font-medium text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
                   Home
                 </li>
               </Link>
               <Link to="/listings">
-                <li className="text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
+                <li className="text-sm font-medium text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
                   Listings
                 </li>
               </Link>
@@ -156,10 +160,10 @@ const Header = () => {
                       </li>
                       <li>
                         <div
-                          onClick={() => handleMenuItemClick("/saved-listings")}
+                          onClick={() => handleMenuItemClick("/wishlists")}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                         >
-                          Saved
+                          Wishlists
                         </div>
                       </li>
                       <li>
@@ -322,11 +326,11 @@ const Header = () => {
                 <div
                   onClick={() => {
                     toggleMobileMenu();
-                    navigate("/saved-listings");
+                    navigate("/wishlists");
                   }}
                 >
                   <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
-                    Saved
+                    Wistlists
                   </li>
                 </div>
               )}
