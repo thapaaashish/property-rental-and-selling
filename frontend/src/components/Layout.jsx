@@ -8,7 +8,7 @@ const Layout = () => {
     <>
       {/* Show header on all pages EXCEPT Add Listing */}
       {location.pathname !== "/add-listing" && <Header />}
-      <main className="pt-16">
+      <main className="mt-14">
         <Outlet /> {/* This will render the page content */}
       </main>
     </>

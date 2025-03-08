@@ -515,8 +515,9 @@ const CreateListingForm = () => {
                       <FormInput
                         label="City"
                         name="city"
-                        type="text"
+                        type="select"
                         value={formData.address.city}
+                        options={["Kathmandu", "Pokhara"]}
                         onChange={handleAddressChange}
                         required
                       />

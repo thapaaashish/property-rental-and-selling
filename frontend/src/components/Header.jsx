@@ -83,11 +83,7 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? "glass-effect border-b border-gray-100 py-3"
-          : "bg-transparent py-5"
-      }`}
+      className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 bg-white/90 backdrop-blur-md shadow-lg`}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -97,15 +93,15 @@ const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center justify-center space-x-6 mx-auto">
             <ul className="flex space-x-4">
               <Link to="/">
-                <li className="text-sm font-medium text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
+                <li className="text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
                   Home
                 </li>
               </Link>
               <Link to="/listings">
-                <li className="text-sm font-medium text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
+                <li className="text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
                   Listings
                 </li>
               </Link>
@@ -160,10 +156,10 @@ const Header = () => {
                       </li>
                       <li>
                         <div
-                          onClick={() => handleMenuItemClick("/wishlists")}
+                          onClick={() => handleMenuItemClick("/saved-listings")}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                         >
-                          Wishlists
+                          Saved
                         </div>
                       </li>
                       <li>
@@ -268,71 +264,51 @@ const Header = () => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white/95 backdrop-blur-md shadow-lg rounded-lg mt-2 py-4 box-border z-50">
-            <ul className="flex flex-col space-y-4 px-4">
-              {currentUser ? (
-                <div
-                  onClick={() => {
-                    toggleMobileMenu();
-                    navigate("/profile");
-                  }}
-                >
-                  <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
-                    Profile
-                  </li>
-                </div>
-              ) : (
-                <div
-                  onClick={() => {
-                    toggleMobileMenu();
-                    navigate("/sign-in");
-                  }}
-                >
-                  <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
-                    Sign In
-                  </li>
-                </div>
-              )}
-              <div
-                onClick={() => {
-                  toggleMobileMenu();
-                  navigate("/");
-                }}
-              >
-                <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
+            <ul className="flex flex-col space-y-4 items-center">
+              <Link to="/">
+                <li className="text-black px-4 py-2 hover:bg-gray-300 rounded-lg transition duration-300">
                   Home
                 </li>
-              </div>
-              <div
-                onClick={() => {
-                  toggleMobileMenu();
-                  navigate("/listings");
-                }}
-              >
-                <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
+              </Link>
+              <Link to="/listings">
+                <li className="text-black px-4 py-2 hover:bg-gray-300 rounded-lg transition duration-300">
                   Listings
                 </li>
-              </div>
-              <div
-                onClick={() => {
-                  toggleMobileMenu();
-                  navigate("/create-listing");
-                }}
-              >
-                <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
+              </Link>
+              <Link to="/create-listing">
+                <button className="text-black px-4 py-2 hover:bg-gray-300 rounded-lg transition duration-300">
                   Host your Property
-                </li>
-              </div>
-              {currentUser && (
-                <div
-                  onClick={() => {
-                    toggleMobileMenu();
-                    navigate("/wishlists");
-                  }}
-                >
-                  <li className="hover:bg-sky-100 rounded-sm p-2 text-slate-700 hover:text-black transition duration-300 cursor-pointer">
-                    Wistlists
-                  </li>
+                </button>
+              </Link>
+              {currentUser ? (
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={toggleProfilePopup}
+                    className="flex items-center justify-center"
+                  >
+                    <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-300">
+                      <img
+                        src={currentUser.avatar}
+                        alt="User Avatar"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  </button>
+                  <div className="mt-4">
+                    <button
+                      onClick={handleSignOut}
+                      className="text-black px-4 py-2 rounded-lg transition duration-300"
+                    >
+                      Log Out
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <Link to="/sign-in">
+                  <button className="text-black px-4 py-2 rounded-lg transition duration-300">
+                    Sign In
+                  </button>
+                </Link>
               )}
             </ul>
           </div>

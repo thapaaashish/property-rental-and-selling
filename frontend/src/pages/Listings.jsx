@@ -15,7 +15,6 @@ const Listings = () => {
   // Handle filter submissions
   const handleFilterSubmit = (filters) => {
     console.log("Filters submitted:", filters);
-    // In a real app, you would update the URL or fetch filtered properties
   };
 
   // Fetch properties from the backend

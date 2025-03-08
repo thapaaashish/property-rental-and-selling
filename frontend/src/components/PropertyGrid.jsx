@@ -1,8 +1,16 @@
 import { Link } from "react-router-dom";
 
-const PropertyGrid = ({ properties }) => {
+const PropertyGrid = ({ properties, columns = 3 }) => {
+  // Define the grid classes based on the `columns` prop
+  const gridClasses = {
+    1: "grid-cols-1",
+    2: "grid-cols-1 sm:grid-cols-2",
+    3: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3",
+    4: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+  };
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-8">
+    <div className={`grid ${gridClasses[columns]} gap-8`}>
       {properties.map((property) => (
         <Link
           key={property.id}
@@ -12,9 +20,9 @@ const PropertyGrid = ({ properties }) => {
           {/* Property Thumbnail */}
           <div className="relative">
             <img
-              src={property.images?.[0] || "https://via.placeholder.com/500"}
+              src={property.images?.[0]}
               alt={property.title}
-              className="w-full h-[150px] object-cover" // Reduced height
+              className="w-full h-[150px] object-cover"
             />
             {/* Rent/Sale Badge */}
             <div className="absolute top-4 left-4 bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-md">
