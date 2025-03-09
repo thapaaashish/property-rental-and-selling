@@ -18,6 +18,13 @@ const Header = () => {
 
   const navigate = useNavigate();
 
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
   // Check if the user has scrolled down
   useEffect(() => {
     const handleScroll = () => {
@@ -88,14 +95,14 @@ const Header = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center">
+          <Link to="/" onClick={scrollToTop} className="flex items-center">
             <img src={logo} alt="HomeFinder Logo" className="h-16 w-auto" />
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center justify-center space-x-6 mx-auto">
+          {/* Desktop Navigation - Center */}
+          <nav className="hidden md:flex items-center">
             <ul className="flex space-x-4">
-              <Link to="/">
+              <Link to="/" onClick={scrollToTop}>
                 <li className="text-black hover:bg-gray-300 transition duration-300 rounded-lg px-4 py-2">
                   Home
                 </li>
@@ -106,84 +113,86 @@ const Header = () => {
                 </li>
               </Link>
             </ul>
-            <div className="flex space-x-4 items-center">
-              <Link to="/create-listing">
-                <button className="px-4 py-2 text-sm font-medium text-black hover:bg-black hover:text-white rounded-lg transition duration-300 cursor-pointer">
-                  Host your Property
-                </button>
-              </Link>
-              {/* Profile Avatar */}
-              <div className="relative cursor-pointer" ref={profileRef}>
-                {currentUser ? (
-                  <button
-                    onClick={toggleProfilePopup}
-                    className="flex items-center justify-center focus:outline-none group cursor-pointer"
-                  >
-                    <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all duration-300 shadow-md">
-                      <img
-                        src={currentUser.avatar}
-                        alt="User Avatar"
-                        className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <span className="ml-2 text-sm font-medium hidden sm:block"></span>
-                  </button>
-                ) : (
-                  <Link to="/sign-in">
-                    <button
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition duration-300 ${
-                        isScrolled
-                          ? "border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
-                          : "border border-black text-black hover:bg-black hover:text-white"
-                      }`}
-                    >
-                      Sign In
-                    </button>
-                  </Link>
-                )}
-
-                {/* Profile Popup */}
-                {isProfilePopupOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                    <ul className="py-2">
-                      <li>
-                        <div
-                          onClick={() => handleMenuItemClick("/profile")}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                        >
-                          Profile
-                        </div>
-                      </li>
-                      <li>
-                        <div
-                          onClick={() => handleMenuItemClick("/saved-listings")}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                        >
-                          Saved
-                        </div>
-                      </li>
-                      <li>
-                        <div
-                          onClick={() => handleMenuItemClick("/messages")}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                        >
-                          Messages
-                        </div>
-                      </li>
-                      <li>
-                        <div
-                          onClick={handleSignOut}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                        >
-                          Log Out
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
           </nav>
+
+          {/* Right Corner Buttons - Desktop */}
+          <div className="hidden md:flex items-center space-x-4">
+            <Link to="/create-listing">
+              <button className="px-4 py-2 text-sm font-medium text-black hover:bg-black hover:text-white rounded-lg transition duration-300 cursor-pointer">
+                Host your Property
+              </button>
+            </Link>
+            {/* Profile Avatar */}
+            <div className="relative cursor-pointer" ref={profileRef}>
+              {currentUser ? (
+                <button
+                  onClick={toggleProfilePopup}
+                  className="flex items-center justify-center focus:outline-none group cursor-pointer"
+                >
+                  <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all duration-300 shadow-md">
+                    <img
+                      src={currentUser.avatar}
+                      alt="User Avatar"
+                      className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <span className="ml-2 text-sm font-medium hidden sm:block"></span>
+                </button>
+              ) : (
+                <Link to="/sign-in">
+                  <button
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition duration-300 ${
+                      isScrolled
+                        ? "border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                        : "border border-black text-black hover:bg-black hover:text-white"
+                    }`}
+                  >
+                    Sign In
+                  </button>
+                </Link>
+              )}
+
+              {/* Profile Popup */}
+              {isProfilePopupOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <ul className="py-2">
+                    <li>
+                      <div
+                        onClick={() => handleMenuItemClick("/profile")}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      >
+                        Profile
+                      </div>
+                    </li>
+                    <li>
+                      <div
+                        onClick={() => handleMenuItemClick("/saved-listings")}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      >
+                        Saved
+                      </div>
+                    </li>
+                    <li>
+                      <div
+                        onClick={() => handleMenuItemClick("/help-center")}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      >
+                        Help Center
+                      </div>
+                    </li>
+                    <li>
+                      <div
+                        onClick={handleSignOut}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      >
+                        Log Out
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Mobile Menu Toggle and Avatar */}
           <div className="md:hidden flex items-center">
@@ -265,7 +274,7 @@ const Header = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-white/95 backdrop-blur-md shadow-lg rounded-lg mt-2 py-4 box-border z-50">
             <ul className="flex flex-col space-y-4 items-center">
-              <Link to="/">
+              <Link to="/" onClick={scrollToTop}>
                 <li className="text-black px-4 py-2 hover:bg-gray-300 rounded-lg transition duration-300">
                   Home
                 </li>
@@ -275,41 +284,56 @@ const Header = () => {
                   Listings
                 </li>
               </Link>
-              <Link to="/create-listing">
-                <button className="text-black px-4 py-2 hover:bg-gray-300 rounded-lg transition duration-300">
-                  Host your Property
-                </button>
-              </Link>
-              {currentUser ? (
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={toggleProfilePopup}
-                    className="flex items-center justify-center"
-                  >
-                    <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-300">
-                      <img
-                        src={currentUser.avatar}
-                        alt="User Avatar"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  </button>
-                  <div className="mt-4">
-                    <button
-                      onClick={handleSignOut}
-                      className="text-black px-4 py-2 rounded-lg transition duration-300"
-                    >
-                      Log Out
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <Link to="/sign-in">
-                  <button className="text-black px-4 py-2 rounded-lg transition duration-300">
-                    Sign In
+              <div className="flex flex-col items-center">
+                <Link to="/create-listing">
+                  <button className="text-black px-4 py-2 hover:bg-gray-300 rounded-lg transition duration-300">
+                    Host your Property
                   </button>
                 </Link>
-              )}
+                {currentUser ? (
+                  <div className="flex flex-col items-center mt-4">
+                    <div className="flex items-center mb-2">
+                      <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-300 mr-2">
+                        <img
+                          src={currentUser.avatar}
+                          alt="User Avatar"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <span className="text-sm font-medium">Profile</span>
+                    </div>
+                    <div className="flex flex-col space-y-2">
+                      <Link to="/profile">
+                        <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
+                          My Profile
+                        </button>
+                      </Link>
+                      <Link to="/saved-listings">
+                        <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
+                          Saved
+                        </button>
+                      </Link>
+                      <Link to="/messages">
+                        <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
+                          Messages
+                        </button>
+                      </Link>
+                      <button
+                        onClick={handleSignOut}
+                        className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm"
+                      >
+                        Log Out
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <Link to="/sign-in" className="mt-4">
+                    <button className="text-black px-4 py-2 border border-black hover:bg-black hover:text-white rounded-lg transition duration-300">
+                      Sign In
+                    </button>
+                  </Link>
+                )}
+              </div>
             </ul>
           </div>
         )}

@@ -1,12 +1,13 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import cors from "cors"; // Import cors
+import cors from "cors";
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
 import listingRouter from "./routes/listing.route.js";
 import wishlistRouter from "./routes/wishlist.route.js";
+import cityRouter from './routes/city.route.js';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/listings", listingRouter);
 app.use("/api/wishlist", wishlistRouter);
+app.use('/api', cityRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {

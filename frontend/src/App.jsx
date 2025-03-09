@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
-import About from "./pages/About";
+import AboutUs from "./pages/AboutUs";
 import Profile from "./pages/Profile";
 import VerifyEmail from "./pages/VerifyEmail";
 import CreateListing from "./pages/CreateListing";
@@ -12,6 +12,7 @@ import Layout from "./components/Layout";
 import PrivateRoute from "./components/PrivateRoute";
 import Listings from "./pages/Listings";
 import AdminDashboard from "./pages/AdminDashboard";
+import HelpCenter from "./pages/HelpCenter";
 // import Wistlists from "./pages/Wishlists";
 
 export const App = () => {
@@ -25,12 +26,13 @@ export const App = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/sign-up" element={<SignUp />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/about" element={<About />} />
+          <Route path="/about-us" element={<AboutUs />} />
           <Route element={<PrivateRoute />}>
             <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="/property/:id" element={<PropertyDetails />} />
           <Route path="/listings" element={<Listings />} />
+          <Route path="/help-center" element={<HelpCenter />} />
           {/* <Route path="/wishlists" element={<Wistlists />} /> */}
         </Route>
 
