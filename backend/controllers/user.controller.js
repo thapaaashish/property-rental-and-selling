@@ -110,3 +110,17 @@ export const uploadProfilePicture = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get User Details
+export const getUserDetails = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return next(errorHandler(404, "User not found"));
+    }
+    const { password, ...rest } = user._doc; // Exclude password from the response
+    res.status(200).json(rest);
+  } catch (error) {
+    next(error);
+  }
+};

@@ -18,6 +18,7 @@ import AddToWishlist from "../components/AddToWishlist";
 const PropertyDetails = () => {
   const { id } = useParams();
   const [property, setProperty] = useState(null);
+  const [agent, setAgent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("description");
@@ -25,20 +26,33 @@ const PropertyDetails = () => {
   const [liked, setLiked] = useState(false);
 
   useEffect(() => {
-    const fetchProperty = async () => {
+    const fetchPropertyAndAgent = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/listings/listings/${id}`);
+        // Fetch property details
+        const propertyResponse = await fetch(`/api/listings/listings/${id}`);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+        if (!propertyResponse.ok) {
+          throw new Error(`HTTP error! Status: ${propertyResponse.status}`);
         }
 
-        const data = await response.json();
-        setProperty(data);
+        const propertyData = await propertyResponse.json();
+        setProperty(propertyData);
+
+        // If property has userRef, fetch agent details
+        if (propertyData.userRef) {
+          const agentResponse = await fetch(`/api/user/${propertyData.userRef}`);
+          
+          if (!agentResponse.ok) {
+            console.error(`Failed to fetch agent details. Status: ${agentResponse.status}`);
+          } else {
+            const agentData = await agentResponse.json();
+            setAgent(agentData);
+          }
+        }
       } catch (error) {
-        console.error("Error fetching property:", error);
+        console.error("Error fetching data:", error);
         setError("Failed to fetch property details. Please try again later.");
       } finally {
         setLoading(false);
@@ -46,7 +60,7 @@ const PropertyDetails = () => {
     };
 
     if (id) {
-      fetchProperty();
+      fetchPropertyAndAgent();
     }
   }, [id]);
 
@@ -104,6 +118,27 @@ const PropertyDetails = () => {
       </div>
     );
   }
+
+  // Get agent initials for avatar fallback
+  const getAgentInitials = () => {
+    if (!agent || !agent.fullname) return "AG";
+    
+    // Extract initials from fullname
+    const nameParts = agent.fullname.split(' ');
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    } else if (nameParts.length === 1) {
+      return nameParts[0][0].toUpperCase();
+    } else {
+      return "AG";
+    }
+  };
+
+  // Format agent name
+  const agentName = agent?.fullname || "Agent Information";
+
+  // Agent role/title - using a default since it's not in your schema
+  const agentRole = "Real Estate Agent";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 md:px-6 lg:px-8">
@@ -353,17 +388,25 @@ const PropertyDetails = () => {
           <div className="space-y-8">
             {/* Agent Card */}
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <div className="bg-blue-600 px-6 py-4 text-white">
+              <div className="bg-teal-500 px-6 py-4 text-white">
                 <h3 className="font-semibold">Listed By</h3>
               </div>
               <div className="p-6">
                 <div className="flex items-center space-x-4 pb-4 border-b">
-                  <div className="h-16 w-16 rounded-full bg-gray-100 border-2 border-blue-600 flex items-center justify-center overflow-hidden">
-                    <span className="font-medium text-lg">JD</span>
+                  <div className="h-16 w-16 rounded-full bg-gray-100 border-2 border-teal-500 flex items-center justify-center overflow-hidden">
+                    {agent?.avatar ? (
+                      <img 
+                        src={agent.avatar} 
+                        alt={agentName} 
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="font-medium text-lg">{getAgentInitials()}</span>
+                    )}
                   </div>
                   <div>
-                    <h3 className="font-medium text-lg">John Doe</h3>
-                    <p className="text-sm text-gray-600">Real Estate Agent</p>
+                    <h3 className="font-medium text-lg">{agentName}</h3>
+                    <p className="text-sm text-gray-600">{agentRole}</p>
                     <div className="flex mt-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <svg
@@ -381,23 +424,21 @@ const PropertyDetails = () => {
                 <div className="py-4 space-y-4">
                   <div className="flex items-center p-2 rounded-md hover:bg-gray-50 transition-colors">
                     <Phone className="mr-3 h-5 w-5 text-blue-600" />
-                    <span className="text-gray-700">(123) 456-7890</span>
+                    <span className="text-gray-700 truncate">
+                      {agent?.phone || "Contact information unavailable"}
+                    </span>
                   </div>
                   <div className="flex items-center p-2 rounded-md hover:bg-gray-50 transition-colors">
                     <Mail className="mr-3 h-5 w-5 text-blue-600" />
                     <span className="text-gray-700 truncate">
-                      john.doe@example.com
+                      {agent?.email || "Email unavailable"}
                     </span>
                   </div>
                 </div>
                 <div className="pt-4 border-t space-y-3">
-                  <button className="w-full bg-blue-600 text-white font-medium px-4 py-3 rounded-md hover:bg-blue-700 transition-colors flex justify-center items-center">
-                    <Phone className="mr-2 h-4 w-4" />
-                    Contact Agent
-                  </button>
-                  <button className="w-full bg-white border border-blue-600 text-blue-600 font-medium px-4 py-3 rounded-md hover:bg-blue-50 transition-colors flex justify-center items-center">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Schedule Viewing
+                  <button className="w-full bg-teal-500 cursor-pointer text-white font-medium px-4 py-3 rounded-md hover:bg-teal-700 transition-colors flex justify-center items-center">
+                    <message className="mr-2 h-4 w-4" />
+                    Send message
                   </button>
                 </div>
               </div>
@@ -413,83 +454,57 @@ const PropertyDetails = () => {
               <div className="p-6">
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                    <div>
                       <label
-                        htmlFor="first-name"
-                        className="text-sm font-medium text-gray-700"
+                        htmlFor="firstName"
+                        className="block text-sm font-medium text-gray-700"
                       >
                         First Name
                       </label>
                       <input
-                        id="first-name"
-                        className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all"
-                        placeholder="John"
+                        type="text"
+                        name="firstName"
+                        id="firstName"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div>
                       <label
-                        htmlFor="last-name"
-                        className="text-sm font-medium text-gray-700"
+                        htmlFor="lastName"
+                        className="block text-sm font-medium text-gray-700"
                       >
                         Last Name
                       </label>
                       <input
-                        id="last-name"
-                        className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all"
-                        placeholder="Doe"
+                        type="text"
+                        name="lastName"
+                        id="lastName"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="email"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Email
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all"
-                      placeholder="john.doe@example.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="phone"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Phone
-                    </label>
-                    <input
-                      id="phone"
-                      type="tel"
-                      className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all"
-                      placeholder="(123) 456-7890"
-                    />
-                  </div>
-                  <div className="space-y-2">
+                  
+                  <div>
                     <label
                       htmlFor="message"
-                      className="text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-gray-700"
                     >
                       Message
                     </label>
                     <textarea
+                      name="message"
                       id="message"
                       rows="4"
-                      className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all"
-                      placeholder="I'm interested in this property..."
-                    />
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    ></textarea>
                   </div>
-                  <div className="pt-2">
-                    <button className="w-full bg-blue-600 text-white font-medium px-4 py-3 rounded-md hover:bg-blue-700 transition-colors">
-                      Send Message
+                  <div>
+                    <button
+                      type="submit"
+                      className="w-full bg-blue-600 text-white font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Send Request
                     </button>
-                    <p className="text-xs text-gray-500 mt-2 text-center">
-                      By submitting, you agree to our Terms of Service and
-                      Privacy Policy
-                    </p>
                   </div>
                 </div>
               </div>

@@ -16,7 +16,7 @@ const listingSchema = new mongoose.Schema(
     area: { type: Number, required: true, min: 0 },
     address: {
       street: { type: String, required: true, trim: true },
-      city: { type: mongoose.Schema.Types.ObjectId, ref: 'City', required: true },
+      city: { type: String, required: true, trim: true },
       state: { type: String, required: true, trim: true },
       zip: { type: String, required: true, trim: true },
       country: { type: String, required: true, trim: true },

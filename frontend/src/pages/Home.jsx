@@ -100,7 +100,7 @@ const Home = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `http://localhost:3000/api/listings/listings?type=${propertyType}&listingType=${listingType}`
+          `api/listings/listings?type=${propertyType}&listingType=${listingType}`
         );
         if (!response.ok)
           throw new Error(`HTTP error! Status: ${response.status}`);
@@ -293,9 +293,6 @@ const Home = () => {
         className="py-12"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center mb-8">
-            Featured Properties
-          </h2>
           {/* Property Grid */}
           <div>
             <Suspense fallback={<LoadingPlaceholder />}>
