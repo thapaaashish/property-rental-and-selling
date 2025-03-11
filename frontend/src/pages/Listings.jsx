@@ -32,7 +32,6 @@ const Listings = () => {
         }
 
         const data = await response.json();
-        console.log("Fetched data:", data); // Log fetched data for debugging
 
         // Map the fetched data to match the expected frontend format
         const mappedProperties = data.map((listing) => ({

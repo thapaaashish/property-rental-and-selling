@@ -1,5 +1,6 @@
 import Listing from "../models/listing.model.js";
 import { errorHandler } from "../utils/error.js";
+import User from "../models/user.model.js";
 
 export const createListing = async (req, res, next) => {
   try {
@@ -52,7 +53,31 @@ export const getListing = async (req, res, next) => {
     if (!listing) {
       return next(errorHandler(404, "Listing not found!"));
     }
-    res.status(200).json(listing);
+
+    // Fetch basic agent information
+    const agent = await User.findById(listing.userRef).select(
+      "fullname email phone avatar"
+    );
+
+    // Log the agent data to verify it's being fetched correctly
+    console.log("Agent Data:", agent);
+
+    // Combine listing and agent data
+    const listingWithAgent = {
+      ...listing._doc, // Use _doc to get the raw document object
+      agent: agent
+        ? {
+            fullname: agent.fullname,
+            email: agent.email,
+            phone: agent.phone,
+            avatar: agent.avatar,
+          }
+        : null,
+    };
+
+    // Log the final response to verify the data structure
+    console.log("Listing with Agent:", listingWithAgent);
+    res.status(200).json(listingWithAgent);
   } catch (error) {
     next(error);
   }

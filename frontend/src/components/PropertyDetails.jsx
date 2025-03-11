@@ -12,6 +12,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 import AddToWishlist from "../components/AddToWishlist";
 
@@ -38,18 +39,14 @@ const PropertyDetails = () => {
         }
 
         const propertyData = await propertyResponse.json();
+
         setProperty(propertyData);
 
-        // If property has userRef, fetch agent details
-        if (propertyData.userRef) {
-          const agentResponse = await fetch(`/api/user/${propertyData.userRef}`);
-          
-          if (!agentResponse.ok) {
-            console.error(`Failed to fetch agent details. Status: ${agentResponse.status}`);
-          } else {
-            const agentData = await agentResponse.json();
-            setAgent(agentData);
-          }
+        // The agent data is now included in the property response
+        if (propertyData.agent) {
+          setAgent(propertyData.agent);
+        } else {
+          console.log("No Agent Data Found"); // Log if no agent data is found
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -122,9 +119,9 @@ const PropertyDetails = () => {
   // Get agent initials for avatar fallback
   const getAgentInitials = () => {
     if (!agent || !agent.fullname) return "AG";
-    
+
     // Extract initials from fullname
-    const nameParts = agent.fullname.split(' ');
+    const nameParts = agent.fullname.split(" ");
     if (nameParts.length >= 2) {
       return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
     } else if (nameParts.length === 1) {
@@ -395,13 +392,15 @@ const PropertyDetails = () => {
                 <div className="flex items-center space-x-4 pb-4 border-b">
                   <div className="h-16 w-16 rounded-full bg-gray-100 border-2 border-teal-500 flex items-center justify-center overflow-hidden">
                     {agent?.avatar ? (
-                      <img 
-                        src={agent.avatar} 
-                        alt={agentName} 
+                      <img
+                        src={agent.avatar}
+                        alt={agentName}
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="font-medium text-lg">{getAgentInitials()}</span>
+                      <span className="font-medium text-lg">
+                        {getAgentInitials()}
+                      </span>
                     )}
                   </div>
                   <div>
@@ -443,72 +442,12 @@ const PropertyDetails = () => {
                 </div>
               </div>
             </div>
-
-            {/* Contact Form */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <div className="bg-gray-50 px-6 py-4 border-b">
-                <h3 className="font-semibold text-gray-900">
-                  Request Information
-                </h3>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="firstName"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        name="firstName"
-                        id="firstName"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="lastName"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        name="lastName"
-                        id="lastName"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label
-                      htmlFor="message"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Message
-                    </label>
-                    <textarea
-                      name="message"
-                      id="message"
-                      rows="4"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                    ></textarea>
-                  </div>
-                  <div>
-                    <button
-                      type="submit"
-                      className="w-full bg-blue-600 text-white font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Send Request
-                    </button>
-                  </div>
-                </div>
-              </div>
+            <div>
+              <button className="w-full bg-teal-500 cursor-pointer text-white font-medium px-4 py-3 rounded-md hover:bg-teal-700 transition-colors flex justify-center items-center">
+                Pay Now
+              </button>
             </div>
+            
           </div>
         </div>
       </div>
