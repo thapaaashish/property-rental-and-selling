@@ -166,10 +166,10 @@ const Header = () => {
                     </li>
                     <li>
                       <div
-                        onClick={() => handleMenuItemClick("/saved-listings")}
+                        onClick={() => handleMenuItemClick("/wishlists")}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                       >
-                        Saved
+                        Wishlists
                       </div>
                     </li>
                     <li>

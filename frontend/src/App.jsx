@@ -13,7 +13,7 @@ import PrivateRoute from "./components/PrivateRoute";
 import Listings from "./pages/Listings";
 import AdminDashboard from "./pages/AdminDashboard";
 import HelpCenter from "./pages/HelpCenter";
-// import Wistlists from "./pages/Wishlists";
+import Wistlists from "./pages/Wishlists";
 
 export const App = () => {
   return (
@@ -33,13 +33,13 @@ export const App = () => {
           <Route path="/property/:id" element={<PropertyDetails />} />
           <Route path="/listings" element={<Listings />} />
           <Route path="/help-center" element={<HelpCenter />} />
-          {/* <Route path="/wishlists" element={<Wistlists />} /> */}
+          <Route path="/wishlists" element={<Wistlists />} />
         </Route>
 
         {/* Keep pages outside Layout (No Header Here) */}
         <Route element={<PrivateRoute />}>
           <Route path="/create-listing" element={<CreateListing />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />      
         </Route>
       </Routes>
     </BrowserRouter>

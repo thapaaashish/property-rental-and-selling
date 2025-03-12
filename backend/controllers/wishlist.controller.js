@@ -53,21 +53,23 @@ export const removeFromWishlist = async (req, res, next) => {
 };
 
 export const getWishlist = async (req, res, next) => {
-  const { id } = req.user; // Authenticated user ID
+  const { id } = req.user;
 
   try {
-    // Find the user's wishlist and populate the properties
-    const wishlist = await Wishlist.findOne({ user: id }).populate(
-      "properties"
-    );
+    console.log("Fetching wishlist for user:", id);
+
+    // Find the user's wishlist and populate the properties (listings)
+    const wishlist = await Wishlist.findOne({ user: id }).populate("properties");
 
     if (!wishlist) {
+      console.log("No wishlist found for user:", id);
       return res.status(200).json([]); // Return an empty array if no wishlist exists
     }
 
+    console.log("Wishlist found:", wishlist);
     res.status(200).json(wishlist.properties);
   } catch (error) {
-    console.error("Error fetching wishlist:", error); // Log the error
+    console.error("Error fetching wishlist:", error);
     next(error);
   }
 };
