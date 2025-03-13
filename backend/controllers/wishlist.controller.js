@@ -1,12 +1,16 @@
 import Wishlist from "../models/wishlist.model.js";
 import { errorHandler } from "../utils/error.js";
 
+// Add to wishlist
 export const addToWishlist = async (req, res, next) => {
   const { propertyId } = req.body;
-  const { id } = req.user; // Authenticated user ID
+  const { id } = req.user;
+
+  if (!propertyId) {
+    return next(errorHandler(400, "Property ID is required"));
+  }
 
   try {
-    // Find the user's wishlist or create a new one
     let wishlist = await Wishlist.findOne({ user: id });
 
     if (!wishlist) {
@@ -28,12 +32,16 @@ export const addToWishlist = async (req, res, next) => {
   }
 };
 
+// Remove from wishlist
 export const removeFromWishlist = async (req, res, next) => {
   const { propertyId } = req.body;
-  const { id } = req.user; // Authenticated user ID
+  const { id } = req.user;
+
+  if (!propertyId) {
+    return next(errorHandler(400, "Property ID is required"));
+  }
 
   try {
-    // Find the user's wishlist
     const wishlist = await Wishlist.findOne({ user: id });
 
     if (!wishlist) {
@@ -52,24 +60,21 @@ export const removeFromWishlist = async (req, res, next) => {
   }
 };
 
+// Get wishlist
 export const getWishlist = async (req, res, next) => {
   const { id } = req.user;
 
   try {
-    console.log("Fetching wishlist for user:", id);
-
-    // Find the user's wishlist and populate the properties (listings)
-    const wishlist = await Wishlist.findOne({ user: id }).populate("properties");
+    const wishlist = await Wishlist.findOne({ user: id }).populate(
+      "properties"
+    );
 
     if (!wishlist) {
-      console.log("No wishlist found for user:", id);
       return res.status(200).json([]); // Return an empty array if no wishlist exists
     }
 
-    console.log("Wishlist found:", wishlist);
     res.status(200).json(wishlist.properties);
   } catch (error) {
-    console.error("Error fetching wishlist:", error);
     next(error);
   }
 };
