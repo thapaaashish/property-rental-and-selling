@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import FormInput from "./FormInput";
 import { useSelector } from "react-redux";
+import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 
 const steps = [
   "Choose Property Type",
@@ -13,6 +14,42 @@ const steps = [
   "Review & Submit",
 ];
 
+const containerStyle = {
+  width: "100%",
+  height: "100%",
+};
+
+const center = {
+  lat: 27.7103,
+  lng: 85.3222,
+};
+
+const GoogleMapComponent = ({ onLocationSelect }) => {
+  const [selectedLocation, setSelectedLocation] = React.useState(null);
+
+  const handleMapClick = (event) => {
+    const lat = event.latLng.lat();
+    const lng = event.latLng.lng();
+    setSelectedLocation({ lat, lng });
+    onLocationSelect(lat, lng); // Pass latitude and longitude to parent
+  };
+
+  return (
+    <div className="map-wrapper" style={{ width: "100%", height: "100%" }}>
+      <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={center}
+          zoom={12}
+          onClick={handleMapClick}
+        >
+          {selectedLocation && <Marker position={selectedLocation} />}
+        </GoogleMap>
+      </LoadScript>
+    </div>
+  );
+};
+
 const CreateListingForm = () => {
   const [step, setStep] = useState(0);
   const [files, setFiles] = useState([]);
@@ -21,10 +58,10 @@ const CreateListingForm = () => {
     rentOrSale: "",
     title: "",
     description: "",
-    price: "",
-    bedrooms: "",
-    bathrooms: "",
-    area: "",
+    price: 0,
+    bedrooms: 0,
+    bathrooms: 0,
+    area: 0,
     address: {
       street: "",
       city: "",
@@ -32,8 +69,13 @@ const CreateListingForm = () => {
       zip: "",
       country: "",
     },
+    location: {
+      type: "Point",
+      coordinates: [0, 0], // [longitude, latitude]
+    },
     amenities: [],
     imageUrls: [],
+    userRef: "", // Will be populated dynamically
   });
   const [imageUploadError, setImageUploadError] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -124,42 +166,27 @@ const CreateListingForm = () => {
       setImageUploadError(false);
 
       try {
-        const urls = [];
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
+        const uploadPromises = files.map((file) => {
           const data = new FormData();
           data.append("file", file);
-          data.append(
-            "upload_preset",
-            import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-          );
+          data.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
 
-          const response = await fetch(
-            `https://api.cloudinary.com/v1_1/${
-              import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-            }/image/upload`,
+          return fetch(
+            `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
             {
               method: "POST",
               body: data,
             }
-          );
-
-          if (!response.ok) {
-            const errorResponse = await response.json();
-            console.error("Cloudinary API Error:", errorResponse);
-            throw new Error("Failed to upload image");
-          }
-
-          const result = await response.json();
-          if (result.secure_url) {
-            urls.push(result.secure_url);
-          }
-        }
-
-        setFormData({
-          ...formData,
-          imageUrls: formData.imageUrls.concat(urls),
+          ).then((response) => response.json());
         });
+
+        const results = await Promise.all(uploadPromises);
+        const urls = results.map((result) => result.secure_url);
+
+        setFormData((prev) => ({
+          ...prev,
+          imageUrls: prev.imageUrls.concat(urls),
+        }));
         setImageUploadError(false);
         setFiles([]);
       } catch (error) {
@@ -195,17 +222,18 @@ const CreateListingForm = () => {
 
     if (isValid) {
       try {
+        const listingData = {
+          ...formData,
+          userRef: currentUser._id, // Populate userRef dynamically
+        };
+
         const response = await fetch("/api/listings/create", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${currentUser.token}`,
           },
-          credentials: "include",
-          body: JSON.stringify({
-            ...formData,
-            userRef: currentUser._id,
-          }),
+          body: JSON.stringify(listingData),
         });
 
         if (response.ok) {
@@ -267,6 +295,9 @@ const CreateListingForm = () => {
           ...newErrors.address,
           country: "Country is required.",
         };
+      if (!formData.location.coordinates[0] || !formData.location.coordinates[1]) {
+        newErrors.location = "Please select a location on the map.";
+      }
     }
 
     if (step === 4 && formData.amenities.length === 0) {
@@ -576,6 +607,33 @@ const CreateListingForm = () => {
                       )}
                     </div>
                   </div>
+
+                  {/* Google Map Component */}
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                      Select Property Location
+                    </h3>
+                    <div className="h-96 w-full rounded-lg overflow-hidden">
+                      <GoogleMapComponent
+                        onLocationSelect={(lat, lng) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            location: {
+                              type: "Point",
+                              coordinates: [lng, lat], // [longitude, latitude]
+                            },
+                          }));
+                        }}
+                      />
+                    </div>
+                    {formData.location.coordinates[0] &&
+                      formData.location.coordinates[1] && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Selected Location: {formData.location.coordinates[1]},{" "}
+                          {formData.location.coordinates[0]}
+                        </p>
+                      )}
+                  </div>
                 </>
               )}
 
@@ -762,6 +820,10 @@ const CreateListingForm = () => {
                       <strong>Address:</strong> {formData.address.street},{" "}
                       {formData.address.city}, {formData.address.state},{" "}
                       {formData.address.zip}, {formData.address.country}
+                    </p>
+                    <p>
+                      <strong>Location:</strong> {formData.location.coordinates[1]},{" "}
+                      {formData.location.coordinates[0]}
                     </p>
                     <p>
                       <strong>Amenities:</strong>{" "}

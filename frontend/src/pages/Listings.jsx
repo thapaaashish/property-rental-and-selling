@@ -1,8 +1,8 @@
-// pages/Listings.js
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import PropertyGrid from "../components/PropertyGrid";
 import SearchFilters from "../components/SearchFilters";
+import GoogleMapComponent from "../components/GoogleMap";
 
 const Listings = () => {
   const [searchParams] = useSearchParams();
@@ -24,7 +24,7 @@ const Listings = () => {
 
       try {
         const response = await fetch(
-          `http://localhost:3000/api/listings/listings?type=${propertyType}&listingType=${listingType}`
+          `api/listings/listings?type=${propertyType}&listingType=${listingType}`
         );
 
         if (!response.ok) {
@@ -111,21 +111,23 @@ const Listings = () => {
     <div className="min-h-screen flex flex-col">
       <main className="flex-grow pt-5 pb-16">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="mb-10">
-            <h1 className="text-3xl font-bold mb-2">{getFilterLabel()}</h1>
-            <p className="text-gray-600">
-              Find your perfect property from our carefully curated listings
-            </p>
-          </div>
-
-          {/* Main content area with search, properties, and map placeholder */}
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left side: Search and Properties */}
-            <div className="flex-2">
+          {/* Grid layout to keep the map always on the right */}
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+            {/* Left side: Content */}
+            <div className="flex flex-col">
+              <div className="mb-10">
+                <h1 className="text-3xl font-bold mb-2">{getFilterLabel()}</h1>
+                <p className="text-gray-600">
+                  Find your perfect property from our carefully curated listings
+                </p>
+              </div>
+  
+              {/* Search Filters */}
               <div className="mb-8">
                 <SearchFilters onFilter={handleFilterSubmit} />
               </div>
-
+  
+              {/* Properties */}
               {loading ? (
                 <div className="flex justify-center items-center min-h-[400px]">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -134,26 +136,25 @@ const Listings = () => {
                 <PropertyGrid properties={properties} />
               ) : (
                 <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-                  <h3 className="text-xl font-semibold mb-2">
-                    No properties found
-                  </h3>
+                  <h3 className="text-xl font-semibold mb-2">No properties found</h3>
                   <p className="text-gray-600 max-w-md">
-                    We couldn't find any properties matching your criteria. Try
-                    adjusting your filters or check back later.
+                    We couldn't find any properties matching your criteria. Try adjusting your filters or check back later.
                   </p>
                 </div>
               )}
             </div>
-
-            {/* Right side: Fixed-size Map Placeholder */}
-            <div className="w-full lg:w-1/3 bg-gray-100 rounded-lg p-6 flex items-center justify-center h-[550px] flex-shrink-0 overflow-hidden lg:overflow-auto lg:sticky lg:top-40">
-              <p className="text-gray-500 text-center">Map will go here</p>
+  
+            {/* Right side: Always visible Map */}
+            <div className="hidden lg:block sticky top-24 h-[80vh]">
+              <div className="w-full h-full bg-gray-100 rounded-2xl overflow-hidden">
+                <GoogleMapComponent />
+              </div>
             </div>
           </div>
         </div>
       </main>
     </div>
   );
-};
+};  
 
 export default Listings;
