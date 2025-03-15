@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import FormInput from "./FormInput";
 import { useSelector } from "react-redux";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import FormInput from "./FormInput";
 
 const steps = [
   "Choose Property Type",
@@ -27,11 +27,56 @@ const center = {
 const GoogleMapComponent = ({ onLocationSelect }) => {
   const [selectedLocation, setSelectedLocation] = React.useState(null);
 
-  const handleMapClick = (event) => {
+  const handleMapClick = async (event) => {
     const lat = event.latLng.lat();
     const lng = event.latLng.lng();
     setSelectedLocation({ lat, lng });
-    onLocationSelect(lat, lng); // Pass latitude and longitude to parent
+
+    // Fetch address using reverse geocoding
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${
+          import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+        }`
+      );
+      const data = await response.json();
+
+      if (data.status === "OK" && data.results.length > 0) {
+        const addressComponents = data.results[0].address_components;
+        const address = {
+          street: "",
+          city: "",
+          state: "",
+          zip: "",
+          country: "",
+        };
+
+        addressComponents.forEach((component) => {
+          if (component.types.includes("route")) {
+            address.street = component.long_name;
+          }
+          if (component.types.includes("locality")) {
+            address.city = component.long_name;
+          }
+          if (component.types.includes("administrative_area_level_1")) {
+            address.state = component.long_name;
+          }
+          if (component.types.includes("postal_code")) {
+            address.zip = component.long_name;
+          }
+          if (component.types.includes("country")) {
+            address.country = component.long_name;
+          }
+        });
+
+        // Pass the address and location to the parent component
+        onLocationSelect(lat, lng, address);
+      } else {
+        console.error("Geocoding failed:", data.status);
+      }
+    } catch (error) {
+      console.error("Error fetching address:", error);
+    }
   };
 
   return (
@@ -58,10 +103,10 @@ const CreateListingForm = () => {
     rentOrSale: "",
     title: "",
     description: "",
-    price: 0,
-    bedrooms: 0,
-    bathrooms: 0,
-    area: 0,
+    price: 1,
+    bedrooms: 1,
+    bathrooms: 1,
+    area: 1,
     address: {
       street: "",
       city: "",
@@ -169,10 +214,16 @@ const CreateListingForm = () => {
         const uploadPromises = files.map((file) => {
           const data = new FormData();
           data.append("file", file);
-          data.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+          data.append(
+            "upload_preset",
+            import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+          );
+          data.append("folder", "HomeFinder/listings"); // Specify the folder name here
 
           return fetch(
-            `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
+            `https://api.cloudinary.com/v1_1/${
+              import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+            }/image/upload`,
             {
               method: "POST",
               body: data,
@@ -267,17 +318,14 @@ const CreateListingForm = () => {
       if (!formData.description)
         newErrors.description = "Description is required.";
       if (!formData.price) newErrors.price = "Price is required.";
-      if (!formData.bedrooms) newErrors.bedrooms = "Bedrooms is required.";
+      if (formData.listingType !== "Room" && !formData.bedrooms) {
+        newErrors.bedrooms = "Bedrooms is required.";
+      }
       if (!formData.bathrooms) newErrors.bathrooms = "Bathrooms is required.";
       if (!formData.area) newErrors.area = "Area is required.";
     }
 
     if (step === 3) {
-      if (!formData.address.street)
-        newErrors.address = {
-          ...newErrors.address,
-          street: "Street is required.",
-        };
       if (!formData.address.city)
         newErrors.address = { ...newErrors.address, city: "City is required." };
       if (!formData.address.state)
@@ -295,7 +343,10 @@ const CreateListingForm = () => {
           ...newErrors.address,
           country: "Country is required.",
         };
-      if (!formData.location.coordinates[0] || !formData.location.coordinates[1]) {
+      if (
+        !formData.location.coordinates[0] ||
+        !formData.location.coordinates[1]
+      ) {
         newErrors.location = "Please select a location on the map.";
       }
     }
@@ -384,12 +435,12 @@ const CreateListingForm = () => {
             Fill out the form below to list your property.
           </p>
         </header>
-
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="p-8">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">
               {steps[step]}
             </h2>
+
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Form steps */}
               {step === 0 && (
@@ -399,7 +450,7 @@ const CreateListingForm = () => {
                   type="select"
                   onChange={handleChange}
                   value={formData.listingType}
-                  options={["Room", "Apartment", "House", "Villa", "Condo"]}
+                  options={["Room", "Apartment", "House"]}
                   error={errors.listingType}
                   required
                 />
@@ -437,7 +488,7 @@ const CreateListingForm = () => {
 
                     <div>
                       <FormInput
-                        label="Price ($)"
+                        label="Price (Rs)"
                         name="price"
                         type="number"
                         value={formData.price}
@@ -458,7 +509,8 @@ const CreateListingForm = () => {
                         type="number"
                         value={formData.bedrooms}
                         onChange={handleChange}
-                        required
+                        required={formData.listingType !== "Room"}
+                        disabled={formData.listingType === "Room"}
                       />
                       {errors.bedrooms && (
                         <p className="text-red-500 text-sm mt-1">
@@ -524,6 +576,40 @@ const CreateListingForm = () => {
 
               {step === 3 && (
                 <>
+                  {/* Google Map Component */}
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                      Select Property Location
+                    </h3>
+                    <div className="h-96 w-full rounded-lg overflow-hidden">
+                      <GoogleMapComponent
+                        onLocationSelect={(lat, lng, address) => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            location: {
+                              type: "Point",
+                              coordinates: [lng, lat], // [longitude, latitude]
+                            },
+                            address: {
+                              ...prev.address,
+                              street: address.street,
+                              city: address.city,
+                              state: address.state,
+                              zip: address.zip,
+                              country: address.country,
+                            },
+                          }));
+                        }}
+                      />
+                    </div>
+                    {formData.location.coordinates[0] &&
+                      formData.location.coordinates[1] && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Selected Location: {formData.location.coordinates[1]},{" "}
+                          {formData.location.coordinates[0]}
+                        </p>
+                      )}
+                  </div>
                   {/* Address Fields */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -546,9 +632,8 @@ const CreateListingForm = () => {
                       <FormInput
                         label="City"
                         name="city"
-                        type="select"
+                        type="text"
                         value={formData.address.city}
-                        options={["Kathmandu", "Pokhara"]}
                         onChange={handleAddressChange}
                         required
                       />
@@ -606,33 +691,6 @@ const CreateListingForm = () => {
                         </p>
                       )}
                     </div>
-                  </div>
-
-                  {/* Google Map Component */}
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                      Select Property Location
-                    </h3>
-                    <div className="h-96 w-full rounded-lg overflow-hidden">
-                      <GoogleMapComponent
-                        onLocationSelect={(lat, lng) => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            location: {
-                              type: "Point",
-                              coordinates: [lng, lat], // [longitude, latitude]
-                            },
-                          }));
-                        }}
-                      />
-                    </div>
-                    {formData.location.coordinates[0] &&
-                      formData.location.coordinates[1] && (
-                        <p className="text-sm text-gray-600 mt-2">
-                          Selected Location: {formData.location.coordinates[1]},{" "}
-                          {formData.location.coordinates[0]}
-                        </p>
-                      )}
                   </div>
                 </>
               )}
@@ -822,7 +880,8 @@ const CreateListingForm = () => {
                       {formData.address.zip}, {formData.address.country}
                     </p>
                     <p>
-                      <strong>Location:</strong> {formData.location.coordinates[1]},{" "}
+                      <strong>Location:</strong>{" "}
+                      {formData.location.coordinates[1]},{" "}
                       {formData.location.coordinates[0]}
                     </p>
                     <p>

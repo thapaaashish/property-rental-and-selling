@@ -2,19 +2,18 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   Share2,
-  Heart,
   MapPin,
   Bed,
   Bath,
   Square,
   Phone,
   Mail,
-  Calendar,
   ChevronLeft,
   ChevronRight,
   MessageSquare,
 } from "lucide-react";
 import AddToWishlist from "../components/AddToWishlist";
+import GoogleMapComponent from "./GoogleMap";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -22,31 +21,23 @@ const PropertyDetails = () => {
   const [agent, setAgent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("description");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [liked, setLiked] = useState(false);
 
   useEffect(() => {
     const fetchPropertyAndAgent = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch property details
         const propertyResponse = await fetch(`/api/listings/listings/${id}`);
-
         if (!propertyResponse.ok) {
           throw new Error(`HTTP error! Status: ${propertyResponse.status}`);
         }
-
         const propertyData = await propertyResponse.json();
-
         setProperty(propertyData);
-
-        // The agent data is now included in the property response
         if (propertyData.agent) {
           setAgent(propertyData.agent);
         } else {
-          console.log("No Agent Data Found"); // Log if no agent data is found
+          console.log("No Agent Data Found");
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -116,11 +107,8 @@ const PropertyDetails = () => {
     );
   }
 
-  // Get agent initials for avatar fallback
   const getAgentInitials = () => {
     if (!agent || !agent.fullname) return "AG";
-
-    // Extract initials from fullname
     const nameParts = agent.fullname.split(" ");
     if (nameParts.length >= 2) {
       return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
@@ -131,11 +119,11 @@ const PropertyDetails = () => {
     }
   };
 
-  // Format agent name
   const agentName = agent?.fullname || "Agent Information";
-
-  // Agent role/title - using a default since it's not in your schema
   const agentRole = "Real Estate Agent";
+
+  // Extract lat and lng from property.location.coordinates
+  const [lng, lat] = property.location.coordinates;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 md:px-6 lg:px-8">
@@ -270,113 +258,73 @@ const PropertyDetails = () => {
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <div className="flex border-b">
-                <button
-                  className={`py-4 px-6 text-sm font-medium transition-colors ${
-                    activeTab === "description"
-                      ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                  onClick={() => setActiveTab("description")}
-                >
-                  Description
-                </button>
-                <button
-                  className={`py-4 px-6 text-sm font-medium transition-colors ${
-                    activeTab === "features"
-                      ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                  onClick={() => setActiveTab("features")}
-                >
-                  Features
-                </button>
-                <button
-                  className={`py-4 px-6 text-sm font-medium transition-colors ${
-                    activeTab === "location"
-                      ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                  onClick={() => setActiveTab("location")}
-                >
-                  Location
-                </button>
+            {/* Description Section */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">
+                Description
+              </h3>
+              <div className="prose max-w-none">
+                <p className="text-gray-700 leading-relaxed">
+                  {property.description}
+                </p>
               </div>
+            </div>
 
-              {/* Tab Content */}
-              <div className="p-6">
-                {activeTab === "description" && (
-                  <div className="prose max-w-none">
-                    <p className="text-gray-700 leading-relaxed">
-                      {property.description}
-                    </p>
-                  </div>
-                )}
+            {/* Features Section */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">
+                Property Features
+              </h3>
+              <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {property.amenities.map((amenity, index) => (
+                  <li
+                    key={index}
+                    className="flex items-center p-2 rounded-md hover:bg-gray-50"
+                  >
+                    <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
+                    <span className="text-gray-700">{amenity}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-                {activeTab === "features" && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 text-gray-900">
-                      Property Features
-                    </h3>
-                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {property.amenities.map((amenity, index) => (
-                        <li
-                          key={index}
-                          className="flex items-center p-2 rounded-md hover:bg-gray-50"
-                        >
-                          <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
-                          <span className="text-gray-700">{amenity}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {activeTab === "location" && (
-                  <div>
-                    <div className="aspect-[16/9] overflow-hidden rounded-lg bg-gray-100 mb-6">
-                      <div className="h-full w-full flex items-center justify-center text-gray-500 border border-gray-200">
-                        <div className="text-center p-4">
-                          <MapPin className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                          <p>Map view would be displayed here</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Nearby Amenities
-                      </h3>
-                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <li className="flex items-center p-2 bg-blue-50 rounded-md">
-                          <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
-                          <span className="text-gray-700">
-                            Schools within 1 mile
-                          </span>
-                        </li>
-                        <li className="flex items-center p-2 bg-blue-50 rounded-md">
-                          <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
-                          <span className="text-gray-700">
-                            Shopping centers within 2 miles
-                          </span>
-                        </li>
-                        <li className="flex items-center p-2 bg-blue-50 rounded-md">
-                          <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
-                          <span className="text-gray-700">
-                            Public transportation within 0.5 miles
-                          </span>
-                        </li>
-                        <li className="flex items-center p-2 bg-blue-50 rounded-md">
-                          <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
-                          <span className="text-gray-700">
-                            Parks and recreation within 1 mile
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
+            {/* Location Section */}
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">
+                Location
+              </h3>
+              <div className="aspect-[16/9] overflow-hidden rounded-lg bg-gray-100 mb-6">
+                {/* Pass lat and lng to GoogleMapComponent */}
+                <GoogleMapComponent lat={lat} lng={lng} />
+              </div>
+              <div className="space-y-4">
+                <h4 className="text-md font-semibold text-gray-900">
+                  Nearby Amenities
+                </h4>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <li className="flex items-center p-2 bg-blue-50 rounded-md">
+                    <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
+                    <span className="text-gray-700">Schools within 1 mile</span>
+                  </li>
+                  <li className="flex items-center p-2 bg-blue-50 rounded-md">
+                    <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
+                    <span className="text-gray-700">
+                      Shopping centers within 2 miles
+                    </span>
+                  </li>
+                  <li className="flex items-center p-2 bg-blue-50 rounded-md">
+                    <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
+                    <span className="text-gray-700">
+                      Public transportation within 0.5 miles
+                    </span>
+                  </li>
+                  <li className="flex items-center p-2 bg-blue-50 rounded-md">
+                    <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
+                    <span className="text-gray-700">
+                      Parks and recreation within 1 mile
+                    </span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
@@ -436,7 +384,7 @@ const PropertyDetails = () => {
                 </div>
                 <div className="pt-4 border-t space-y-3">
                   <button className="w-full bg-teal-500 cursor-pointer text-white font-medium px-4 py-3 rounded-md hover:bg-teal-700 transition-colors flex justify-center items-center">
-                    <message className="mr-2 h-4 w-4" />
+                    <MessageSquare className="mr-2 h-4 w-4" />
                     Send message
                   </button>
                 </div>
@@ -447,7 +395,6 @@ const PropertyDetails = () => {
                 Pay Now
               </button>
             </div>
-            
           </div>
         </div>
       </div>

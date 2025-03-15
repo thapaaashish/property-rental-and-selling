@@ -245,7 +245,7 @@ const Home = () => {
               <input
                 type="text"
                 id="name"
-                placeholder="Enter Name, Keywords..."
+                placeholder="Enter Name, City, Keywords..."
                 className="w-full p-4 outline-none"
                 value={formData.name}
                 onChange={handleChange}

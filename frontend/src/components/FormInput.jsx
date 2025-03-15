@@ -9,6 +9,8 @@ const FormInput = ({
   options = [],
   error,
   required = false,
+  disabled = false, // Add disabled prop
+  className = "", // Add className prop
 }) => {
   return (
     <div className="mb-4">
@@ -20,7 +22,10 @@ const FormInput = ({
           name={name}
           value={value}
           onChange={onChange}
-          className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          disabled={disabled} // Add disabled prop
+          className={`w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+            disabled ? "opacity-60 cursor-not-allowed bg-gray-100" : ""
+          } ${className}`} // Add className and disabled styles
         >
           <option value="">Select an option</option>
           {options.map((option, index) => (
@@ -39,7 +44,10 @@ const FormInput = ({
                 value={option}
                 checked={value === option}
                 onChange={onChange}
-                className="mr-2"
+                disabled={disabled} // Add disabled prop
+                className={`mr-2 ${
+                  disabled ? "opacity-60 cursor-not-allowed" : ""
+                }`} // Add disabled styles
               />
               {option}
             </label>
@@ -51,7 +59,10 @@ const FormInput = ({
           name={name}
           value={value}
           onChange={onChange}
-          className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          disabled={disabled} // Add disabled prop
+          className={`w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+            disabled ? "opacity-60 cursor-not-allowed bg-gray-100" : ""
+          } ${className}`} // Add className and disabled styles
         />
       )}
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}

@@ -117,7 +117,7 @@ const Header = () => {
 
           {/* Right Corner Buttons - Desktop */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link to="/create-listing">
+            <Link to="/create-listing-landing">
               <button className="px-4 py-2 text-sm font-medium text-black hover:bg-black hover:text-white rounded-lg transition duration-300 cursor-pointer">
                 Host your Property
               </button>
@@ -285,7 +285,7 @@ const Header = () => {
                 </li>
               </Link>
               <div className="flex flex-col items-center">
-                <Link to="/create-listing">
+                <Link to="/create-listing-landing">
                   <button className="text-black px-4 py-2 hover:bg-gray-300 rounded-lg transition duration-300">
                     Host your Property
                   </button>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import PropertyGrid from "../components/PropertyGrid";
 import SearchFilters from "../components/SearchFilters";
-import GoogleMapComponent from "../components/GoogleMap";
+import { MapWithAllProperties } from "../components/GoogleMap";
 
 const Listings = () => {
   const [searchParams] = useSearchParams();
@@ -62,6 +62,7 @@ const Listings = () => {
             phone: "555-123-4567", // Add agent phone if available
             email: "agent@example.com", // Add agent email if available
           },
+          location: listing.location,
         }));
 
         // Set the mapped properties to the state
@@ -75,6 +76,16 @@ const Listings = () => {
 
     fetchProperties();
   }, [listingType, propertyType]);
+
+  // Extract coordinates for the map markers
+  const markers = properties
+    .filter((property) => property.location?.coordinates) // Filter properties with valid coordinates
+    .map((property) => ({
+      lat: property.location.coordinates[1], // Latitude
+      lng: property.location.coordinates[0], // Longitude
+    }));
+
+  console.log("Markers:", markers); // Debug the markers array
 
   // Filter label based on URL parameters
   const getFilterLabel = () => {
@@ -121,12 +132,12 @@ const Listings = () => {
                   Find your perfect property from our carefully curated listings
                 </p>
               </div>
-  
+
               {/* Search Filters */}
               <div className="mb-8">
                 <SearchFilters onFilter={handleFilterSubmit} />
               </div>
-  
+
               {/* Properties */}
               {loading ? (
                 <div className="flex justify-center items-center min-h-[400px]">
@@ -136,18 +147,22 @@ const Listings = () => {
                 <PropertyGrid properties={properties} />
               ) : (
                 <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-                  <h3 className="text-xl font-semibold mb-2">No properties found</h3>
+                  <h3 className="text-xl font-semibold mb-2">
+                    No properties found
+                  </h3>
                   <p className="text-gray-600 max-w-md">
-                    We couldn't find any properties matching your criteria. Try adjusting your filters or check back later.
+                    We couldn't find any properties matching your criteria. Try
+                    adjusting your filters or check back later.
                   </p>
                 </div>
               )}
             </div>
-  
+
             {/* Right side: Always visible Map */}
             <div className="hidden lg:block sticky top-24 h-[80vh]">
               <div className="w-full h-full bg-gray-100 rounded-2xl overflow-hidden">
-                <GoogleMapComponent />
+                {/* Pass markers to GoogleMapComponent */}
+                <MapWithAllProperties markers={markers} />
               </div>
             </div>
           </div>
@@ -155,6 +170,6 @@ const Listings = () => {
       </main>
     </div>
   );
-};  
+};
 
 export default Listings;

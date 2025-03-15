@@ -5,7 +5,7 @@ const listingSchema = new mongoose.Schema(
     listingType: {
       type: String,
       required: true,
-      enum: ["Room", "Apartment", "House", "Villa", "Condo"],
+      enum: ["Room", "Apartment", "House"],
       trim: true,
     },
     rentOrSale: {
@@ -47,7 +47,7 @@ const listingSchema = new mongoose.Schema(
     address: {
       street: {
         type: String,
-        required: true,
+        default: " ",
         trim: true,
       },
       city: {

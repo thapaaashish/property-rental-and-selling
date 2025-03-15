@@ -38,11 +38,6 @@ const HelpCenter = () => {
         'After logging in, go to the "List Your Property" section, fill out the details about your property, and submit it for review.',
     },
     {
-      question: "What are the fees for listing a property?",
-      answer:
-        "We charge a small commission per booking. Check our pricing page for more details.",
-    },
-    {
       question: "How do I contact a property owner?",
       answer:
         "You can message the property owner directly through the platform after selecting a property.",
