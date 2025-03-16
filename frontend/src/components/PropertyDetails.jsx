@@ -391,8 +391,10 @@ const PropertyDetails = () => {
               </div>
             </div>
             <div>
-              <button className="w-full bg-teal-500 cursor-pointer text-white font-medium px-4 py-3 rounded-md hover:bg-teal-700 transition-colors flex justify-center items-center">
-                Pay Now
+              <button 
+              
+              className="w-full bg-teal-500 cursor-pointer text-white font-medium px-4 py-3 rounded-md hover:bg-teal-700 transition-colors flex justify-center items-center">
+                Pay Now with Esewa
               </button>
             </div>
           </div>

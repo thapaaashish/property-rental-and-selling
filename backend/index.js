@@ -7,6 +7,8 @@ import authRouter from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
 import listingRouter from "./routes/listing.route.js";
 import wishlistRouter from "./routes/wishlist.route.js";
+import { orderRouter } from "./routes/order.route.js";
+import esewaRouter from "./routes/esewa.route.js"
 
 dotenv.config();
 
@@ -17,6 +19,7 @@ mongoose
   .catch((err) => console.log("Error: " + err));
 
 const app = express();
+
 
 // Enable CORS Middleware
 app.use(
@@ -37,6 +40,8 @@ app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/listings", listingRouter);
 app.use("/api/wishlist", wishlistRouter);
+app.use("/api/orders", orderRouter);
+app.use("/api/esewa", esewaRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {
