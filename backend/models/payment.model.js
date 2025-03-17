@@ -1,34 +1,27 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-const orderSchema = mongoose.Schema(
+const paymentSchema = new mongoose.Schema(
   {
-    payment_method: {
-      type: String,
-      required: true,
-      default: "esewa",
-    },
-    transaction_code: String,
-    amount: {
-      type: Number,
-      required: true,
-    },
-
-        product: {
-          type: String,
-          required: true,
-          default: "Test",
-        },
-    status: {
-      type: String,
-      required: true,
-      enum: ["created", "paid", "shipping", "delivered"],
-      default: "created",
-    },
-    address: String,
+    productId: { 
+      type: String, 
+      required: true 
+    }, // Unique ID of the product/listing
+    amount: { 
+      type: Number, 
+      required: true 
+    }, // Total payment amount
+    refId: { 
+      type: String, 
+      required: true 
+    }, // Reference ID from the payment gateway
+    status: { 
+      type: String, 
+      enum: ["pending", "success", "failed"], 
+      default: "pending" 
+    }, // Payment status
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true } // Adds createdAt and updatedAt fields
 );
 
-module.exports = mongoose.model("Payment", orderSchema);
+// Create the model
+export default mongoose.model("Payment", paymentSchema);

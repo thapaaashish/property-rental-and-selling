@@ -16,11 +16,6 @@ import HelpCenter from "./pages/HelpCenter";
 import Wistlists from "./pages/Wishlists";
 import ListingLandingPage from "./pages/ListingLandingPage";
 
-import EsewaPayment from "./components/EsewaPayment/EsewaPayment";
-import EsewaSuccess from "./components/EsewaPayment/EsewaSuccess";
-import EsewaFailure from "./components/EsewaPayment/EsewaFailure";
-
-
 export const App = () => {
   return (
     <BrowserRouter>
@@ -44,9 +39,6 @@ export const App = () => {
             path="/create-listing-landing"
             element={<ListingLandingPage />}
           />
-          <Route path="/esewa-payment" element={<EsewaPayment />} />
-          <Route path="/esewa-success" element={<EsewaSuccess />} />
-          <Route path="/esewa-failure" element={<EsewaFailure />} />
         </Route>
 
         {/* Keep pages outside Layout (No Header Here) */}

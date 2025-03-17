@@ -15,6 +15,8 @@ import {
 import AddToWishlist from "../components/AddToWishlist";
 import GoogleMapComponent from "./GoogleMap";
 
+
+
 const PropertyDetails = () => {
   const { id } = useParams();
   const [property, setProperty] = useState(null);
