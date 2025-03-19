@@ -7,6 +7,7 @@ import authRouter from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
 import listingRouter from "./routes/listing.route.js";
 import wishlistRouter from "./routes/wishlist.route.js";
+import adminRouter from "./routes/admin.route.js"
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/listings", listingRouter);
 app.use("/api/wishlist", wishlistRouter);
+app.use("/api/admin", adminRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {

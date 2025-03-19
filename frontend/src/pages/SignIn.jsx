@@ -7,6 +7,7 @@ import {
   signInStart,
   signInSuccess,
 } from "../redux/user/userSlice";
+import { setAdmin } from "../redux/admin/adminSlice";
 import OAuth from "../components/OAuth";
 
 const SignIn = () => {
@@ -41,7 +42,7 @@ const SignIn = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
-        credentials: "include"
+        credentials: "include",
       });
       const data = await res.json();
 
@@ -50,10 +51,13 @@ const SignIn = () => {
         return;
       }
 
-      document.cookie = `access_token=${data.accessToken}; path=/; HttpOnly`;
-      localStorage.setItem("refreshToken", data.refreshToken);
-      dispatch(signInSuccess(data));
-      navigate("/");
+      if (data.accountType === "admin") {
+        dispatch(setAdmin(data));
+        navigate("/");
+      } else {
+        dispatch(signInSuccess(data));
+        navigate("/");
+      }
     } catch (error) {
       dispatch(signInFailure(error.message));
     }
@@ -124,7 +128,7 @@ const SignIn = () => {
             disabled={loading}
             className="w-full text-white p-2 rounded bg-teal-500 hover:bg-teal-400 disabled:bg-teal-300"
           >
-            {loading ? "Loading..." : "Sign in"}
+            Sign in
           </button>
         </form>
 

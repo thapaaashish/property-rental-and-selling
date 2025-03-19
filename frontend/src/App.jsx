@@ -9,12 +9,13 @@ import CreateListing from "./pages/CreateListing";
 import ForgotPassword from "./pages/ForgotPassword";
 import PropertyDetails from "./components/PropertyDetails";
 import Layout from "./components/Layout";
-import PrivateRoute from "./components/PrivateRoute";
+import { UserPrivateRoute, AdminPrivateRoute } from "./components/PrivateRoute";
 import Listings from "./pages/Listings";
 import AdminDashboard from "./pages/AdminDashboard";
 import HelpCenter from "./pages/HelpCenter";
 import Wistlists from "./pages/Wishlists";
 import ListingLandingPage from "./pages/ListingLandingPage";
+import UserDashboard from "./pages/UserDashboard";
 
 export const App = () => {
   return (
@@ -28,7 +29,7 @@ export const App = () => {
           <Route path="/sign-up" element={<SignUp />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/about-us" element={<AboutUs />} />
-          <Route element={<PrivateRoute />}>
+          <Route element={<UserPrivateRoute />}>
             <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="/property/:id" element={<PropertyDetails />} />
@@ -42,10 +43,14 @@ export const App = () => {
         </Route>
 
         {/* Keep pages outside Layout (No Header Here) */}
-        <Route element={<PrivateRoute />}>
+        <Route element={<UserPrivateRoute />}>
           <Route path="/create-listing" element={<CreateListing />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/user-dashboard" element={<UserDashboard />} />
         </Route>
+
+        {/* <Route element={<AdminPrivateRoute />}>
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        </Route> */}
       </Routes>
     </BrowserRouter>
   );

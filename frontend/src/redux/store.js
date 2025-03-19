@@ -4,10 +4,12 @@ import { combineReducers } from '@reduxjs/toolkit';
 import { persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import wishlistReducer from './wishlist/wishlistSlice';
+import adminReducer from "./admin/adminSlice";
 
 const rootReducer = combineReducers({
     user: userReducer,
     wishlist: wishlistReducer,
+    admin: adminReducer,
 });
 
 const persistConfig = {

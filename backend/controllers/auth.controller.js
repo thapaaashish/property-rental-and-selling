@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/user.model.js";
 import dotenv from "dotenv";
+import Admin from "../models/admin.model.js";
 
 dotenv.config();
 
@@ -41,54 +42,40 @@ const sendOTP = (email, otp) => {
   });
 };
 
-// Signin
+// Signin for both User and Admin
 export const signin = async (req, res, next) => {
   const { email, password } = req.body;
-
   try {
-    const validUser = await User.findOne({ email });
-    if (!validUser) return next(errorHandler(404, "User not found"));
+    let user =
+      (await User.findOne({ email })) || (await Admin.findOne({ email }));
+    if (!user) return next(errorHandler(404, "User not found"));
 
-    const validPassword = bcryptjs.compareSync(password, validUser.password);
-    if (!validPassword) return next(errorHandler(401, "Invalid Credentials"));
+    const validPassword = bcryptjs.compareSync(password, user.password);
+    if (!validPassword) return next(errorHandler(401, "Invalid credentials"));
 
-    // Generate access token (short-lived)
-    const accessToken = jwt.sign(
-      { id: validUser._id }, 
-      process.env.JWT_SECRET, 
+    const isAdmin = user instanceof Admin;
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
       { expiresIn: "15m" }
     );
-    
-    // Generate refresh token (long-lived)
-    const refreshToken = jwt.sign(
-      { id: validUser._id }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: "7d" }
-    );
-    
-    // Save refresh token in the user document
-    validUser.refreshToken = refreshToken;
-    await validUser.save();
-    
-    // Remove password from the response
-    const { password: pass, ...rest } = validUser._doc;
 
-    // Set both tokens as HttpOnly cookies
+    // Log to verify token creation
+    console.log("Generated admin_access_token:", token);
+
     res
-      .cookie("access_token", accessToken, { 
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // HTTPS only in production
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000 // 15 minutes
-      })
-      .cookie("refresh_token", refreshToken, {
+      .cookie(isAdmin ? "admin_access_token" : "access_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        sameSite: "lax",
+        maxAge: 15 * 60 * 1000, // 15 minutes
       })
       .status(200)
-      .json(rest);
+      .json({
+        ...user.toObject(),
+        password: undefined,
+        accountType: isAdmin ? "admin" : "user",
+      });
   } catch (error) {
     next(error);
   }
@@ -359,10 +346,11 @@ export const signOut = async (req, res, next) => {
     }
 
     // Clear cookies regardless of token validity
-    res.clearCookie("access_token")
-       .clearCookie("refresh_token")
-       .status(200)
-       .json({ message: "Signed out successfully" });
+    res
+      .clearCookie("access_token")
+      .clearCookie("refresh_token")
+      .status(200)
+      .json({ message: "Signed out successfully" });
   } catch (error) {
     next(error);
   }
@@ -462,44 +450,43 @@ export const changePassword = async (req, res, next) => {
   }
 };
 
-
 export const refreshAccessToken = async (req, res, next) => {
   try {
     const refreshToken = req.cookies.refresh_token;
-    
+
     if (!refreshToken) {
       return next(errorHandler(401, "No refresh token provided"));
     }
-    
+
     // Verify the refresh token
     const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
-    
+
     // Find the user and check if the refresh token matches
     const user = await User.findById(decoded.id);
     if (!user || user.refreshToken !== refreshToken) {
       return next(errorHandler(403, "Invalid refresh token"));
     }
-    
+
     // Generate a new access token
-    const newAccessToken = jwt.sign(
-      { id: user._id }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: "15m" }
-    );
-    
+    const newAccessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "15m",
+    });
+
     // Set the new access token in a cookie
     res
       .cookie("access_token", newAccessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 15 * 60 * 1000 // 15 minutes
+        maxAge: 15 * 60 * 1000, // 15 minutes
       })
       .status(200)
       .json({ message: "Access token refreshed" });
-      
   } catch (error) {
-    if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
       return next(errorHandler(403, "Invalid or expired refresh token"));
     }
     next(error);

@@ -87,29 +87,72 @@ export const getListings = async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit) || 9;
     const startIndex = parseInt(req.query.startIndex) || 0;
+    const searchTerm = req.query.searchTerm || "";
+    const minPrice = parseInt(req.query.minPrice) || 0;
+    const maxPrice = parseInt(req.query.maxPrice) || Number.MAX_SAFE_INTEGER;
+    const bedrooms = parseInt(req.query.bedrooms) || 0;
+    const bathrooms = parseInt(req.query.bathrooms) || 0;
 
     let listingType = req.query.listingType || "all";
     let propertyType = req.query.type || "all";
 
-    let query = {};
+    let query = {
+      price: { $gte: minPrice, $lte: maxPrice },
+      bedrooms: { $gte: bedrooms },
+      bathrooms: { $gte: bathrooms },
+    };
 
-    // Filter by listing type (rent or sale)
     if (listingType !== "all") {
       query.rentOrSale = listingType === "buy" ? "Sale" : "Rent";
     }
 
-    // Filter by property type (apartment, house, etc.)
     if (propertyType !== "all") {
       query.listingType =
         propertyType.charAt(0).toUpperCase() + propertyType.slice(1);
     }
 
+    if (searchTerm) {
+      query.$or = [
+        { title: { $regex: searchTerm, $options: "i" } },
+        { description: { $regex: searchTerm, $options: "i" } },
+        { "address.street": { $regex: searchTerm, $options: "i" } },
+        { "address.city": { $regex: searchTerm, $options: "i" } },
+      ];
+    }
+
+    const totalListings = await Listing.countDocuments(query);
     const listings = await Listing.find(query)
+      .populate("userRef", "fullname email phone avatar") // Populate agent details
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(startIndex);
 
-    return res.status(200).json(listings);
+    return res.status(200).json({
+      listings,
+      totalListings,
+      currentPage: Math.floor(startIndex / limit) + 1,
+      totalPages: Math.ceil(totalListings / limit),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getListingsByUser = async (req, res, next) => {
+  try {
+    const userId = req.params.userId;
+    const listings = await Listing.find({ userRef: userId });
+    res.status(200).json(listings);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllListings = async (req, res, next) => {
+  if (!req.admin) return next(errorHandler(403, "Admin access required"));
+  try {
+    const listings = await Listing.find();
+    res.status(200).json(listings);
   } catch (error) {
     next(error);
   }

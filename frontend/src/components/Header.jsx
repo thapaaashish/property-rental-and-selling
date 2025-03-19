@@ -7,9 +7,11 @@ import {
   signOutUserFailure,
   signOutUserSuccess,
 } from "../redux/user/userSlice";
+import { signoutAdmin } from "../redux/admin/adminSlice";
 
 const Header = () => {
   const { currentUser } = useSelector((state) => state.user);
+  const { currentAdmin } = useSelector((state) => state.admin);
   const dispatch = useDispatch();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -76,17 +78,31 @@ const Header = () => {
     }, 10);
   };
 
-  // Handle sign out
+  // Handle sign out (for both user and admin)
   const handleSignOut = async () => {
     try {
-      dispatch(signOutUserStart());
-      dispatch(signOutUserSuccess());
+      if (currentAdmin) {
+        await fetch("/api/admin/signout", { method: "POST" });
+        dispatch(signoutAdmin());
+      } else if (currentUser) {
+        dispatch(signOutUserStart());
+        await fetch("/api/auth/signout", { method: "POST" });
+        dispatch(signOutUserSuccess());
+      }
       setIsProfilePopupOpen(false);
       navigate("/");
     } catch (error) {
-      dispatch(signOutUserFailure(error.message));
+      if (currentAdmin) {
+        console.error("Admin sign out failed:", error);
+      } else {
+        dispatch(signOutUserFailure(error.message));
+      }
     }
   };
+
+  // Determine if the current user is an admin or regular user
+  const isAdmin = !!currentAdmin;
+  const currentEntity = currentAdmin || currentUser;
 
   return (
     <header
@@ -124,15 +140,15 @@ const Header = () => {
             </Link>
             {/* Profile Avatar */}
             <div className="relative cursor-pointer" ref={profileRef}>
-              {currentUser ? (
+              {currentEntity ? (
                 <button
                   onClick={toggleProfilePopup}
                   className="flex items-center justify-center focus:outline-none group cursor-pointer"
                 >
                   <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all duration-300 shadow-md">
                     <img
-                      src={currentUser.avatar}
-                      alt="User Avatar"
+                      src={currentEntity.avatar}
+                      alt="Avatar"
                       className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
@@ -156,28 +172,44 @@ const Header = () => {
               {isProfilePopupOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                   <ul className="py-2">
-                    <li>
-                      <div
-                        onClick={() => handleMenuItemClick("/profile")}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                      >
-                        Profile
-                      </div>
-                    </li>
-                    <li>
-                      <div
-                        onClick={() => handleMenuItemClick("/wishlists")}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                      >
-                        Wishlists
-                      </div>
-                    </li>
+                    {!isAdmin && (
+                      <>
+                        <li>
+                          <div
+                            onClick={() => handleMenuItemClick("/profile")}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                          >
+                            Profile
+                          </div>
+                        </li>
+                        <li>
+                          <div
+                            onClick={() => handleMenuItemClick("/wishlists")}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                          >
+                            Wishlists
+                          </div>
+                        </li>
+                      </>
+                    )}
                     <li>
                       <div
                         onClick={() => handleMenuItemClick("/help-center")}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                       >
                         Help Center
+                      </div>
+                    </li>
+                    <li>
+                      <div
+                        onClick={() =>
+                          handleMenuItemClick(
+                            isAdmin ? "/admin-dashboard" : "/user-dashboard"
+                          )
+                        }
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                      >
+                        {isAdmin ? "Admin Dashboard" : "User Dashboard"}
                       </div>
                     </li>
                     <li>
@@ -204,7 +236,6 @@ const Header = () => {
                 aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               >
                 {isMobileMenuOpen ? (
-                  // X (Close) Icon
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -220,7 +251,6 @@ const Header = () => {
                     />
                   </svg>
                 ) : (
-                  // Hamburger (Menu) Icon
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -237,17 +267,17 @@ const Header = () => {
                   </svg>
                 )}
               </button>
-              {/* User Avatar */}
+              {/* User/Admin Avatar */}
               <div>
-                {currentUser ? (
+                {currentEntity ? (
                   <button
                     onClick={toggleProfilePopup}
                     className="flex items-center justify-center"
                   >
                     <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-300">
                       <img
-                        src={currentUser.avatar}
-                        alt="User Avatar"
+                        src={currentEntity.avatar}
+                        alt="Avatar"
                         className="h-full w-full object-cover"
                       />
                     </div>
@@ -290,32 +320,43 @@ const Header = () => {
                     Host your Property
                   </button>
                 </Link>
-                {currentUser ? (
+                {currentEntity ? (
                   <div className="flex flex-col items-center mt-4">
                     <div className="flex items-center mb-2">
                       <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-300 mr-2">
                         <img
-                          src={currentUser.avatar}
-                          alt="User Avatar"
+                          src={currentEntity.avatar}
+                          alt="Avatar"
                           className="h-full w-full object-cover"
                         />
                       </div>
                       <span className="text-sm font-medium">Profile</span>
                     </div>
                     <div className="flex flex-col space-y-2">
-                      <Link to="/profile">
-                        <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
-                          My Profile
-                        </button>
-                      </Link>
-                      <Link to="/saved-listings">
-                        <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
-                          Saved
-                        </button>
-                      </Link>
+                      {!isAdmin && (
+                        <>
+                          <Link to="/profile">
+                            <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
+                              My Profile
+                            </button>
+                          </Link>
+                          <Link to="/saved-listings">
+                            <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
+                              Saved
+                            </button>
+                          </Link>
+                        </>
+                      )}
                       <Link to="/messages">
                         <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
                           Messages
+                        </button>
+                      </Link>
+                      <Link
+                        to={isAdmin ? "/admin-dashboard" : "/user-dashboard"}
+                      >
+                        <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
+                          {isAdmin ? "Admin Dashboard" : "User Dashboard"}
                         </button>
                       </Link>
                       <button

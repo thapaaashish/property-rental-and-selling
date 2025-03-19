@@ -124,3 +124,15 @@ export const getUserDetails = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getAllUsers = async (req, res, next) => {
+  if (!req.admin || req.admin.role !== "admin") {
+    return next(errorHandler(403, "Admin access required"));
+  }
+  try {
+    const users = await User.find().select("-password");
+    res.status(200).json(users);
+  } catch (error) {
+    next(error);
+  }
+};

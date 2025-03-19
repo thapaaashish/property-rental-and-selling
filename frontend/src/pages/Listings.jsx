@@ -33,8 +33,11 @@ const Listings = () => {
 
         const data = await response.json();
 
+        // Extract the listings array from the response
+        const listings = data.listings || [];
+
         // Map the fetched data to match the expected frontend format
-        const mappedProperties = data.map((listing) => ({
+        const mappedProperties = listings.map((listing) => ({
           id: listing._id,
           title: listing.title,
           description: listing.description,

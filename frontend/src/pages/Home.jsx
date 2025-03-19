@@ -105,33 +105,41 @@ const Home = () => {
         if (!response.ok)
           throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
-        setProperties(
-          data.map((listing) => ({
-            id: listing._id,
-            title: listing.title,
-            description: listing.description,
-            price: listing.price,
-            priceUnit: listing.rentOrSale === "Rent" ? "monthly" : "total",
-            address: listing.address,
-            bedrooms: listing.bedrooms,
-            bathrooms: listing.bathrooms,
-            area: listing.area,
-            images: listing.imageUrls,
-            type: listing.listingType.toLowerCase(),
-            listingType: listing.rentOrSale.toLowerCase(),
-            amenities: listing.amenities || [],
-            isNew:
-              new Date(listing.createdAt).getTime() >
-              Date.now() - 30 * 24 * 60 * 60 * 1000,
-            agent: {
-              id: listing.userRef,
-              name: "Agent Name",
-              photo: "https://randomuser.me/api/portraits/men/1.jpg",
-              phone: "555-123-4567",
-              email: "agent@example.com",
-            },
-          }))
-        );
+        if (data && Array.isArray(data.listings)) {
+          // Ensure data.listings exists and is an array
+          setProperties(
+            data.listings.map((listing) => ({
+              id: listing._id,
+              title: listing.title,
+              description: listing.description,
+              price: listing.price,
+              priceUnit: listing.rentOrSale === "Rent" ? "monthly" : "total",
+              address: listing.address,
+              bedrooms: listing.bedrooms,
+              bathrooms: listing.bathrooms,
+              area: listing.area,
+              images: listing.imageUrls,
+              type: listing.listingType.toLowerCase(),
+              listingType: listing.rentOrSale.toLowerCase(),
+              amenities: listing.amenities || [],
+              isNew:
+                new Date(listing.createdAt).getTime() >
+                Date.now() - 30 * 24 * 60 * 60 * 1000,
+              agent: {
+                id: listing.userRef,
+                name: listing.userRef?.fullname || "Agent Name", // Access nested properties safely
+                photo:
+                  listing.userRef?.avatar ||
+                  "https://randomuser.me/api/portraits/men/1.jpg",
+                phone: listing.userRef?.phone || "N/A",
+                email: listing.userRef?.email || "N/A",
+              },
+            }))
+          );
+        } else {
+          console.error("Error: Listings data is not an array", data);
+          setProperties([]); // Set an empty array to avoid further errors
+        }
       } catch (error) {
         console.error("Error fetching properties:", error);
       } finally {
@@ -250,7 +258,7 @@ const Home = () => {
                 value={formData.name}
                 onChange={handleChange}
               />
-              <button className="bg-teal-500 p-4 m-2 rounded-lg text-white hover:bg-teal-600 transition-colors duration-300">
+              <button className="bg-teal-500 p-4 m-2 rounded-lg text-white hover:bg-teal-600 transition-colors duration-300 cursor-pointer">
                 <FaSearch />
               </button>
             </div>
@@ -341,7 +349,7 @@ const Home = () => {
           pointerEvents: showScrollTop ? "auto" : "none",
         }}
         transition={{ duration: 0.3 }}
-        className="fixed right-6 bottom-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-50 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-300"
+        className="fixed right-6 bottom-6 cursor-pointer bg-teal-500 text-white p-4 rounded-full shadow-lg z-50 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-300"
         aria-label="Scroll to top"
       >
         <FaArrowUp />

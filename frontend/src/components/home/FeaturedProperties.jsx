@@ -78,7 +78,7 @@ const FeaturedProperties = ({ properties }) => {
 
           <button
             onClick={() => navigateProperties("left")}
-            className="absolute left-6 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-20 hover:bg-gray-100 focus:ring-2 focus:ring-gray-300 transition-all"
+            className="absolute cursor-pointer left-6 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-20 hover:bg-gray-100 focus:ring-2 focus:ring-gray-300 transition-all"
             aria-label="Previous property"
             disabled={isTransitioning}
           >
@@ -149,7 +149,7 @@ const FeaturedProperties = ({ properties }) => {
 
           <button
             onClick={() => navigateProperties("right")}
-            className="absolute right-6 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-20 hover:bg-gray-100 focus:ring-2 focus:ring-gray-300 transition-all"
+            className="absolute cursor-pointer right-6 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg z-20 hover:bg-gray-100 focus:ring-2 focus:ring-gray-300 transition-all"
             aria-label="Next property"
             disabled={isTransitioning}
           >
