@@ -30,21 +30,22 @@ const Profile = () => {
   const handleSaveProfile = async () => {
     try {
       const response = await fetch(`/api/user/update/${currentUser._id}`, {
+        // Use full backend URL
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(userProfile),
       });
 
-      // Check if the response is OK (status code 200-299)
       if (!response.ok) {
-        const errorData = await response.json(); // Parse the error response
+        const errorData = await response.json();
         throw new Error(errorData.message || "Failed to update profile");
       }
 
-      const data = await response.json(); // Parse the success response
-      dispatch(updateUser(data)); // Update Redux store
+      const data = await response.json();
+      dispatch(updateUser(data));
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error.message);

@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Home, Heart, MessageSquare, User, Package } from "lucide-react";
+import EditListingForm from "./EditListingForm";
+import Wishlists from "./Wishlists";
+import Profile from "./Profile";
+import Popup from "../components/Popup"; // Import the new Popup component
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -11,6 +15,9 @@ const UserDashboard = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [editingListing, setEditingListing] = useState(null);
+  const [showDeletePopup, setShowDeletePopup] = useState(false); // State for delete popup
+  const [showEditPopup, setShowEditPopup] = useState(false); // State for edit popup
 
   useEffect(() => {
     if (!currentUser) {
@@ -25,13 +32,14 @@ const UserDashboard = () => {
           `api/listings/user/${currentUser._id}`,
           {
             headers: {
+              "Content-Type": "application/json",
               Authorization: `Bearer ${currentUser.token}`,
             },
           }
         );
-
         const savedResponse = await fetch(`api/wishlist/get`, {
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${currentUser.token}`,
           },
         });
@@ -39,7 +47,6 @@ const UserDashboard = () => {
         if (listingsResponse.ok && savedResponse.ok) {
           const listingsData = await listingsResponse.json();
           const savedData = await savedResponse.json();
-
           setListings(listingsData);
           setSavedProperties(savedData);
         } else {
@@ -55,20 +62,34 @@ const UserDashboard = () => {
     fetchUserData();
   }, [currentUser, navigate]);
 
+  const handleEditListing = (listingId) => {
+    setEditingListing(listingId);
+  };
+
+  const handleSaveListing = (updatedListing) => {
+    setListings(
+      listings.map((l) => (l._id === updatedListing._id ? updatedListing : l))
+    );
+    setEditingListing(null);
+    setShowEditPopup(true); // Show edit success popup
+  };
+
+  const handleCancelEdit = () => {
+    setEditingListing(null);
+  };
+
   const handleDeleteListing = async (listingId) => {
     if (window.confirm("Are you sure you want to delete this listing?")) {
       try {
         const response = await fetch(`/api/listings/delete/${listingId}`, {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${currentUser.token}`,
-          },
+          headers: { Authorization: `Bearer ${currentUser.token}` },
         });
-
         if (response.ok) {
-          setListings(listings.filter((listing) => listing._id !== listingId));
+          setListings(listings.filter((l) => l._id !== listingId));
+          setShowDeletePopup(true); // Show delete success popup
         } else {
-          console.error("Failed to delete listing");
+          console.error("Failed to delete listing:", await response.text());
         }
       } catch (error) {
         console.error("Error deleting listing:", error);
@@ -80,15 +101,10 @@ const UserDashboard = () => {
     try {
       const response = await fetch(`/api/users/remove-saved/${propertyId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${currentUser.token}`,
-        },
+        headers: { Authorization: `Bearer ${currentUser.token}` },
       });
-
       if (response.ok) {
-        setSavedProperties(
-          savedProperties.filter((property) => property._id !== propertyId)
-        );
+        setSavedProperties(savedProperties.filter((p) => p._id !== propertyId));
       } else {
         console.error("Failed to remove saved property");
       }
@@ -97,14 +113,16 @@ const UserDashboard = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+  const handleViewListing = (listingId) => {
+    navigate(`/property/${listingId}`);
+  };
+
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
-  };
 
   if (isLoading) {
     return (
@@ -116,13 +134,13 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col p-6 max-h-screen">
+      {/* Fixed Sidebar */}
+      <div className="fixed left-0 top-0 w-64 bg-white border-r border-gray-200 flex flex-col p-6 h-screen overflow-hidden">
         <h2 className="text-xl font-bold text-teal-700 flex items-center mb-6">
           <Home className="mr-2 h-5 w-5" />
           User Dashboard
         </h2>
-        <nav className="flex-1 space-y-2">
+        <nav className="flex-1 space-y-2 overflow-y-auto">
           <button
             onClick={() => setActiveTab("overview")}
             className={`flex items-center p-3 rounded-lg w-full text-left ${
@@ -186,9 +204,8 @@ const UserDashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 ml-64 overflow-y-auto p-8">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
             <p className="text-gray-600 mt-2">
@@ -200,57 +217,59 @@ const UserDashboard = () => {
             </p>
           </div>
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm font-medium">
-                    My Listings
-                  </p>
-                  <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                    {listings.length}
-                  </h3>
-                </div>
-                <div className="bg-blue-100 p-3 rounded-full">
-                  <Home className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm font-medium">
-                    Saved Properties
-                  </p>
-                  <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                    {savedProperties.length}
-                  </h3>
-                </div>
-                <div className="bg-green-100 p-3 rounded-full">
-                  <Heart className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm font-medium">Messages</p>
-                  <h3 className="text-2xl font-bold text-gray-800 mt-1">
-                    {messages.length}
-                  </h3>
-                </div>
-                <div className="bg-purple-100 p-3 rounded-full">
-                  <MessageSquare className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Tab Content */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             {activeTab === "overview" && (
               <div className="p-6">
+                {/* Stats Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-500 text-sm font-medium">
+                          My Listings
+                        </p>
+                        <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                          {listings.length}
+                        </h3>
+                      </div>
+                      <div className="bg-blue-100 p-3 rounded-full">
+                        <Home className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-500 text-sm font-medium">
+                          Saved Properties
+                        </p>
+                        <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                          {savedProperties.length}
+                        </h3>
+                      </div>
+                      <div className="bg-green-100 p-3 rounded-full">
+                        <Heart className="h-6 w-6 text-green-600" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-500 text-sm font-medium">
+                          Messages
+                        </p>
+                        <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                          {messages.length}
+                        </h3>
+                      </div>
+                      <div className="bg-purple-100 p-3 rounded-full">
+                        <MessageSquare className="h-6 w-6 text-purple-600" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">
                     Quick Actions
@@ -481,8 +500,7 @@ const UserDashboard = () => {
                             <td className="py-4 px-4">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-12 w-12 bg-gray-200 rounded-md overflow-hidden">
-                                  {listing.imageUrls &&
-                                  listing.imageUrls.length > 0 ? (
+                                  {listing.imageUrls?.length > 0 ? (
                                     <img
                                       src={listing.imageUrls[0]}
                                       alt={listing.title}
@@ -532,9 +550,7 @@ const UserDashboard = () => {
                             <td className="py-4 px-4 text-sm font-medium">
                               <div className="flex space-x-2">
                                 <button
-                                  onClick={() =>
-                                    navigate(`/edit-listing/${listing._id}`)
-                                  }
+                                  onClick={() => handleEditListing(listing._id)}
                                   className="text-blue-600 hover:text-blue-900"
                                 >
                                   Edit
@@ -546,6 +562,12 @@ const UserDashboard = () => {
                                   className="text-red-600 hover:text-red-900"
                                 >
                                   Delete
+                                </button>
+                                <button
+                                  onClick={() => handleViewListing(listing._id)}
+                                  className="text-green-600 hover:text-green-900"
+                                >
+                                  View
                                 </button>
                               </div>
                             </td>
@@ -560,120 +582,7 @@ const UserDashboard = () => {
 
             {activeTab === "saved" && (
               <div className="p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-6">
-                  Saved Properties
-                </h2>
-                {savedProperties.length === 0 ? (
-                  <div className="text-center py-16">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-16 w-16 text-gray-400 mx-auto mb-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                      />
-                    </svg>
-                    <h3 className="text-lg font-medium text-gray-800 mb-2">
-                      No saved properties
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      You haven't saved any properties yet.
-                    </p>
-                    <button
-                      onClick={() => navigate("/listings")}
-                      className="text-sm font-medium text-white bg-blue-600 py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-150"
-                    >
-                      Browse Properties
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {savedProperties.map((property) => (
-                      <div
-                        key={property._id}
-                        className="bg-white rounded-xl border border-gray-200 overflow-hidden"
-                      >
-                        <div className="relative h-48 bg-gray-200">
-                          {property.imageUrls &&
-                          property.imageUrls.length > 0 ? (
-                            <img
-                              src={property.imageUrls[0]}
-                              alt={property.title}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center bg-gray-200">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-12 w-12 text-gray-400"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                                />
-                              </svg>
-                            </div>
-                          )}
-                          <button
-                            onClick={() => handleRemoveSaved(property._id)}
-                            className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5 text-red-500"
-                              fill="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-medium text-gray-900 mb-1">
-                            {property.title}
-                          </h3>
-                          <p className="text-gray-600 text-sm mb-2">
-                            {property.address?.city}, {property.address?.state}
-                          </p>
-                          <div className="flex justify-between items-center">
-                            <p className="font-semibold text-gray-900">
-                              ${property.price}
-                            </p>
-                            <div className="text-sm text-gray-600">
-                              {property.bedrooms} BD · {property.bathrooms} BA
-                            </div>
-                          </div>
-                        </div>
-                        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                          <button
-                            onClick={() =>
-                              navigate(`/listings/${property._id}`)
-                            }
-                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            View Details
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <Wishlists />
               </div>
             )}
 
@@ -733,10 +642,7 @@ const UserDashboard = () => {
                             >
                               View Listing
                             </button>
-                            <button
-                              onClick={() => handleDeleteInquiry(inquiry._id)}
-                              className="text-sm text-red-600 hover:text-red-800 font-medium"
-                            >
+                            <button className="text-sm text-red-600 hover:text-red-800 font-medium">
                               Delete
                             </button>
                           </div>
@@ -750,97 +656,46 @@ const UserDashboard = () => {
 
             {activeTab === "profile" && (
               <div className="p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-6">
-                  Profile Settings
-                </h2>
-                <div className="space-y-6">
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                      Account Information
-                    </h3>
-                    <form>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Full Name
-                          </label>
-                          <input
-                            type="text"
-                            defaultValue={currentUser?.fullname || ""}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            defaultValue={currentUser?.email || ""}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <button
-                          type="submit"
-                          className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          Save Changes
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                      Change Password
-                    </h3>
-                    <form>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Current Password
-                          </label>
-                          <input
-                            type="password"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            New Password
-                          </label>
-                          <input
-                            type="password"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Confirm New Password
-                          </label>
-                          <input
-                            type="password"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-4">
-                        <button
-                          type="submit"
-                          className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          Update Password
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
+                <Profile />
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Edit Listing Modal */}
+      {editingListing && (
+        <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center z-50">
+          <div className="bg-white bg-opacity-80 rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <EditListingForm
+              listing={listings.find((l) => l._id === editingListing)}
+              onSave={handleSaveListing}
+              onCancel={handleCancelEdit}
+              currentUser={currentUser}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Popup for Deletion */}
+      {showDeletePopup && (
+        <Popup
+          message="Listing deleted successfully!"
+          type="success"
+          duration={3000}
+          onClose={() => setShowDeletePopup(false)}
+        />
+      )}
+
+      {/* Popup for Edit Success */}
+      {showEditPopup && (
+        <Popup
+          message="Listing updated successfully!"
+          type="success"
+          duration={3000}
+          onClose={() => setShowEditPopup(false)}
+        />
+      )}
     </div>
   );
 };

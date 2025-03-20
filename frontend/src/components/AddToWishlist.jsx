@@ -5,6 +5,7 @@ import {
   removeFromWishlist,
 } from "../redux/wishlist/wishlistSlice";
 import { Heart, HeartOff } from "lucide-react";
+import Popup from "../components/Popup"; // Adjust the import path as needed
 
 const AddToWishlist = ({ propertyId }) => {
   const dispatch = useDispatch();
@@ -12,6 +13,8 @@ const AddToWishlist = ({ propertyId }) => {
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [loading, setLoading] = useState(false);
   const [wishlist, setWishlist] = useState([]);
+  const [showPopup, setShowPopup] = useState(false); // State for popup
+  const [popupMessage, setPopupMessage] = useState(""); // Dynamic popup message
 
   // Fetch wishlist data on component mount
   useEffect(() => {
@@ -21,7 +24,6 @@ const AddToWishlist = ({ propertyId }) => {
           credentials: "include",
         });
 
-        // Log the response for debugging
         console.log("Response status:", response.status);
         const text = await response.text();
         console.log("Response text:", text);
@@ -30,8 +32,8 @@ const AddToWishlist = ({ propertyId }) => {
           throw new Error(`Failed to fetch wishlist: ${response.status}`);
         }
 
-        const data = JSON.parse(text); // Parse the response as JSON
-        setWishlist(data); // Update local wishlist state
+        const data = JSON.parse(text);
+        setWishlist(data);
       } catch (error) {
         console.error("Error fetching wishlist:", error.message);
       }
@@ -93,17 +95,20 @@ const AddToWishlist = ({ propertyId }) => {
         setWishlist(updatedWishlist);
         dispatch(removeFromWishlist(propertyId));
         setIsInWishlist(false);
+        setPopupMessage("Removed from wishlist!"); // Set popup message
+        setShowPopup(true); // Show popup
       } else {
         // Add to wishlist
         const newItem = {
           _id: propertyId,
           userRef: currentUser._id,
-          // Add other properties if needed
         };
         const updatedWishlist = [...wishlist, newItem];
         setWishlist(updatedWishlist);
         dispatch(addToWishlist(propertyId));
         setIsInWishlist(true);
+        setPopupMessage("Added to wishlist!"); // Set popup message
+        setShowPopup(true); // Show popup
       }
     } catch (error) {
       console.error("Error updating wishlist:", error.message);
@@ -113,31 +118,45 @@ const AddToWishlist = ({ propertyId }) => {
   };
 
   return (
-    <button
-      onClick={handleWishlist}
-      disabled={loading}
-      className={`flex items-center gap-2 p-2 rounded-md transition-colors ${
-        isInWishlist
-          ? "bg-red-100 hover:bg-red-200"
-          : "bg-gray-100 hover:bg-gray-200"
-      }`}
-      aria-label={isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-      aria-live="polite"
-    >
-      {loading ? (
-        <span className="text-gray-500 font-medium">Updating...</span>
-      ) : isInWishlist ? (
-        <>
-          <HeartOff className="h-5 w-5 text-red-500" />
-          <span className="text-red-600 font-medium">Remove from Wishlist</span>
-        </>
-      ) : (
-        <>
-          <Heart className="h-5 w-5 text-gray-700" />
-          <span className="text-gray-800 font-medium">Add to Wishlist</span>
-        </>
+    <>
+      <button
+        onClick={handleWishlist}
+        disabled={loading}
+        className={`flex items-center gap-2 p-2 rounded-md transition-colors ${
+          isInWishlist
+            ? "bg-red-100 hover:bg-red-200"
+            : "bg-gray-100 hover:bg-gray-200"
+        }`}
+        aria-label={isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+        aria-live="polite"
+      >
+        {loading ? (
+          <span className="text-gray-500 font-medium">Updating...</span>
+        ) : isInWishlist ? (
+          <>
+            <HeartOff className="h-5 w-5 text-red-500" />
+            <span className="text-red-600 font-medium">
+              Remove from Wishlist
+            </span>
+          </>
+        ) : (
+          <>
+            <Heart className="h-5 w-5 text-gray-700" />
+            <span className="text-gray-800 font-medium">Add to Wishlist</span>
+          </>
+        )}
+      </button>
+
+      {/* Popup for success */}
+      {showPopup && (
+        <Popup
+          message={popupMessage}
+          type="success"
+          duration={3000}
+          onClose={() => setShowPopup(false)}
+        />
       )}
-    </button>
+    </>
   );
 };
 

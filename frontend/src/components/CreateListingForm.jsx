@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import FormInput from "./FormInput";
+import Popup from "../components/Popup"; // Adjust the import path as needed
 
 const steps = [
   "Choose Property Type",
@@ -32,7 +33,6 @@ const GoogleMapComponent = ({ onLocationSelect }) => {
     const lng = event.latLng.lng();
     setSelectedLocation({ lat, lng });
 
-    // Fetch address using reverse geocoding
     try {
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${
@@ -69,7 +69,6 @@ const GoogleMapComponent = ({ onLocationSelect }) => {
           }
         });
 
-        // Pass the address and location to the parent component
         onLocationSelect(lat, lng, address);
       } else {
         console.error("Geocoding failed:", data.status);
@@ -120,12 +119,13 @@ const CreateListingForm = () => {
     },
     amenities: [],
     imageUrls: [],
-    userRef: "", // Will be populated dynamically
+    userRef: "",
   });
   const [imageUploadError, setImageUploadError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
   const [isValid, setIsValid] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // State for success popup
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
 
@@ -218,7 +218,7 @@ const CreateListingForm = () => {
             "upload_preset",
             import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
           );
-          data.append("folder", "HomeFinder/listings"); // Specify the folder name here
+          data.append("folder", "HomeFinder/listings");
 
           return fetch(
             `https://api.cloudinary.com/v1_1/${
@@ -275,7 +275,7 @@ const CreateListingForm = () => {
       try {
         const listingData = {
           ...formData,
-          userRef: currentUser._id, // Populate userRef dynamically
+          userRef: currentUser._id,
         };
 
         const response = await fetch("/api/listings/create", {
@@ -290,8 +290,8 @@ const CreateListingForm = () => {
         if (response.ok) {
           const result = await response.json();
           console.log("Listing submitted:", result);
-          alert("Listing submitted successfully!");
-          navigate("/");
+          setShowSuccessPopup(true); // Show success popup
+          setTimeout(() => navigate("/"), 3000); // Navigate after popup duration
         } else {
           throw new Error("Failed to submit listing.");
         }
@@ -380,10 +380,9 @@ const CreateListingForm = () => {
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       {/* Fixed Steps Header */}
-      <div className="fixed top-0 left-0 right-0 bg-white z-50 outline-offset-2 ">
+      <div className="fixed top-0 left-0 right-0 bg-white z-50 outline-offset-2">
         <div className="max-w-4xl mx-auto p-4">
           <div className="flex items-center justify-between">
-            {/* Go Back Button */}
             <button
               onClick={handleGoBack}
               className="flex items-center gap-2 px-4 py-2 cursor-pointer text-white hover:text-gray-900 bg-teal-500 hover:bg-gray-200 rounded-xl transition duration-300 shadow-sm"
@@ -404,13 +403,9 @@ const CreateListingForm = () => {
               </svg>
               <span className="text-sm font-medium">Go Back</span>
             </button>
-
-            {/* Step Indicator */}
             <p className="text-sm font-medium text-gray-600">
               Step {step + 1} of {steps.length}
             </p>
-
-            {/* Step Progress Bar */}
             <div className="flex space-x-2">
               {steps.map((_, index) => (
                 <div
@@ -442,7 +437,6 @@ const CreateListingForm = () => {
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Form steps */}
               {step === 0 && (
                 <FormInput
                   label="What type of property?"
@@ -485,7 +479,6 @@ const CreateListingForm = () => {
                         </p>
                       )}
                     </div>
-
                     <div>
                       <FormInput
                         label="Price (Rs)"
@@ -501,7 +494,6 @@ const CreateListingForm = () => {
                         </p>
                       )}
                     </div>
-
                     <div>
                       <FormInput
                         label="Bedrooms"
@@ -518,7 +510,6 @@ const CreateListingForm = () => {
                         </p>
                       )}
                     </div>
-
                     <div>
                       <FormInput
                         label="Bathrooms"
@@ -534,7 +525,6 @@ const CreateListingForm = () => {
                         </p>
                       )}
                     </div>
-
                     <div>
                       <FormInput
                         label="Area (sqft)"
@@ -551,8 +541,6 @@ const CreateListingForm = () => {
                       )}
                     </div>
                   </div>
-
-                  {/* Description Field */}
                   <div className="mt-4">
                     <label className="block text-lg font-medium text-gray-700">
                       Description
@@ -573,10 +561,8 @@ const CreateListingForm = () => {
                   </div>
                 </>
               )}
-
               {step === 3 && (
                 <>
-                  {/* Google Map Component */}
                   <div className="mt-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">
                       Select Property Location
@@ -588,7 +574,7 @@ const CreateListingForm = () => {
                             ...prev,
                             location: {
                               type: "Point",
-                              coordinates: [lng, lat], // [longitude, latitude]
+                              coordinates: [lng, lat],
                             },
                             address: {
                               ...prev.address,
@@ -610,7 +596,6 @@ const CreateListingForm = () => {
                         </p>
                       )}
                   </div>
-                  {/* Address Fields */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <FormInput
@@ -619,7 +604,6 @@ const CreateListingForm = () => {
                         type="text"
                         value={formData.address.street}
                         onChange={handleAddressChange}
-                        required
                       />
                       {errors.address?.street && (
                         <p className="text-red-500 text-sm mt-1">
@@ -627,7 +611,6 @@ const CreateListingForm = () => {
                         </p>
                       )}
                     </div>
-
                     <div>
                       <FormInput
                         label="City"
@@ -643,7 +626,6 @@ const CreateListingForm = () => {
                         </p>
                       )}
                     </div>
-
                     <div>
                       <FormInput
                         label="State"
@@ -659,7 +641,6 @@ const CreateListingForm = () => {
                         </p>
                       )}
                     </div>
-
                     <div>
                       <FormInput
                         label="ZIP Code"
@@ -675,7 +656,6 @@ const CreateListingForm = () => {
                         </p>
                       )}
                     </div>
-
                     <div>
                       <FormInput
                         label="Country"
@@ -694,54 +674,45 @@ const CreateListingForm = () => {
                   </div>
                 </>
               )}
-
               {step === 4 && (
-                <>
-                  {/* Amenities Selection */}
-                  <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-2">
-                      Amenities
-                    </label>
-                    <div className="grid grid-cols-2 gap-4">
-                      {[
-                        "Wifi",
-                        "Balcony",
-                        "Parking",
-                        "Pool",
-                        "Gym",
-                        "Air Conditioning",
-                      ].map((amenity) => (
-                        <div key={amenity} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={amenity}
-                            name="amenities"
-                            value={amenity}
-                            checked={formData.amenities.includes(amenity)}
-                            onChange={handleAmenitiesChange}
-                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                          />
-                          <label
-                            htmlFor={amenity}
-                            className="ml-2 text-gray-700"
-                          >
-                            {amenity}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                    {errors.amenities && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.amenities}
-                      </p>
-                    )}
+                <div>
+                  <label className="block text-lg font-medium text-gray-700 mb-2">
+                    Amenities
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      "Wifi",
+                      "Balcony",
+                      "Parking",
+                      "Pool",
+                      "Gym",
+                      "Air Conditioning",
+                    ].map((amenity) => (
+                      <div key={amenity} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={amenity}
+                          name="amenities"
+                          value={amenity}
+                          checked={formData.amenities.includes(amenity)}
+                          onChange={handleAmenitiesChange}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                        />
+                        <label htmlFor={amenity} className="ml-2 text-gray-700">
+                          {amenity}
+                        </label>
+                      </div>
+                    ))}
                   </div>
-                </>
+                  {errors.amenities && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.amenities}
+                    </p>
+                  )}
+                </div>
               )}
-
               {step === 5 && (
                 <div className="mt-6 space-y-4">
-                  {/* Image Upload Section */}
                   <div
                     className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-600 transition duration-300"
                     onDrop={handleDrop}
@@ -765,8 +736,6 @@ const CreateListingForm = () => {
                       Supported formats: JPG, PNG. Max file size: 5MB.
                     </p>
                   </div>
-
-                  {/* Display Selected Images Before Uploading */}
                   {files.length > 0 && (
                     <div className="flex flex-wrap gap-3">
                       {files.map((file, index) => (
@@ -794,8 +763,6 @@ const CreateListingForm = () => {
                       ))}
                     </div>
                   )}
-
-                  {/* Upload Button */}
                   <div className="flex justify-end">
                     <button
                       className="px-4 py-2 text-white hover:text-gray-900 bg-teal-500 hover:bg-gray-200 text-sm font-medium rounded-md transition duration-300 disabled:bg-blue-300"
@@ -806,8 +773,6 @@ const CreateListingForm = () => {
                       {uploading ? "Uploading..." : "Upload Images"}
                     </button>
                   </div>
-
-                  {/* Display Uploaded Images */}
                   {formData.imageUrls.length > 0 && (
                     <div className="flex flex-wrap gap-3">
                       {formData.imageUrls.map((url, index) => (
@@ -831,8 +796,6 @@ const CreateListingForm = () => {
                       ))}
                     </div>
                   )}
-
-                  {/* Error Message */}
                   {imageUploadError && (
                     <p className="text-sm text-red-500 mt-1">
                       {imageUploadError}
@@ -840,7 +803,6 @@ const CreateListingForm = () => {
                   )}
                 </div>
               )}
-
               {step === 6 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-800">
@@ -931,6 +893,16 @@ const CreateListingForm = () => {
           </div>
         </div>
       </div>
+
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <Popup
+          message="Listing submitted successfully!"
+          type="success"
+          duration={3000}
+          onClose={() => setShowSuccessPopup(false)}
+        />
+      )}
     </div>
   );
 };

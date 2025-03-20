@@ -42,23 +42,39 @@ export const verifyToken = async (req, res, next) => {
           req.user = { id: refreshDecoded.id };
         }
 
-        // Issue a new access token
         const newAccessToken = jwt.sign(
           {
             id: refreshDecoded.id,
             type: refreshDecoded.type,
             role: entity?.role,
-          }, // Include type and role
+          },
           process.env.JWT_SECRET,
-          { expiresIn: "15m" }
+          { expiresIn: "7d" } // Access token lasts 7 days
         );
 
-        // Set the new access token in the cookie
+        const newRefreshToken = jwt.sign(
+          { id: refreshDecoded.id, type: refreshDecoded.type },
+          process.env.JWT_SECRET,
+          { expiresIn: "30d" } // Refresh token lasts 30 days
+        );
+
+        // Update refresh token in the database
+        entity.refreshToken = newRefreshToken;
+        await entity.save();
+
+        // Set cookies
         res.cookie("access_token", newAccessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 15 * 60 * 1000, // 15 minutes
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        res.cookie("refresh_token", newRefreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         });
 
         next();

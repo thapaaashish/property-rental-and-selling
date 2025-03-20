@@ -14,7 +14,7 @@ const UserSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1741280259/default-avatar_oabgol.png",
+      default: "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1742463191/blank-profile-picture-973460_1280_u3cxlw.webp",
     },
     password: {
       type: String,

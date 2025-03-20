@@ -17,10 +17,10 @@ const router = express.Router();
 router.post("/create", verifyToken, createListing);
 
 // Delete a listing by ID (requires authentication)
-router.delete("/delete/:id", [verifyToken, verifyAdminToken], deleteListing);
+router.delete("/delete/:id", verifyToken, deleteListing);
 
 // Update a listing by ID (requires authentication)
-router.patch("/update/:id", [verifyToken, verifyAdminToken], updateListing);
+router.put("/update/:id", verifyToken, updateListing);
 
 // Get a single listing by ID (public route)
 router.get("/listings/:id", getListing);
