@@ -104,21 +104,28 @@ export const getListings = async (req, res, next) => {
     let listingType = req.query.listingType || "all";
     let propertyType = req.query.type || "all";
 
+    // Debug logs
+    console.log("Received listingType:", listingType);
+    console.log("Received propertyType:", propertyType);
+
     let query = {
       price: { $gte: minPrice, $lte: maxPrice },
       bedrooms: { $gte: bedrooms },
       bathrooms: { $gte: bathrooms },
     };
 
+    // Apply listingType filter
     if (listingType !== "all") {
       query.rentOrSale = listingType === "buy" ? "Sale" : "Rent";
     }
 
+    // Apply propertyType filter
     if (propertyType !== "all") {
       query.listingType =
         propertyType.charAt(0).toUpperCase() + propertyType.slice(1);
     }
 
+    // Apply searchTerm filter
     if (searchTerm) {
       query.$or = [
         { title: { $regex: searchTerm, $options: "i" } },
@@ -127,10 +134,16 @@ export const getListings = async (req, res, next) => {
         { "address.city": { $regex: searchTerm, $options: "i" } },
       ];
     }
+    if (req.query.location) {
+      query.address = { $regex: req.query.location, $options: "i" }; // Case-insensitive match
+    }
+
+    // Debug log for final query
+    console.log("Final Query:", query);
 
     const totalListings = await Listing.countDocuments(query);
     const listings = await Listing.find(query)
-      .populate("userRef", "fullname email phone avatar") // Populate agent details
+      .populate("userRef", "fullname email phone avatar")
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(startIndex);

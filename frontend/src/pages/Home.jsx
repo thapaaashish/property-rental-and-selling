@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { FaSearch, FaArrowUp } from "react-icons/fa";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom"; // Ensure Link is imported
 import { ArrowRight } from "lucide-react";
 import { useInView } from "react-intersection-observer";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,7 +9,6 @@ import { useSwipeable } from "react-swipeable";
 // Lazy loaded components
 const CitySection = React.lazy(() => import("../components/home/CitySection"));
 const Features = React.lazy(() => import("../components/home/Features"));
-const Footer = React.lazy(() => import("../components/Footer"));
 const FeaturedProperties = React.lazy(() =>
   import("../components/home/FeaturedProperties")
 );
@@ -106,7 +105,6 @@ const Home = () => {
           throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
         if (data && Array.isArray(data.listings)) {
-          // Ensure data.listings exists and is an array
           setProperties(
             data.listings.map((listing) => ({
               id: listing._id,
@@ -127,7 +125,7 @@ const Home = () => {
                 Date.now() - 30 * 24 * 60 * 60 * 1000,
               agent: {
                 id: listing.userRef,
-                name: listing.userRef?.fullname || "Agent Name", // Access nested properties safely
+                name: listing.userRef?.fullname || "Agent Name",
                 photo:
                   listing.userRef?.avatar ||
                   "https://randomuser.me/api/portraits/men/1.jpg",
@@ -138,7 +136,7 @@ const Home = () => {
           );
         } else {
           console.error("Error: Listings data is not an array", data);
-          setProperties([]); // Set an empty array to avoid further errors
+          setProperties([]);
         }
       } catch (error) {
         console.error("Error fetching properties:", error);
@@ -152,14 +150,12 @@ const Home = () => {
   // Handle scroll to show/hide the scroll to top button and parallax effect
   useEffect(() => {
     const handleScroll = () => {
-      // Show/hide scroll button
       if (window.scrollY > 300) {
         setShowScrollTop(true);
       } else {
         setShowScrollTop(false);
       }
 
-      // Parallax effect for hero section
       if (parallaxRef.current) {
         const scrollPosition = window.scrollY;
         parallaxRef.current.style.transform = `translateY(${
@@ -226,7 +222,7 @@ const Home = () => {
                   src={heroImages[currentImageIndex]}
                   className="absolute inset-0 w-full h-full object-cover"
                   alt="Hero"
-                  loading="eager" // Load first image eagerly
+                  loading="eager"
                 />
               </div>
               <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/60" />
@@ -258,9 +254,12 @@ const Home = () => {
                 value={formData.name}
                 onChange={handleChange}
               />
-              <button className="bg-teal-500 p-4 m-2 rounded-lg text-white hover:bg-teal-600 transition-colors duration-300 cursor-pointer">
+              <Link
+                to={`/listings?location=${encodeURIComponent(formData.name)}`}
+                className="bg-teal-500 p-4 m-2 rounded-lg text-white hover:bg-teal-600 transition-colors duration-300 flex items-center justify-center"
+              >
                 <FaSearch />
-              </button>
+              </Link>
             </div>
           </motion.div>
         </div>
@@ -301,12 +300,9 @@ const Home = () => {
         className="py-12"
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Property Grid */}
-          <div>
-            <Suspense fallback={<LoadingPlaceholder />}>
-              <FeaturedProperties properties={properties} />
-            </Suspense>
-          </div>
+          <Suspense fallback={<LoadingPlaceholder />}>
+            <FeaturedProperties properties={properties} />
+          </Suspense>
         </div>
       </motion.section>
 
@@ -333,11 +329,6 @@ const Home = () => {
           <Features />
         </Suspense>
       </motion.section>
-
-      {/* Lazy loaded Footer */}
-      <Suspense fallback={<LoadingPlaceholder />}>
-        <Footer />
-      </Suspense>
 
       {/* Scroll to Top Button */}
       <motion.button

@@ -8,6 +8,7 @@ import {
   signOutUserSuccess,
 } from "../redux/user/userSlice";
 import { signoutAdmin } from "../redux/admin/adminSlice";
+import { IoMdMenu } from "react-icons/io";
 
 const Header = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -16,8 +17,10 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
-  const profileRef = useRef(null);
-
+  const profileButtonRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+  const profilePopupRef = useRef(null);
+  const mobilePopupRef = useRef(null);
   const navigate = useNavigate();
 
   const scrollToTop = () => {
@@ -27,59 +30,55 @@ const Header = () => {
     });
   };
 
-  // Check if the user has scrolled down
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 50);
     };
-
     window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Toggle mobile menu
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  // Toggle profile popup
-  const toggleProfilePopup = () => {
-    setIsProfilePopupOpen(!isProfilePopupOpen);
-  };
-
-  // Close profile popup when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
+      if (
+        profileButtonRef.current &&
+        !profileButtonRef.current.contains(event.target) &&
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target) &&
+        profilePopupRef.current &&
+        !profilePopupRef.current.contains(event.target) &&
+        mobilePopupRef.current &&
+        !mobilePopupRef.current.contains(event.target)
+      ) {
         setIsProfilePopupOpen(false);
+        setIsMobileMenuOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle navigation for profile menu items
-  const handleMenuItemClick = (path) => {
-    console.log(`Navigating to: ${path}`);
+  const toggleMobileMenu = (e) => {
+    e.stopPropagation();
+    setIsMobileMenuOpen(!isMobileMenuOpen);
     setIsProfilePopupOpen(false);
-    setTimeout(() => {
-      navigate(path);
-    }, 10);
   };
 
-  // Handle sign out (for both user and admin)
-  const handleSignOut = async () => {
+  const toggleProfilePopup = (e) => {
+    e.stopPropagation();
+    setIsProfilePopupOpen(!isProfilePopupOpen);
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleMenuItemClick = (path) => (e) => {
+    e.stopPropagation();
+    setIsProfilePopupOpen(false);
+    setIsMobileMenuOpen(false);
+    navigate(path);
+  };
+
+  const handleSignOut = async (e) => {
+    e.stopPropagation();
     try {
       if (currentAdmin) {
         await fetch("/api/admin/signout", { method: "POST" });
@@ -90,6 +89,7 @@ const Header = () => {
         dispatch(signOutUserSuccess());
       }
       setIsProfilePopupOpen(false);
+      setIsMobileMenuOpen(false);
       navigate("/");
     } catch (error) {
       if (currentAdmin) {
@@ -100,22 +100,21 @@ const Header = () => {
     }
   };
 
-  // Determine if the current user is an admin or regular user
   const isAdmin = !!currentAdmin;
   const currentEntity = currentAdmin || currentUser;
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 bg-white/90 backdrop-blur-md shadow-lg`}
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 bg-white/90 backdrop-blur-md ${
+        isScrolled ? "shadow-lg" : "shadow-sm"
+      }`}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
           <Link to="/" onClick={scrollToTop} className="flex items-center">
             <img src={logo} alt="HomeFinder Logo" className="h-16 w-auto" />
           </Link>
 
-          {/* Desktop Navigation - Center */}
           <nav className="hidden md:flex items-center">
             <ul className="flex space-x-4">
               <Link to="/" onClick={scrollToTop}>
@@ -131,33 +130,32 @@ const Header = () => {
             </ul>
           </nav>
 
-          {/* Right Corner Buttons - Desktop */}
           <div className="hidden md:flex items-center space-x-4">
             <Link to="/create-listing-landing">
-              <button className="px-4 py-2 text-sm font-medium text-black hover:bg-black hover:text-white rounded-lg transition duration-300 cursor-pointer">
-                Host your Property
+              <button className="px-3 py-1.5 text-sm font-medium text-black hover:bg-black hover:text-white rounded-lg transition duration-300 cursor-pointer">
+                List Your Property
               </button>
             </Link>
-            {/* Profile Avatar */}
-            <div className="relative cursor-pointer" ref={profileRef}>
+            <div className="relative">
               {currentEntity ? (
                 <button
+                  ref={profileButtonRef}
                   onClick={toggleProfilePopup}
-                  className="flex items-center justify-center focus:outline-none group cursor-pointer"
+                  className="h-10 flex items-center px-2 border border-gray-500 rounded-full gap-1.5 bg-white cursor-pointer hover:shadow-lg"
                 >
-                  <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all duration-300 shadow-md">
+                  <IoMdMenu className="text-gray-600 w-5 h-5" />
+                  <div className="w-7 h-7 rounded-full overflow-hidden">
                     <img
                       src={currentEntity.avatar}
                       alt="Avatar"
-                      className="h-full w-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                      className="h-full w-full object-cover"
                     />
                   </div>
-                  <span className="ml-2 text-sm font-medium hidden sm:block"></span>
                 </button>
               ) : (
                 <Link to="/sign-in">
                   <button
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition duration-300 ${
+                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition duration-300 ${
                       isScrolled
                         ? "border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
                         : "border border-black text-black hover:bg-black hover:text-white"
@@ -168,57 +166,53 @@ const Header = () => {
                 </Link>
               )}
 
-              {/* Profile Popup */}
               {isProfilePopupOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <div
+                  ref={profilePopupRef}
+                  className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-xl shadow-lg z-50"
+                >
                   <ul className="py-2">
                     {!isAdmin && (
-                      <>
-                        <li>
-                          <div
-                            onClick={() => handleMenuItemClick("/profile")}
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                          >
-                            Profile
-                          </div>
-                        </li>
-                        <li>
-                          <div
-                            onClick={() => handleMenuItemClick("/wishlists")}
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                          >
-                            Wishlists
-                          </div>
-                        </li>
-                      </>
+                      <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
+                        <button
+                          onClick={handleMenuItemClick("/profile")}
+                          className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
+                        >
+                          Profile
+                        </button>
+                        <button
+                          onClick={handleMenuItemClick("/wishlists")}
+                          className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
+                        >
+                          Wishlists
+                        </button>
+                      </li>
                     )}
-                    <li>
-                      <div
-                        onClick={() => handleMenuItemClick("/help-center")}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
+                      <button
+                        onClick={handleMenuItemClick("/help-center")}
+                        className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
                       >
                         Help Center
-                      </div>
+                      </button>
                     </li>
-                    <li>
-                      <div
-                        onClick={() =>
-                          handleMenuItemClick(
-                            isAdmin ? "/admin-dashboard" : "/user-dashboard"
-                          )
-                        }
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
+                      <button
+                        onClick={handleMenuItemClick(
+                          isAdmin ? "/admin-dashboard" : "/user-dashboard"
+                        )}
+                        className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
                       >
                         {isAdmin ? "Admin Dashboard" : "User Dashboard"}
-                      </div>
+                      </button>
                     </li>
-                    <li>
-                      <div
+                    <li className="mx-2">
+                      <button
                         onClick={handleSignOut}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                        className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
                       >
                         Log Out
-                      </div>
+                      </button>
                     </li>
                   </ul>
                 </div>
@@ -226,156 +220,133 @@ const Header = () => {
             </div>
           </div>
 
-          {/* Mobile Menu Toggle and Avatar */}
           <div className="md:hidden flex items-center">
-            <div className="flex items-center justify-between bg-gray-100 rounded-full px-2 py-1 shadow-sm">
-              {/* Hamburger Menu */}
-              <button
-                onClick={toggleMobileMenu}
-                className="p-2 text-gray-700 cursor-pointer hover:text-black focus:outline-none"
-                aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-              >
-                {isMobileMenuOpen ? (
+            <button
+              ref={mobileMenuRef}
+              onClick={toggleMobileMenu}
+              className="h-9 flex items-center px-2 border border-gray-500 rounded-full gap-1 bg-white cursor-pointer hover:shadow-lg"
+            >
+              <IoMdMenu className="text-gray-600 w-4 h-4" />
+              {currentEntity ? (
+                <div className="w-6 h-6 rounded-full overflow-hidden">
+                  <img
+                    src={currentEntity.avatar}
+                    alt="Avatar"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center">
                   <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
+                    className="h-4 w-4 text-gray-500"
+                    fill="currentColor"
                     viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                   </svg>
-                ) : (
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16m-7 6h7"
-                    />
-                  </svg>
-                )}
-              </button>
-              {/* User/Admin Avatar */}
-              <div>
-                {currentEntity ? (
-                  <button
-                    onClick={toggleProfilePopup}
-                    className="flex items-center justify-center"
-                  >
-                    <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-300">
-                      <img
-                        src={currentEntity.avatar}
-                        alt="Avatar"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  </button>
-                ) : (
-                  <Link to="/sign-in">
-                    <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center">
-                      <svg
-                        className="h-6 w-6 text-gray-500"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                      </svg>
-                    </div>
-                  </Link>
-                )}
-              </div>
-            </div>
+                </div>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-white/95 backdrop-blur-md shadow-lg rounded-lg mt-2 py-4 box-border z-50">
-            <ul className="flex flex-col space-y-4 items-center">
-              <Link to="/" onClick={scrollToTop}>
-                <li className="text-black px-4 py-2 hover:bg-gray-300 rounded-lg transition duration-300">
-                  Home
+          <div
+            ref={mobilePopupRef}
+            className="fixed top-[64px] left-4 right-4 bg-white border border-gray-200 rounded-xl shadow-lg z-50 md:hidden mx-4"
+          >
+            <div className="px-4 py-4">
+              <ul className="space-y-1">
+                <li className="border-b border-gray-200 pb-2 mb-2">
+                  <Link
+                    to="/"
+                    onClick={() => {
+                      scrollToTop();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    to="/listings"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                  >
+                    Listings
+                  </Link>
                 </li>
-              </Link>
-              <Link to="/listings">
-                <li className="text-black px-4 py-2 hover:bg-gray-300 rounded-lg transition duration-300">
-                  Listings
+
+                <li className="border-b border-gray-200 pb-2 mb-2">
+                  <Link
+                    to="/create-listing-landing"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                  >
+                    List Your Property
+                  </Link>
                 </li>
-              </Link>
-              <div className="flex flex-col items-center">
-                <Link to="/create-listing-landing">
-                  <button className="text-black px-4 py-2 hover:bg-gray-300 rounded-lg transition duration-300">
-                    Host your Property
-                  </button>
-                </Link>
+
                 {currentEntity ? (
-                  <div className="flex flex-col items-center mt-4">
-                    <div className="flex items-center mb-2">
-                      <div className="h-8 w-8 rounded-full overflow-hidden bg-gray-300 mr-2">
-                        <img
-                          src={currentEntity.avatar}
-                          alt="Avatar"
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <span className="text-sm font-medium">Profile</span>
-                    </div>
-                    <div className="flex flex-col space-y-2">
+                  <>
+                    <li className="border-b border-gray-200 pb-2 mb-2">
                       {!isAdmin && (
                         <>
-                          <Link to="/profile">
-                            <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
-                              My Profile
-                            </button>
-                          </Link>
-                          <Link to="/saved-listings">
-                            <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
-                              Saved
-                            </button>
-                          </Link>
+                          <button
+                            onClick={handleMenuItemClick("/profile")}
+                            className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                          >
+                            Profile
+                          </button>
+                          <button
+                            onClick={handleMenuItemClick("/wishlists")}
+                            className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                          >
+                            Wishlists
+                          </button>
                         </>
                       )}
-                      <Link to="/messages">
-                        <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
-                          Messages
-                        </button>
-                      </Link>
-                      <Link
-                        to={isAdmin ? "/admin-dashboard" : "/user-dashboard"}
+                      <button
+                        onClick={handleMenuItemClick("/help-center")}
+                        className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
                       >
-                        <button className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm">
-                          {isAdmin ? "Admin Dashboard" : "User Dashboard"}
-                        </button>
-                      </Link>
+                        Help Center
+                      </button>
+                    </li>
+
+                    <li className="border-b border-gray-200 pb-2 mb-2">
+                      <button
+                        onClick={handleMenuItemClick(
+                          isAdmin ? "/admin-dashboard" : "/user-dashboard"
+                        )}
+                        className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                      >
+                        {isAdmin ? "Admin Dashboard" : "User Dashboard"}
+                      </button>
+                    </li>
+
+                    <li>
                       <button
                         onClick={handleSignOut}
-                        className="text-black px-4 py-1 hover:bg-gray-300 rounded-lg transition duration-300 w-full text-sm"
+                        className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
                       >
                         Log Out
                       </button>
-                    </div>
-                  </div>
+                    </li>
+                  </>
                 ) : (
-                  <Link to="/sign-in" className="mt-4">
-                    <button className="text-black px-4 py-2 border border-black hover:bg-black hover:text-white rounded-lg transition duration-300">
+                  <li>
+                    <Link
+                      to="/sign-in"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                    >
                       Sign In
-                    </button>
-                  </Link>
+                    </Link>
+                  </li>
                 )}
-              </div>
-            </ul>
+              </ul>
+            </div>
           </div>
         )}
       </div>

@@ -21,8 +21,6 @@ const GoogleMapComponent = ({ lat, lng }) => {
     lng: lng || defaultCenter.lng,
   };
 
-  // Log the rendering of the map component
-  console.log("Rendering map component with center:", center);
 
   return (
     <div className="map-wrapper" style={{ width: "100%", height: "100%" }}>
@@ -43,11 +41,9 @@ const GoogleMapComponent = ({ lat, lng }) => {
 };
 
 export const MapWithAllProperties = ({ markers = [] }) => {
-  console.log("Markers:", markers); // Debug the markers prop
 
   // Use the first marker as the center or fallback to defaultCenter
   const center = markers.length > 0 ? markers[0] : defaultCenter;
-  console.log("Map center:", center); // Debug the map center
 
   return (
     <div className="map-wrapper" style={{ width: "100%", height: "100%" }}>
