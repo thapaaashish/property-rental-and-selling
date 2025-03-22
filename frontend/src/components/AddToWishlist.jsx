@@ -5,7 +5,7 @@ import {
   removeFromWishlist,
 } from "../redux/wishlist/wishlistSlice";
 import { Heart, HeartOff } from "lucide-react";
-import Popup from "../components/Popup"; // Adjust the import path as needed
+import Popup from "../components/Popup";
 
 const AddToWishlist = ({ propertyId }) => {
   const dispatch = useDispatch();
@@ -13,48 +13,43 @@ const AddToWishlist = ({ propertyId }) => {
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [loading, setLoading] = useState(false);
   const [wishlist, setWishlist] = useState([]);
-  const [showPopup, setShowPopup] = useState(false); // State for popup
-  const [popupMessage, setPopupMessage] = useState(""); // Dynamic popup message
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
 
-  // Fetch wishlist data on component mount
+  // Fetch wishlist data when user is logged in
   useEffect(() => {
     const fetchWishlist = async () => {
+      if (!currentUser) return;
+
       try {
-        const response = await fetch("http://localhost:3000/api/wishlist/get", {
+        const response = await fetch("/api/wishlist/get", {
           credentials: "include",
         });
-
-        console.log("Response status:", response.status);
-        const text = await response.text();
-        console.log("Response text:", text);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch wishlist: ${response.status}`);
         }
 
-        const data = JSON.parse(text);
-        setWishlist(data);
+        const data = await response.json();
+        setWishlist(data || []); // Ensure wishlist is an array
       } catch (error) {
         console.error("Error fetching wishlist:", error.message);
+        setWishlist([]); // Reset wishlist on error
       }
     };
 
-    if (currentUser) {
-      fetchWishlist();
-    }
+    fetchWishlist();
   }, [currentUser]);
 
-  // Update button state based on wishlist data
+  // Check if property is in wishlist
   useEffect(() => {
     if (currentUser && wishlist.length > 0) {
-      const exists = wishlist.some(
-        (item) => item.userRef === currentUser._id && item._id === propertyId
-      );
+      const exists = wishlist.some((item) => item._id === propertyId);
       setIsInWishlist(exists);
     } else {
       setIsInWishlist(false);
     }
-  }, [currentUser, wishlist, propertyId]);
+  }, [wishlist, propertyId, currentUser]);
 
   // Handle adding/removing from wishlist
   const handleWishlist = async () => {
@@ -67,8 +62,8 @@ const AddToWishlist = ({ propertyId }) => {
 
     try {
       const endpoint = isInWishlist
-        ? "http://localhost:3000/api/wishlist/remove"
-        : "http://localhost:3000/api/wishlist/add";
+        ? "/api/wishlist/remove"
+        : "/api/wishlist/add";
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -86,30 +81,21 @@ const AddToWishlist = ({ propertyId }) => {
         );
       }
 
-      // Update wishlist data
       if (isInWishlist) {
         // Remove from wishlist
-        const updatedWishlist = wishlist.filter(
-          (item) => item._id !== propertyId
-        );
-        setWishlist(updatedWishlist);
+        setWishlist(wishlist.filter((item) => item._id !== propertyId));
         dispatch(removeFromWishlist(propertyId));
         setIsInWishlist(false);
-        setPopupMessage("Removed from wishlist!"); // Set popup message
-        setShowPopup(true); // Show popup
+        setPopupMessage("Removed from wishlist!");
       } else {
         // Add to wishlist
-        const newItem = {
-          _id: propertyId,
-          userRef: currentUser._id,
-        };
-        const updatedWishlist = [...wishlist, newItem];
-        setWishlist(updatedWishlist);
+        const newItem = { _id: propertyId, userRef: currentUser._id };
+        setWishlist([...wishlist, newItem]);
         dispatch(addToWishlist(propertyId));
         setIsInWishlist(true);
-        setPopupMessage("Added to wishlist!"); // Set popup message
-        setShowPopup(true); // Show popup
+        setPopupMessage("Added to wishlist!");
       }
+      setShowPopup(true);
     } catch (error) {
       console.error("Error updating wishlist:", error.message);
     } finally {
@@ -122,13 +108,12 @@ const AddToWishlist = ({ propertyId }) => {
       <button
         onClick={handleWishlist}
         disabled={loading}
-        className={`flex items-center gap-2 p-2 rounded-md transition-colors ${
+        className={`flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer ${
           isInWishlist
             ? "bg-red-100 hover:bg-red-200"
             : "bg-gray-100 hover:bg-gray-200"
         }`}
         aria-label={isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
-        aria-live="polite"
       >
         {loading ? (
           <span className="text-gray-500 font-medium">Updating...</span>
@@ -147,7 +132,6 @@ const AddToWishlist = ({ propertyId }) => {
         )}
       </button>
 
-      {/* Popup for success */}
       {showPopup && (
         <Popup
           message={popupMessage}

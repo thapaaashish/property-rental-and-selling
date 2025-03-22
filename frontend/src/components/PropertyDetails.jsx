@@ -1,7 +1,7 @@
+// src/pages/PropertyDetails.jsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
-  Share2,
   MapPin,
   Bed,
   Bath,
@@ -13,6 +13,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import AddToWishlist from "../components/AddToWishlist";
+import ShareButton from "../components/Share/ShareButton";
 import GoogleMapComponent from "./GoogleMap";
 
 const PropertyDetails = () => {
@@ -122,7 +123,6 @@ const PropertyDetails = () => {
   const agentName = agent?.fullname || "Agent Information";
   const agentRole = "Real Estate Agent";
 
-  // Extract lat and lng from property.location.coordinates
   const [lng, lat] = property.location.coordinates;
 
   return (
@@ -188,9 +188,8 @@ const PropertyDetails = () => {
               )}
 
               <div className="absolute right-4 top-4 flex space-x-2">
-                <button className="rounded-full bg-white/80 p-2.5 shadow-md text-gray-600 hover:bg-white hover:text-blue-600 transition-colors">
-                  <Share2 className="h-5 w-5" />
-                </button>
+                <ShareButton property={property} />{" "}
+                {/* Use the ShareButton component */}
                 <AddToWishlist propertyId={property._id} />
               </div>
 
@@ -294,7 +293,6 @@ const PropertyDetails = () => {
                 Location
               </h3>
               <div className="aspect-[16/9] overflow-hidden rounded-lg bg-gray-100 mb-6">
-                {/* Pass lat and lng to GoogleMapComponent */}
                 <GoogleMapComponent lat={lat} lng={lng} />
               </div>
               <div className="space-y-4">

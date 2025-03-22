@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { FaSearch, FaArrowUp } from "react-icons/fa";
-import { useSearchParams, Link } from "react-router-dom"; // Ensure Link is imported
+import { useSearchParams, useNavigate } from "react-router-dom"; // Replace Link with useNavigate
 import { ArrowRight } from "lucide-react";
 import { useInView } from "react-intersection-observer";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwipeable } from "react-swipeable";
+import MovingServicesSection from "../components/MovingServicesCard.jsx";
 
 // Lazy loaded components
 const CitySection = React.lazy(() => import("../components/home/CitySection"));
@@ -38,6 +39,7 @@ const fadeInUp = {
 
 const Home = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate(); // Added useNavigate
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const listingType = searchParams.get("listing") || "all";
   const propertyType = searchParams.get("type") || "all";
@@ -186,6 +188,13 @@ const Home = () => {
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.id]: e.target.value });
 
+  const handleSearch = () => {
+    if (formData.name.trim()) {
+      // Only navigate if input is not empty
+      navigate(`/listings?location=${encodeURIComponent(formData.name)}`);
+    }
+  };
+
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -254,12 +263,12 @@ const Home = () => {
                 value={formData.name}
                 onChange={handleChange}
               />
-              <Link
-                to={`/listings?location=${encodeURIComponent(formData.name)}`}
+              <button // Replaced Link with button
+                onClick={handleSearch}
                 className="bg-teal-500 p-4 m-2 rounded-lg text-white hover:bg-teal-600 transition-colors duration-300 flex items-center justify-center"
               >
                 <FaSearch />
-              </Link>
+              </button>
             </div>
           </motion.div>
         </div>
@@ -317,6 +326,8 @@ const Home = () => {
           <CitySection />
         </Suspense>
       </motion.section>
+
+      <MovingServicesSection />
 
       {/* Features Section with Animation */}
       <motion.section

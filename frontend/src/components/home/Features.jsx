@@ -1,38 +1,40 @@
-import React from 'react';
-import { Home, Users, Building, ListPlus } from 'lucide-react';
+import React from "react";
+import { Home, Users, Building, ListPlus } from "lucide-react";
 
 const features = [
   {
     icon: Home,
-    title: 'Find your future home',
-    description: 'We help you find a home by offering a smart real estate experience'
+    title: "Find your future home",
+    description:
+      "We help you find a home by offering a smart real estate experience",
   },
   {
     icon: Users,
-    title: 'Experienced agents',
-    description: 'Find an experienced agent who knows your market best'
+    title: "Experienced agents",
+    description: "Find an experienced agent who knows your market best",
   },
   {
     icon: Building,
-    title: 'Buy or rent homes',
-    description: 'Whether you\'re buying or renting, we have you covered'
+    title: "Buy or rent homes",
+    description: "Whether you're buying or renting, we have you covered",
   },
   {
     icon: ListPlus,
-    title: 'List your own property',
-    description: 'Sign up now and list your property for free'
-  }
+    title: "List your own property",
+    description: "Sign up now and list your property for free",
+  },
 ];
 export default function Features() {
   return (
-    <section className="py-16 bg-gray-100">
+    <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             Why Choose Us
           </h2>
           <p className="text-gray-600">
-            We provide a complete service for the sale, purchase or rental of real estate
+            We provide a complete service for the sale, purchase or rental of
+            real estate
           </p>
         </div>
 

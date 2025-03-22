@@ -1,5 +1,11 @@
 import { Link } from "react-router-dom";
 
+// Utility function to capitalize the first letter
+const capitalizeFirstLetter = (string) => {
+  if (!string) return "";
+  return string.charAt(0).toUpperCase() + string.slice(1);
+};
+
 const PropertyGrid = ({ properties, columns = 3 }) => {
   // Define the grid classes based on the `columns` prop
   const gridClasses = {
@@ -32,8 +38,8 @@ const PropertyGrid = ({ properties, columns = 3 }) => {
 
         return (
           <Link
-            key={propertyId} // Use the normalized ID
-            to={`/property/${propertyId}`} // Use the normalized ID
+            key={propertyId}
+            to={`/property/${propertyId}`}
             className="border rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-transform transform hover:scale-105 duration-300 no-underline text-gray-900 block bg-white w-full"
           >
             {/* Property Thumbnail */}
@@ -57,8 +63,14 @@ const PropertyGrid = ({ properties, columns = 3 }) => {
               <h2 className="text-xl font-semibold text-gray-800 truncate mb-2">
                 {property.title}
               </h2>
-              <p className="text-sm text-gray-600 mb-2">
-                {property.address.street}, {property.address.city}
+              <p className="text-sm mb-2">
+                <span className="text-gray-800 font-medium">
+                  {capitalizeFirstLetter(property.type)}
+                </span>
+                <span className="text-gray-600">
+                  {" - "}
+                  {property.address.street}, {property.address.city}
+                </span>
               </p>
 
               <div className="flex items-center mb-3 text-sm text-gray-600">
@@ -76,7 +88,7 @@ const PropertyGrid = ({ properties, columns = 3 }) => {
               </div>
 
               <div className="mt-3 text-emerald-600 font-bold text-2xl">
-                ${property.price.toLocaleString()}{" "}
+                Rs. {property.price.toLocaleString()}{" "}
                 {property.priceUnit && (
                   <span className="text-sm text-gray-500">
                     /{property.priceUnit}
