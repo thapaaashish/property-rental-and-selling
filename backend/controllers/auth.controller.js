@@ -54,27 +54,46 @@ export const signin = async (req, res, next) => {
     if (!validPassword) return next(errorHandler(401, "Invalid credentials"));
 
     const isAdmin = user instanceof Admin;
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
+    const tokenPayload = {
+      id: user._id,
+      type: isAdmin ? "admin" : "user",
+      ...(isAdmin && { role: user.role }),
+    };
+
+    // Make token expiration match cookie maxAge
+    const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+    const refreshToken = jwt.sign(
+      { id: user._id, type: isAdmin ? "admin" : "user" },
       process.env.JWT_SECRET,
-      { expiresIn: "15m" }
+      { expiresIn: "30d" }
     );
 
-    // Log to verify token creation
-    console.log("Generated admin_access_token:", token);
+    // Update user with refresh token
+    user.refreshToken = refreshToken;
+    await user.save();
 
+    // Set cookies with matching expiration
     res
-      .cookie(isAdmin ? "admin_access_token" : "access_token", token, {
+      .cookie(isAdmin ? "admin_access_token" : "access_token", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 15 * 60 * 1000, // 15 minutes
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      })
+      .cookie("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       })
       .status(200)
       .json({
         ...user.toObject(),
         password: undefined,
         accountType: isAdmin ? "admin" : "user",
+        token: accessToken, // For client-side use if needed
       });
   } catch (error) {
     next(error);

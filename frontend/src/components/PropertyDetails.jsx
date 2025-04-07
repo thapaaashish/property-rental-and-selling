@@ -1,4 +1,3 @@
-// src/pages/PropertyDetails.jsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -15,6 +14,7 @@ import {
 import AddToWishlist from "../components/AddToWishlist";
 import ShareButton from "../components/Share/ShareButton";
 import GoogleMapComponent from "./GoogleMap";
+import BookingForm from "../components/BookingForm"; // Import the new component
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -23,17 +23,18 @@ const PropertyDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
 
   useEffect(() => {
     const fetchPropertyAndAgent = async () => {
       setLoading(true);
       setError(null);
       try {
-        const propertyResponse = await fetch(`/api/listings/listings/${id}`);
-        if (!propertyResponse.ok) {
-          throw new Error(`HTTP error! Status: ${propertyResponse.status}`);
+        const response = await fetch(`/api/listings/listings/${id}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        const propertyData = await propertyResponse.json();
+        const propertyData = await response.json();
         setProperty(propertyData);
         if (propertyData.agent) {
           setAgent(propertyData.agent);
@@ -68,6 +69,21 @@ const PropertyDetails = () => {
       );
     }
   };
+
+  const getAgentInitials = () => {
+    if (!agent || !agent.fullname) return "AG";
+    const nameParts = agent.fullname.split(" ");
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    } else if (nameParts.length === 1) {
+      return nameParts[0][0].toUpperCase();
+    } else {
+      return "AG";
+    }
+  };
+
+  const agentName = agent?.fullname || "Agent Information";
+  const agentRole = "Real Estate Agent";
 
   if (loading) {
     return (
@@ -107,21 +123,6 @@ const PropertyDetails = () => {
       </div>
     );
   }
-
-  const getAgentInitials = () => {
-    if (!agent || !agent.fullname) return "AG";
-    const nameParts = agent.fullname.split(" ");
-    if (nameParts.length >= 2) {
-      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
-    } else if (nameParts.length === 1) {
-      return nameParts[0][0].toUpperCase();
-    } else {
-      return "AG";
-    }
-  };
-
-  const agentName = agent?.fullname || "Agent Information";
-  const agentRole = "Real Estate Agent";
 
   const [lng, lat] = property.location.coordinates;
 
@@ -188,8 +189,7 @@ const PropertyDetails = () => {
               )}
 
               <div className="absolute right-4 top-4 flex space-x-2">
-                <ShareButton property={property} />{" "}
-                {/* Use the ShareButton component */}
+                <ShareButton property={property} />
                 <AddToWishlist propertyId={property._id} />
               </div>
 
@@ -327,7 +327,7 @@ const PropertyDetails = () => {
             </div>
           </div>
 
-          {/* Right Column (Agent and Contact Form) */}
+          {/* Right Column (Agent and Booking Form) */}
           <div className="space-y-8">
             {/* Agent Card */}
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -381,6 +381,8 @@ const PropertyDetails = () => {
                 Pay Now with Esewa
               </button>
             </div>
+            {/* Replace with BookingForm component */}
+            <BookingForm property={property} />
           </div>
         </div>
       </div>

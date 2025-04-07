@@ -9,6 +9,7 @@ import listingRouter from "./routes/listing.route.js";
 import wishlistRouter from "./routes/wishlist.route.js";
 import adminRouter from "./routes/admin.route.js";
 import movingServicesRouter from "./routes/movingServices.route.js";
+import bookingRouter from "./routes/booking.route.js";
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use("/api/listings", listingRouter);
 app.use("/api/wishlist", wishlistRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/moving-services", movingServicesRouter);
+app.use("/api/bookings", bookingRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {
