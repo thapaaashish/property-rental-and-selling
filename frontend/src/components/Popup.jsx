@@ -30,7 +30,7 @@ const Popup = ({
       <style>
         {`
           @keyframes fade-in {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
           }
           .animate-fade-in {
@@ -38,9 +38,9 @@ const Popup = ({
           }
         `}
       </style>
-      <div className="fixed bottom-4 right-4 z-50 animate-fade-in">
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
         <div
-          className={`p-4 rounded-lg shadow-lg flex items-center justify-between w-80 ${typeStyles[type]}`}
+          className={`p-4 rounded-2xl shadow-lg flex items-center justify-between w-80 ${typeStyles[type]}`}
         >
           <div className="flex items-center">
             {type === "success" && (
@@ -109,7 +109,10 @@ const Popup = ({
             )}
             <span>{message}</span>
           </div>
-          <button onClick={onClose} className="text-white hover:text-gray-200">
+          <button
+            onClick={onClose}
+            className="text-white hover:text-gray-200 rounded-full ml-4"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>

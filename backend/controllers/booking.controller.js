@@ -1,5 +1,6 @@
 import Booking from "../models/booking.model.js";
 import Listing from "../models/listing.model.js";
+import User from "../models/user.model.js";
 import { sendBookingConfirmation, notifyAgent } from "../utils/email.js";
 
 export const createBooking = async (req, res, next) => {
@@ -13,7 +14,6 @@ export const createBooking = async (req, res, next) => {
       durationDays,
       totalPrice,
     } = req.body;
-    console.log("Received request body:", req.body);
 
     // Validate required fields
     if (!user) {
@@ -31,9 +31,31 @@ export const createBooking = async (req, res, next) => {
       });
     }
 
+    // Get listing and user details
     const listingExists = await Listing.findById(listing);
+    const userExists = await User.findById(user);
+    const ownerExists = await User.findById(listingExists.userRef); // Get owner using userRef
+
     if (!listingExists) {
       return res.status(404).json({ message: "Listing not found" });
+    }
+    if (!userExists) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (!ownerExists) {
+      return res.status(404).json({ message: "Listing owner not found" });
+    }
+
+    // Check for existing bookings
+    const existingBooking = await Booking.findOne({
+      user,
+      listing,
+      status: { $in: ["pending", "confirmed"] },
+    });
+    if (existingBooking) {
+      return res.status(400).json({
+        message: "You already have an active booking for this property",
+      });
     }
 
     const booking = new Booking({
@@ -47,7 +69,28 @@ export const createBooking = async (req, res, next) => {
     });
 
     await booking.save();
-    console.log("Booking created:", booking);
+
+    // Send emails
+    if (!userExists.email) {
+      console.warn("User email missing - cannot send confirmation");
+    } else {
+      await sendBookingConfirmation(userExists.email, {
+        ...booking.toObject(),
+        listing: listingExists,
+        user: userExists,
+      });
+    }
+
+    if (!ownerExists.email) {
+      console.warn("Owner email missing - cannot send notification");
+    } else {
+      await notifyAgent(ownerExists.email, {
+        ...booking.toObject(),
+        listing: listingExists,
+        user: userExists,
+      });
+    }
+
     res.status(201).json(booking);
   } catch (error) {
     console.error("Error in createBooking:", error.message);
@@ -55,14 +98,43 @@ export const createBooking = async (req, res, next) => {
   }
 };
 
-// Get all bookings for the logged-in user
+export const checkBooking = async (req, res) => {
+  try {
+    const { userId, propertyId } = req.body;
+
+    if (!userId || !propertyId) {
+      return res
+        .status(400)
+        .json({ message: "User ID and Property ID are required" });
+    }
+
+    const existingBooking = await Booking.findOne({
+      user: userId,
+      listing: propertyId,
+      status: { $in: ["pending", "confirmed"] },
+    });
+
+    res.status(200).json({ exists: !!existingBooking });
+  } catch (error) {
+    console.error("Error in checkBooking:", error.message);
+    res.status(500).json({
+      message: "Failed to check booking status",
+      error: error.message,
+    });
+  }
+};
+
 export const getUserBookings = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.params.userId;
 
     const bookings = await Booking.find({ user: userId })
       .populate("listing")
       .sort({ createdAt: -1 });
+
+    if (!bookings.length) {
+      return res.status(404).json({ message: "No bookings found" });
+    }
 
     res.status(200).json(bookings);
   } catch (err) {
@@ -72,27 +144,24 @@ export const getUserBookings = async (req, res) => {
   }
 };
 
-// Confirm a booking (only if not already confirmed/cancelled)
 export const confirmBooking = async (req, res) => {
   try {
     const bookingId = req.params.id;
 
     const booking = await Booking.findById(bookingId).populate("listing");
 
-    if (!booking)
-      return res.status(404).json({ message: "Booking not found." });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
 
     if (booking.status === "confirmed") {
-      return res.status(400).json({ message: "Booking is already confirmed." });
+      return res.status(400).json({ message: "Booking is already confirmed" });
     }
 
     booking.status = "confirmed";
     await booking.save();
 
-    // Optional: Mark listing as booked
-    // await Listing.findByIdAndUpdate(booking.listing._id, { isBooked: true });
-
-    res.status(200).json({ message: "Booking confirmed.", booking });
+    res.status(200).json({ message: "Booking confirmed", booking });
   } catch (err) {
     res
       .status(500)
@@ -106,20 +175,18 @@ export const cancelBooking = async (req, res) => {
 
     const booking = await Booking.findById(bookingId).populate("listing");
 
-    if (!booking)
-      return res.status(404).json({ message: "Booking not found." });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
 
     if (booking.status === "cancelled") {
-      return res.status(400).json({ message: "Booking is already cancelled." });
+      return res.status(400).json({ message: "Booking is already cancelled" });
     }
 
     booking.status = "cancelled";
     await booking.save();
 
-    // Optional: Update listing
-    // await Listing.findByIdAndUpdate(booking.listing._id, { isBooked: false });
-
-    res.status(200).json({ message: "Booking cancelled.", booking });
+    res.status(200).json({ message: "Booking cancelled", booking });
   } catch (err) {
     res
       .status(500)
@@ -127,7 +194,6 @@ export const cancelBooking = async (req, res) => {
   }
 };
 
-// Can be run on a schedule using a cron job or node-cron
 export const autoCancelExpiredBookings = async () => {
   try {
     const now = new Date();
@@ -140,8 +206,52 @@ export const autoCancelExpiredBookings = async () => {
       { $set: { status: "cancelled" } }
     );
 
-    console.log(`Auto-cancelled ${expired.modifiedCount} expired bookings.`);
+    console.log(`Auto-cancelled ${expired.modifiedCount} expired bookings`);
   } catch (err) {
     console.error("Error auto-cancelling bookings:", err.message);
+  }
+};
+
+export const editBooking = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const { startDate, endDate, durationDays, totalPrice, userId } = req.body;
+
+    const booking = await Booking.findById(bookingId).populate("listing");
+
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (booking.status !== "pending") {
+      return res
+        .status(400)
+        .json({ message: "Only pending bookings can be edited" });
+    }
+    if (booking.user.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ message: "You can only edit your own bookings" });
+    }
+
+    if (booking.bookingType === "Rent") {
+      if (!startDate || !endDate || !durationDays || !totalPrice) {
+        return res.status(400).json({
+          message:
+            "Start date, end date, duration, and total price are required",
+        });
+      }
+      booking.startDate = startDate;
+      booking.endDate = endDate;
+      booking.durationDays = durationDays;
+      booking.totalPrice = totalPrice;
+    } else if (totalPrice) {
+      booking.totalPrice = totalPrice;
+    }
+
+    await booking.save();
+
+    res.status(200).json({ message: "Booking updated successfully", booking });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to edit booking", error: err.message });
   }
 };

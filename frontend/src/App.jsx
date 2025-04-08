@@ -16,6 +16,8 @@ import HelpCenter from "./pages/HelpCenter";
 import Wistlists from "./pages/Wishlists";
 import ListingLandingPage from "./pages/ListingLandingPage";
 import UserDashboard from "./pages/UserDashboard";
+import MyBookings from "./pages/Booking/MyBookings";
+import axios from "axios";
 
 export const App = () => {
   return (
@@ -40,6 +42,7 @@ export const App = () => {
             path="/create-listing-landing"
             element={<ListingLandingPage />}
           />
+          <Route path="/my-bookings" element={<MyBookings />} />
         </Route>
 
         {/* Keep pages outside Layout (No Header Here) */}
@@ -51,6 +54,8 @@ export const App = () => {
         {/* <Route element={<AdminPrivateRoute />}>
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Route> */}
+
+        {/* <Route path="/payment" element={<Payment />} /> */}
       </Routes>
     </BrowserRouter>
   );

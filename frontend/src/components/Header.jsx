@@ -186,6 +186,12 @@ const Header = () => {
                         >
                           Wishlists
                         </button>
+                        <button
+                          onClick={handleMenuItemClick("/my-bookings")}
+                          className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
+                        >
+                          My Bookings
+                        </button>
                       </li>
                     )}
                     <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
@@ -303,6 +309,12 @@ const Header = () => {
                             className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
                           >
                             Wishlists
+                          </button>
+                          <button
+                            onClick={handleMenuItemClick("/my-bookings")}
+                            className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                          >
+                            My Bookings
                           </button>
                         </>
                       )}

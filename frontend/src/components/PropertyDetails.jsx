@@ -10,11 +10,18 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageSquare,
+  Home,
+  List,
+  Map,
+  Heart,
+  Share2,
+  Calendar,
+  DollarSign,
 } from "lucide-react";
 import AddToWishlist from "../components/AddToWishlist";
 import ShareButton from "../components/Share/ShareButton";
 import GoogleMapComponent from "./GoogleMap";
-import BookingForm from "../components/BookingForm"; // Import the new component
+import BookingForm from "../components/Booking";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -23,7 +30,7 @@ const PropertyDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
+  const [activeTab, setActiveTab] = useState("description");
 
   useEffect(() => {
     const fetchPropertyAndAgent = async () => {
@@ -38,8 +45,6 @@ const PropertyDetails = () => {
         setProperty(propertyData);
         if (propertyData.agent) {
           setAgent(propertyData.agent);
-        } else {
-          console.log("No Agent Data Found");
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -49,9 +54,7 @@ const PropertyDetails = () => {
       }
     };
 
-    if (id) {
-      fetchPropertyAndAgent();
-    }
+    if (id) fetchPropertyAndAgent();
   }, [id]);
 
   const nextImage = () => {
@@ -73,22 +76,15 @@ const PropertyDetails = () => {
   const getAgentInitials = () => {
     if (!agent || !agent.fullname) return "AG";
     const nameParts = agent.fullname.split(" ");
-    if (nameParts.length >= 2) {
-      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
-    } else if (nameParts.length === 1) {
-      return nameParts[0][0].toUpperCase();
-    } else {
-      return "AG";
-    }
+    return nameParts.length >= 2
+      ? (nameParts[0][0] + nameParts[1][0]).toUpperCase()
+      : nameParts[0][0].toUpperCase();
   };
-
-  const agentName = agent?.fullname || "Agent Information";
-  const agentRole = "Real Estate Agent";
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-400"></div>
       </div>
     );
   }
@@ -96,12 +92,11 @@ const PropertyDetails = () => {
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="max-w-md p-6 bg-white rounded-lg shadow-lg text-center">
-          <div className="text-red-500 text-5xl mb-4">⚠️</div>
-          <h3 className="text-xl font-semibold text-red-600 mb-2">Error</h3>
-          <p className="text-gray-600">{error}</p>
+        <div className="max-w-md p-6 bg-white rounded-lg shadow-sm text-center border border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
           <button
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors text-sm"
             onClick={() => window.location.reload()}
           >
             Try Again
@@ -114,8 +109,10 @@ const PropertyDetails = () => {
   if (!property) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="max-w-md p-6 bg-white rounded-lg shadow-lg text-center">
-          <h3 className="text-xl font-semibold mb-2">Property Not Found</h3>
+        <div className="max-w-md p-6 bg-white rounded-lg shadow-sm text-center border border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Property Not Found
+          </h3>
           <p className="text-gray-600">
             The property you're looking for doesn't exist or has been removed.
           </p>
@@ -125,35 +122,40 @@ const PropertyDetails = () => {
   }
 
   const [lng, lat] = property.location.coordinates;
+  const agentName = agent?.fullname || "Agent Information";
+  const agentRole = "Real Estate Agent";
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 md:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Breadcrumb */}
-        <div className="mb-6 flex items-center text-sm text-gray-500">
-          <a href="/" className="hover:text-blue-600">
+        {/* Breadcrumb Navigation */}
+        <nav className="mb-6 flex items-center text-sm text-gray-500">
+          <a href="/" className="hover:text-gray-900 flex items-center">
+            <Home className="h-4 w-4 mr-1" />
             Home
           </a>
-          <span className="mx-2">›</span>
-          <a href="/listings" className="hover:text-blue-600">
+          <span className="mx-2">/</span>
+          <a href="/listings" className="hover:text-gray-900">
             Listings
           </a>
-          <span className="mx-2">›</span>
-          <span className="text-gray-900 font-medium">{property.title}</span>
-        </div>
+          <span className="mx-2">/</span>
+          <span className="text-gray-900 font-medium truncate max-w-xs">
+            {property.title}
+          </span>
+        </nav>
 
-        <div className="grid gap-8 lg:grid-cols-3 lg:gap-12">
-          {/* Left Column (Property Details) */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Property Images Gallery */}
-            <div className="relative rounded-xl overflow-hidden shadow-lg bg-white">
-              <div className="aspect-[16/9] overflow-hidden">
+        <div className="grid gap-8 lg:grid-cols-3 lg:gap-8">
+          {/* Main Content Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Image Gallery */}
+            <div className="relative rounded-lg overflow-hidden bg-white border border-gray-200">
+              <div className="aspect-[16/10] overflow-hidden">
                 <img
                   src={
                     property.imageUrls[currentImageIndex] || "/placeholder.svg"
                   }
                   alt={property.title}
-                  className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                  className="h-full w-full object-cover"
                 />
               </div>
 
@@ -161,15 +163,17 @@ const PropertyDetails = () => {
                 <>
                   <button
                     onClick={prevImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/70 p-2 text-gray-800 shadow-md hover:bg-white transition-colors"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-gray-800 shadow-sm hover:bg-white transition-all"
+                    aria-label="Previous image"
                   >
-                    <ChevronLeft className="h-6 w-6" />
+                    <ChevronLeft className="h-5 w-5" />
                   </button>
                   <button
                     onClick={nextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/70 p-2 text-gray-800 shadow-md hover:bg-white transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-gray-800 shadow-sm hover:bg-white transition-all"
+                    aria-label="Next image"
                   >
-                    <ChevronRight className="h-6 w-6" />
+                    <ChevronRight className="h-5 w-5" />
                   </button>
                 </>
               )}
@@ -180,9 +184,12 @@ const PropertyDetails = () => {
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`h-2 w-2 rounded-full ${
-                        index === currentImageIndex ? "bg-white" : "bg-white/50"
+                      className={`h-2 w-2 rounded-full transition-all ${
+                        index === currentImageIndex
+                          ? "bg-gray-900"
+                          : "bg-gray-400"
                       }`}
+                      aria-label={`Go to image ${index + 1}`}
                     />
                   ))}
                 </div>
@@ -195,10 +202,10 @@ const PropertyDetails = () => {
 
               <div className="absolute left-4 top-4">
                 <span
-                  className={`inline-block px-3 py-1 text-sm font-semibold rounded-full shadow-md ${
+                  className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-md ${
                     property.rentOrSale === "Sale"
-                      ? "bg-blue-600 text-white"
-                      : "bg-green-600 text-white"
+                      ? "bg-gray-900 text-white"
+                      : "bg-gray-700 text-white"
                   }`}
                 >
                   {property.rentOrSale === "Sale" ? "For Sale" : "For Rent"}
@@ -206,137 +213,184 @@ const PropertyDetails = () => {
               </div>
             </div>
 
-            {/* Property Title and Price */}
-            <div className="bg-white p-6 rounded-xl shadow-md space-y-4">
+            {/* Property Header */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+                  <h1 className="text-2xl font-semibold text-gray-900">
                     {property.title}
                   </h1>
-                  <div className="flex items-center mt-2 text-gray-600">
-                    <MapPin className="mr-1.5 h-4 w-4 flex-shrink-0 text-blue-600" />
-                    <span>
+                  <div className="flex items-center mt-1 text-gray-600">
+                    <MapPin className="mr-1.5 h-4 w-4 flex-shrink-0 text-gray-500" />
+                    <span className="text-sm">
                       {property.address?.street}, {property.address?.city},{" "}
                       {property.address?.state}
                     </span>
                   </div>
                 </div>
                 <div className="text-left md:text-right">
-                  <p className="text-3xl font-bold text-blue-600">
+                  <p className="text-2xl font-semibold text-gray-900">
                     ${property.price.toLocaleString()}
                   </p>
                   {property.rentOrSale === "Rent" && (
-                    <p className="text-gray-600 text-sm">per month</p>
+                    <p className="text-gray-500 text-xs">per month</p>
                   )}
                 </div>
               </div>
 
-              {/* Property Stats */}
-              <div className="grid grid-cols-3 gap-1 mt-6 bg-blue-50 rounded-lg p-4 border border-blue-100">
-                <div className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-blue-100 transition-colors">
-                  <Bed className="mb-2 h-6 w-6 text-blue-600" />
-                  <span className="text-lg font-semibold text-gray-900">
+              {/* Quick Stats */}
+              <div className="grid grid-cols-3 gap-2 mt-4">
+                <div className="flex flex-col items-center p-3 rounded-md border border-gray-200">
+                  <Bed className="h-5 w-5 text-gray-700" />
+                  <span className="mt-1 text-sm font-medium text-gray-900">
                     {property.bedrooms}
                   </span>
-                  <span className="text-xs text-gray-600">Bedrooms</span>
+                  <span className="text-xs text-gray-500">Bedrooms</span>
                 </div>
-                <div className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-blue-100 transition-colors">
-                  <Bath className="mb-2 h-6 w-6 text-blue-600" />
-                  <span className="text-lg font-semibold text-gray-900">
+                <div className="flex flex-col items-center p-3 rounded-md border border-gray-200">
+                  <Bath className="h-5 w-5 text-gray-700" />
+                  <span className="mt-1 text-sm font-medium text-gray-900">
                     {property.bathrooms}
                   </span>
-                  <span className="text-xs text-gray-600">Bathrooms</span>
+                  <span className="text-xs text-gray-500">Bathrooms</span>
                 </div>
-                <div className="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-blue-100 transition-colors">
-                  <Square className="mb-2 h-6 w-6 text-blue-600" />
-                  <span className="text-lg font-semibold text-gray-900">
+                <div className="flex flex-col items-center p-3 rounded-md border border-gray-200">
+                  <Square className="h-5 w-5 text-gray-700" />
+                  <span className="mt-1 text-sm font-medium text-gray-900">
                     {property.area}
                   </span>
-                  <span className="text-xs text-gray-600">sq ft</span>
+                  <span className="text-xs text-gray-500">sq ft</span>
                 </div>
               </div>
             </div>
 
-            {/* Description Section */}
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">
-                Description
-              </h3>
-              <div className="prose max-w-none">
-                <p className="text-gray-700 leading-relaxed">
-                  {property.description}
-                </p>
+            {/* Navigation Tabs */}
+            <div className="bg-white rounded-lg border border-gray-200">
+              <div className="flex border-b border-gray-200">
+                <button
+                  onClick={() => setActiveTab("description")}
+                  className={`px-4 py-3 font-medium text-sm flex items-center ${
+                    activeTab === "description"
+                      ? "text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Description
+                </button>
+                <button
+                  onClick={() => setActiveTab("features")}
+                  className={`px-4 py-3 font-medium text-sm flex items-center ${
+                    activeTab === "features"
+                      ? "text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  Features
+                </button>
+                <button
+                  onClick={() => setActiveTab("location")}
+                  className={`px-4 py-3 font-medium text-sm flex items-center ${
+                    activeTab === "location"
+                      ? "text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <Map className="h-4 w-4 mr-2" />
+                  Location
+                </button>
               </div>
-            </div>
 
-            {/* Features Section */}
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">
-                Property Features
-              </h3>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {property.amenities.map((amenity, index) => (
-                  <li
-                    key={index}
-                    className="flex items-center p-2 rounded-md hover:bg-gray-50"
-                  >
-                    <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
-                    <span className="text-gray-700">{amenity}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              {/* Tab Content */}
+              <div className="p-6">
+                {activeTab === "description" && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">
+                      Property Details
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">
+                      {property.description}
+                    </p>
+                  </div>
+                )}
 
-            {/* Location Section */}
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">
-                Location
-              </h3>
-              <div className="aspect-[16/9] overflow-hidden rounded-lg bg-gray-100 mb-6">
-                <GoogleMapComponent lat={lat} lng={lng} />
-              </div>
-              <div className="space-y-4">
-                <h4 className="text-md font-semibold text-gray-900">
-                  Nearby Amenities
-                </h4>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <li className="flex items-center p-2 bg-blue-50 rounded-md">
-                    <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
-                    <span className="text-gray-700">Schools within 1 mile</span>
-                  </li>
-                  <li className="flex items-center p-2 bg-blue-50 rounded-md">
-                    <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
-                    <span className="text-gray-700">
-                      Shopping centers within 2 miles
-                    </span>
-                  </li>
-                  <li className="flex items-center p-2 bg-blue-50 rounded-md">
-                    <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
-                    <span className="text-gray-700">
-                      Public transportation within 0.5 miles
-                    </span>
-                  </li>
-                  <li className="flex items-center p-2 bg-blue-50 rounded-md">
-                    <div className="mr-3 h-2 w-2 rounded-full bg-blue-600" />
-                    <span className="text-gray-700">
-                      Parks and recreation within 1 mile
-                    </span>
-                  </li>
-                </ul>
+                {activeTab === "features" && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">
+                      Amenities & Features
+                    </h3>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {property.amenities.map((amenity, index) => (
+                        <li
+                          key={index}
+                          className="flex items-center p-2 rounded-md hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="mr-2 h-1.5 w-1.5 rounded-full bg-gray-500" />
+                          <span className="text-gray-700 text-sm">
+                            {amenity}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {activeTab === "location" && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">
+                      Location Details
+                    </h3>
+                    <div className="aspect-[16/9] overflow-hidden rounded-md bg-gray-100 mb-4 border border-gray-200">
+                      <GoogleMapComponent lat={lat} lng={lng} />
+                    </div>
+                    <div className="space-y-3">
+                      <h4 className="text-md font-medium text-gray-900">
+                        Nearby Amenities
+                      </h4>
+                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <li className="flex items-center p-2 rounded-md border border-gray-200">
+                          <div className="mr-2 h-1.5 w-1.5 rounded-full bg-gray-500" />
+                          <span className="text-gray-700 text-sm">
+                            Schools within 1 mile
+                          </span>
+                        </li>
+                        <li className="flex items-center p-2 rounded-md border border-gray-200">
+                          <div className="mr-2 h-1.5 w-1.5 rounded-full bg-gray-500" />
+                          <span className="text-gray-700 text-sm">
+                            Shopping centers within 2 miles
+                          </span>
+                        </li>
+                        <li className="flex items-center p-2 rounded-md border border-gray-200">
+                          <div className="mr-2 h-1.5 w-1.5 rounded-full bg-gray-500" />
+                          <span className="text-gray-700 text-sm">
+                            Public transportation within 0.5 miles
+                          </span>
+                        </li>
+                        <li className="flex items-center p-2 rounded-md border border-gray-200">
+                          <div className="mr-2 h-1.5 w-1.5 rounded-full bg-gray-500" />
+                          <span className="text-gray-700 text-sm">
+                            Parks and recreation within 1 mile
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Right Column (Agent and Booking Form) */}
-          <div className="space-y-8">
+          {/* Sidebar Column */}
+          <div className="space-y-6">
             {/* Agent Card */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <div className="bg-teal-500 px-6 py-4 text-white">
-                <h3 className="font-semibold">Listed By</h3>
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                <h3 className="font-medium text-gray-900">Listed By</h3>
               </div>
-              <div className="p-6">
-                <div className="flex items-center space-x-4 pb-4 border-b">
-                  <div className="h-16 w-16 rounded-full bg-gray-100 border-2 border-teal-500 flex items-center justify-center overflow-hidden">
+              <div className="p-4">
+                <div className="flex items-center space-x-3 pb-4 border-b border-gray-200">
+                  <div className="h-12 w-12 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center overflow-hidden">
                     {agent?.avatar ? (
                       <img
                         src={agent.avatar}
@@ -344,45 +398,45 @@ const PropertyDetails = () => {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="font-medium text-lg">
+                      <span className="font-medium text-gray-600">
                         {getAgentInitials()}
                       </span>
                     )}
                   </div>
                   <div>
-                    <h3 className="font-medium text-lg">{agentName}</h3>
-                    <p className="text-sm text-gray-600">{agentRole}</p>
+                    <h3 className="font-medium text-gray-900">{agentName}</h3>
+                    <p className="text-sm text-gray-500">{agentRole}</p>
                   </div>
                 </div>
-                <div className="py-4 space-y-4">
+                <div className="py-4 space-y-3">
                   <div className="flex items-center p-2 rounded-md hover:bg-gray-50 transition-colors">
-                    <Phone className="mr-3 h-5 w-5 text-blue-600" />
-                    <span className="text-gray-700 truncate">
-                      {agent?.phone || "Contact information unavailable"}
+                    <Phone className="mr-2 h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-700">
+                      {agent?.phone || "Not provided"}
                     </span>
                   </div>
                   <div className="flex items-center p-2 rounded-md hover:bg-gray-50 transition-colors">
-                    <Mail className="mr-3 h-5 w-5 text-blue-600" />
-                    <span className="text-gray-700 truncate">
-                      {agent?.email || "Email unavailable"}
+                    <Mail className="mr-2 h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-700">
+                      {agent?.email || "Not provided"}
                     </span>
                   </div>
                 </div>
-                <div className="pt-4 border-t space-y-3">
-                  <button className="w-full bg-teal-500 cursor-pointer text-white font-medium px-4 py-3 rounded-md hover:bg-teal-700 transition-colors flex justify-center items-center">
+                <div className="pt-3 border-t border-gray-200">
+                  <button className=" cursor-pointer w-full bg-gray-900 text-white font-medium px-4 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm flex justify-center items-center">
                     <MessageSquare className="mr-2 h-4 w-4" />
-                    Send message
+                    Contact Agent
                   </button>
                 </div>
               </div>
             </div>
-            <div>
-              <button className="w-full bg-teal-500 cursor-pointer text-white font-medium px-4 py-3 rounded-md hover:bg-teal-700 transition-colors flex justify-center items-center">
-                Pay Now with Esewa
-              </button>
+
+            {/* Booking Form */}
+            <div className="">
+              <div className="">
+                <BookingForm property={property} />
+              </div>
             </div>
-            {/* Replace with BookingForm component */}
-            <BookingForm property={property} />
           </div>
         </div>
       </div>

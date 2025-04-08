@@ -2,6 +2,8 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
+import cron from "node-cron";
+
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
@@ -10,6 +12,8 @@ import wishlistRouter from "./routes/wishlist.route.js";
 import adminRouter from "./routes/admin.route.js";
 import movingServicesRouter from "./routes/movingServices.route.js";
 import bookingRouter from "./routes/booking.route.js";
+
+import { autoCancelExpiredBookings } from "./controllers/booking.controller.js";
 
 dotenv.config();
 
@@ -54,6 +58,12 @@ app.use((err, req, res, next) => {
     statusCode,
     message,
   });
+});
+
+// Schedule auto-cancel of expired bookings (runs every hour)
+cron.schedule("0 * * * *", async () => {
+  console.log("Running auto-cancel expired bookings...");
+  await autoCancelExpiredBookings();
 });
 
 // Start the server

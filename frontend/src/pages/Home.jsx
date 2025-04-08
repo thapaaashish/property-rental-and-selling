@@ -344,13 +344,22 @@ const Home = () => {
       {/* Scroll to Top Button */}
       <motion.button
         onClick={scrollToTop}
-        initial={{ opacity: 0, y: 20 }}
         animate={{
-          opacity: showScrollTop ? 1 : 0,
-          y: showScrollTop ? 0 : 20,
-          pointerEvents: showScrollTop ? "auto" : "none",
+          opacity: showScrollTop ? 1 : 0.4,
+          scale: showScrollTop ? 1 : 0.8,
+          y: showScrollTop ? [0, -8, 0] : 0,
         }}
-        transition={{ duration: 0.3 }}
+        transition={{
+          y: showScrollTop
+            ? {
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }
+            : { duration: 0 },
+          opacity: { duration: 0.3 },
+          scale: { duration: 0.3 },
+        }}
         className="fixed right-6 bottom-6 cursor-pointer bg-teal-500 text-white p-4 rounded-full shadow-lg z-50 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-300"
         aria-label="Scroll to top"
       >
