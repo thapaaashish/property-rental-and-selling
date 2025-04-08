@@ -481,8 +481,8 @@ const MyBookings = () => {
                 <input
                   type="number"
                   value={editTotalPrice}
-                  onChange={(e) => setEditTotalPrice(Number(e.target.value))}
-                  className="w-full p-2 border rounded"
+                  readOnly
+                  className="w-full p-2 border rounded cursor-not-allowed bg-gray-100"
                   min="0"
                 />
               </div>

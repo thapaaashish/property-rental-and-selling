@@ -40,7 +40,7 @@ const bookingSchema = new mongoose.Schema(
     },
     durationDays: {
       type: Number,
-      min: [1, "Minimum booking duration is 1 days"], // Set your minimum here
+      min: [30, "Minimum booking duration is 30 days"], // Set your minimum here
       required: function () {
         return this.bookingType === "Rent";
       },
@@ -77,9 +77,9 @@ bookingSchema.pre("save", function (next) {
     const diffTime = Math.abs(this.endDate - this.startDate);
     this.durationDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (this.durationDays < 1) {
+    if (this.durationDays < 30) {
       // Match with min validation
-      throw new Error("Minimum booking duration is 3 days");
+      throw new Error("Minimum booking duration is 30 days");
     }
   }
   next();

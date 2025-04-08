@@ -11,7 +11,7 @@ const BookingForm = ({ property }) => {
   const { currentUser } = useSelector((state) => state.user);
   const userId = currentUser?._id;
 
-  const MINIMUM_BOOKING_DAYS = 1;
+  const MINIMUM_BOOKING_DAYS = 30; // Minimum booking days for rent
   const today = new Date();
 
   const [showForm, setShowForm] = useState(false);
@@ -216,7 +216,7 @@ const BookingForm = ({ property }) => {
                     <div className="flex justify-between font-medium mt-1">
                       <span>Total:</span>
                       <span>
-                        $$
+                        Rs
                         {calculateTotalPrice(
                           startDate,
                           endDate

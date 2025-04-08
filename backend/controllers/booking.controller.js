@@ -144,56 +144,6 @@ export const getUserBookings = async (req, res) => {
   }
 };
 
-export const confirmBooking = async (req, res) => {
-  try {
-    const bookingId = req.params.id;
-
-    const booking = await Booking.findById(bookingId).populate("listing");
-
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    if (booking.status === "confirmed") {
-      return res.status(400).json({ message: "Booking is already confirmed" });
-    }
-
-    booking.status = "confirmed";
-    await booking.save();
-
-    res.status(200).json({ message: "Booking confirmed", booking });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to confirm booking", error: err.message });
-  }
-};
-
-export const cancelBooking = async (req, res) => {
-  try {
-    const bookingId = req.params.id;
-
-    const booking = await Booking.findById(bookingId).populate("listing");
-
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    if (booking.status === "cancelled") {
-      return res.status(400).json({ message: "Booking is already cancelled" });
-    }
-
-    booking.status = "cancelled";
-    await booking.save();
-
-    res.status(200).json({ message: "Booking cancelled", booking });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to cancel booking", error: err.message });
-  }
-};
-
 export const autoCancelExpiredBookings = async () => {
   try {
     const now = new Date();
@@ -253,5 +203,141 @@ export const editBooking = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to edit booking", error: err.message });
+  }
+};
+
+// Get bookings for a user's listings
+export const getAgentBookingRequests = async (req, res) => {
+  try {
+    const agentId = req.params.userId;
+
+    // Find all listings owned by this agent
+    const agentListings = await Listing.find({ userRef: agentId });
+    const listingIds = agentListings.map((listing) => listing._id);
+
+    // Find all pending bookings for these listings with populated user data
+    const bookings = await Booking.find({
+      listing: { $in: listingIds },
+      status: "pending",
+    })
+      .populate({
+        path: "listing",
+        select: "title price bedrooms bathrooms imageUrls",
+      })
+      .populate({
+        path: "user",
+        select: "fullname email avatar phone address city province zipCode", // Include all needed fields
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(bookings);
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to fetch booking requests",
+      error: err.message,
+    });
+  }
+};
+
+// confirmBooking to check ownership
+// Confirm Booking
+export const confirmBooking = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const { userId } = req.body; // Get userId from request body
+
+    const booking = await Booking.findById(bookingId).populate("listing");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Verify the requesting user owns the listing
+    if (booking.listing.userRef.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only confirm bookings for your own listings",
+      });
+    }
+
+    if (booking.status === "confirmed") {
+      return res.status(400).json({ message: "Booking is already confirmed" });
+    }
+
+    booking.status = "confirmed";
+    await booking.save();
+
+    res.status(200).json({ message: "Booking confirmed", booking });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to confirm booking", error: err.message });
+  }
+};
+
+// Cancel Booking
+export const cancelBooking = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const { userId } = req.body; // Get userId from request body
+
+    const booking = await Booking.findById(bookingId).populate("listing");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Verify the requesting user is either the booker or listing owner
+    const isBooker = booking.user.toString() === userId;
+    const isListingOwner = booking.listing.userRef.toString() === userId;
+
+    if (!isBooker && !isListingOwner) {
+      return res.status(403).json({
+        message:
+          "You can only cancel your own bookings or bookings for your listings",
+      });
+    }
+
+    if (booking.status === "cancelled") {
+      return res.status(400).json({ message: "Booking is already cancelled" });
+    }
+
+    booking.status = "cancelled";
+    await booking.save();
+
+    res.status(200).json({ message: "Booking cancelled", booking });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to cancel booking", error: err.message });
+  }
+};
+
+export const getBookingsForListings = async (req, res) => {
+  try {
+    const { listingIds } = req.body;
+    
+    if (!listingIds || !Array.isArray(listingIds) || listingIds.length === 0) {
+      return res.status(400).json({ message: "Valid listing IDs array is required" });
+    }
+
+    const bookings = await Booking.find({
+      listing: { $in: listingIds }
+    })
+      .populate({
+        path: "listing",
+        select: "title price bedrooms bathrooms imageUrls type"
+      })
+      .populate({
+        path: "user",
+        select: "fullname email avatar phone"
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(bookings);
+  } catch (err) {
+    res.status(500).json({
+      message: "Failed to fetch bookings for listings",
+      error: err.message
+    });
   }
 };

@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { Home, Heart, MessageSquare, User, Package } from "lucide-react";
 import EditListingForm from "./EditListingForm";
 import Wishlists from "./Wishlists";
 import Profile from "./Profile";
-import Popup from "../components/Popup"; // Import the new Popup component
+import Popup from "../components/Popup";
+import AgentBookings from "../components/AgentBookings";
+import {
+  Home,
+  Heart,
+  MessageSquare,
+  User,
+  Package,
+  Clock,
+  Menu,
+  X,
+} from "lucide-react";
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -16,8 +26,9 @@ const UserDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [editingListing, setEditingListing] = useState(null);
-  const [showDeletePopup, setShowDeletePopup] = useState(false); // State for delete popup
-  const [showEditPopup, setShowEditPopup] = useState(false); // State for edit popup
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [showEditPopup, setShowEditPopup] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -71,7 +82,7 @@ const UserDashboard = () => {
       listings.map((l) => (l._id === updatedListing._id ? updatedListing : l))
     );
     setEditingListing(null);
-    setShowEditPopup(true); // Show edit success popup
+    setShowEditPopup(true);
   };
 
   const handleCancelEdit = () => {
@@ -87,7 +98,7 @@ const UserDashboard = () => {
         });
         if (response.ok) {
           setListings(listings.filter((l) => l._id !== listingId));
-          setShowDeletePopup(true); // Show delete success popup
+          setShowDeletePopup(true);
         } else {
           console.error("Failed to delete listing:", await response.text());
         }
@@ -134,15 +145,34 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Fixed Sidebar */}
-      <div className="fixed left-0 top-0 w-64 bg-white border-r border-gray-200 flex flex-col p-6 h-screen overflow-hidden">
+      {/* Mobile Sidebar Toggle */}
+      <button
+        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-md"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        {sidebarOpen ? (
+          <X className="h-6 w-6 text-gray-700" />
+        ) : (
+          <Menu className="h-6 w-6 text-gray-700" />
+        )}
+      </button>
+
+      {/* Sidebar */}
+      <div
+        className={`fixed left-0 top-0 w-64 bg-white border-r border-gray-200 flex flex-col p-6 h-screen overflow-hidden transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 z-40`}
+      >
         <h2 className="text-xl font-bold text-teal-700 flex items-center mb-6">
           <Home className="mr-2 h-5 w-5" />
           User Dashboard
         </h2>
         <nav className="flex-1 space-y-2 overflow-y-auto">
           <button
-            onClick={() => setActiveTab("overview")}
+            onClick={() => {
+              setActiveTab("overview");
+              setSidebarOpen(false);
+            }}
             className={`flex items-center p-3 rounded-lg w-full text-left ${
               activeTab === "overview"
                 ? "bg-teal-50 text-teal-700"
@@ -152,7 +182,10 @@ const UserDashboard = () => {
             <Package className="h-5 w-5 mr-3" /> Overview
           </button>
           <button
-            onClick={() => setActiveTab("listings")}
+            onClick={() => {
+              setActiveTab("listings");
+              setSidebarOpen(false);
+            }}
             className={`flex items-center p-3 rounded-lg w-full text-left ${
               activeTab === "listings"
                 ? "bg-teal-50 text-teal-700"
@@ -162,7 +195,10 @@ const UserDashboard = () => {
             <Home className="h-5 w-5 mr-3" /> My Listings
           </button>
           <button
-            onClick={() => setActiveTab("saved")}
+            onClick={() => {
+              setActiveTab("saved");
+              setSidebarOpen(false);
+            }}
             className={`flex items-center p-3 rounded-lg w-full text-left ${
               activeTab === "saved"
                 ? "bg-teal-50 text-teal-700"
@@ -172,7 +208,23 @@ const UserDashboard = () => {
             <Heart className="h-5 w-5 mr-3" /> Saved Properties
           </button>
           <button
-            onClick={() => setActiveTab("messages")}
+            onClick={() => {
+              setActiveTab("bookings");
+              setSidebarOpen(false);
+            }}
+            className={`flex items-center p-3 rounded-lg w-full text-left ${
+              activeTab === "bookings"
+                ? "bg-teal-50 text-teal-700"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            <Clock className="h-5 w-5 mr-3" /> Booking Requests
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("messages");
+              setSidebarOpen(false);
+            }}
             className={`flex items-center p-3 rounded-lg w-full text-left ${
               activeTab === "messages"
                 ? "bg-teal-50 text-teal-700"
@@ -182,7 +234,10 @@ const UserDashboard = () => {
             <MessageSquare className="h-5 w-5 mr-3" /> Messages
           </button>
           <button
-            onClick={() => setActiveTab("profile")}
+            onClick={() => {
+              setActiveTab("profile");
+              setSidebarOpen(false);
+            }}
             className={`flex items-center p-3 rounded-lg w-full text-left ${
               activeTab === "profile"
                 ? "bg-teal-50 text-teal-700"
@@ -204,10 +259,12 @@ const UserDashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 ml-64 overflow-y-auto p-8">
+      <div className="flex-1 md:ml-64 overflow-y-auto p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+              Dashboard
+            </h1>
             <p className="text-gray-600 mt-2">
               Welcome back,{" "}
               <span className="text-black">
@@ -220,64 +277,64 @@ const UserDashboard = () => {
           {/* Tab Content */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             {activeTab === "overview" && (
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 {/* Stats Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+                  <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-gray-500 text-sm font-medium">
                           My Listings
                         </p>
-                        <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                        <h3 className="text-xl md:text-2xl font-bold text-gray-800 mt-1">
                           {listings.length}
                         </h3>
                       </div>
-                      <div className="bg-blue-100 p-3 rounded-full">
-                        <Home className="h-6 w-6 text-blue-600" />
+                      <div className="bg-blue-100 p-2 md:p-3 rounded-full">
+                        <Home className="h-5 md:h-6 w-5 md:w-6 text-blue-600" />
                       </div>
                     </div>
                   </div>
-                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                  <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-gray-500 text-sm font-medium">
                           Saved Properties
                         </p>
-                        <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                        <h3 className="text-xl md:text-2xl font-bold text-gray-800 mt-1">
                           {savedProperties.length}
                         </h3>
                       </div>
-                      <div className="bg-green-100 p-3 rounded-full">
-                        <Heart className="h-6 w-6 text-green-600" />
+                      <div className="bg-green-100 p-2 md:p-3 rounded-full">
+                        <Heart className="h-5 md:h-6 w-5 md:w-6 text-green-600" />
                       </div>
                     </div>
                   </div>
-                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                  <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-gray-500 text-sm font-medium">
                           Messages
                         </p>
-                        <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                        <h3 className="text-xl md:text-2xl font-bold text-gray-800 mt-1">
                           {messages.length}
                         </h3>
                       </div>
-                      <div className="bg-purple-100 p-3 rounded-full">
-                        <MessageSquare className="h-6 w-6 text-purple-600" />
+                      <div className="bg-purple-100 p-2 md:p-3 rounded-full">
+                        <MessageSquare className="h-5 md:h-6 w-5 md:w-6 text-purple-600" />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="mb-8">
+                <div className="mb-6 md:mb-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">
                     Quick Actions
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <button
                       onClick={() => navigate("/create-listing-landing")}
-                      className="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
+                      className="flex items-center justify-center py-2 px-3 md:py-3 md:px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -297,7 +354,7 @@ const UserDashboard = () => {
                     </button>
                     <button
                       onClick={() => navigate("/listings")}
-                      className="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
+                      className="flex items-center justify-center py-2 px-3 md:py-3 md:px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -317,7 +374,7 @@ const UserDashboard = () => {
                     </button>
                     <button
                       onClick={() => setActiveTab("profile")}
-                      className="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
+                      className="flex items-center justify-center py-2 px-3 md:py-3 md:px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -343,7 +400,7 @@ const UserDashboard = () => {
                     </button>
                     <button
                       onClick={() => navigate("/")}
-                      className="flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
+                      className="flex items-center justify-center py-2 px-3 md:py-3 md:px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -417,14 +474,14 @@ const UserDashboard = () => {
             )}
 
             {activeTab === "listings" && (
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
+              <div className="p-4 md:p-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
                   <h2 className="text-xl font-bold text-gray-800">
                     My Listings
                   </h2>
                   <button
                     onClick={() => navigate("/create-listing")}
-                    className="flex items-center text-sm font-medium text-white bg-blue-600 py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-150"
+                    className="flex items-center text-sm font-medium text-white bg-blue-600 py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-150 w-full md:w-auto justify-center"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -548,10 +605,10 @@ const UserDashboard = () => {
                               {formatDate(listing.createdAt)}
                             </td>
                             <td className="py-4 px-4 text-sm font-medium">
-                              <div className="flex space-x-2">
+                              <div className="flex flex-wrap gap-2">
                                 <button
                                   onClick={() => handleEditListing(listing._id)}
-                                  className="text-blue-600 hover:text-blue-900"
+                                  className="text-blue-600 hover:text-blue-900 whitespace-nowrap"
                                 >
                                   Edit
                                 </button>
@@ -559,13 +616,13 @@ const UserDashboard = () => {
                                   onClick={() =>
                                     handleDeleteListing(listing._id)
                                   }
-                                  className="text-red-600 hover:text-red-900"
+                                  className="text-red-600 hover:text-red-900 whitespace-nowrap"
                                 >
                                   Delete
                                 </button>
                                 <button
                                   onClick={() => handleViewListing(listing._id)}
-                                  className="text-green-600 hover:text-green-900"
+                                  className="text-green-600 hover:text-green-900 whitespace-nowrap"
                                 >
                                   View
                                 </button>
@@ -581,13 +638,19 @@ const UserDashboard = () => {
             )}
 
             {activeTab === "saved" && (
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 <Wishlists />
               </div>
             )}
 
+            {activeTab === "bookings" && (
+              <div className="p-4 md:p-6">
+                <AgentBookings />
+              </div>
+            )}
+
             {activeTab === "messages" && (
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 <h2 className="text-xl font-bold text-gray-800 mb-6">
                   Messages
                 </h2>
@@ -655,7 +718,7 @@ const UserDashboard = () => {
             )}
 
             {activeTab === "profile" && (
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 <Profile />
               </div>
             )}
@@ -666,7 +729,7 @@ const UserDashboard = () => {
       {/* Edit Listing Modal */}
       {editingListing && (
         <div className="fixed inset-0 backdrop-blur-xs flex items-center justify-center z-50">
-          <div className="bg-white bg-opacity-80 rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white bg-opacity-80 rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-2">
             <EditListingForm
               listing={listings.find((l) => l._id === editingListing)}
               onSave={handleSaveListing}
