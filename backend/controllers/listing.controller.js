@@ -12,16 +12,24 @@ export const createListing = async (req, res, next) => {
 };
 
 export const deleteListing = async (req, res, next) => {
-  const listing = await Listing.findById(req.params.id);
-  if (!listing) return next(errorHandler(404, "Listing not found"));
-
-  if (req.user.id !== listing.userRef.toString()) {
-    return next(errorHandler(403, "You can only delete your own listings"));
-  }
-
   try {
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return next(errorHandler(404, "Listing not found"));
+
+    if (req.user.id !== listing.userRef.toString()) {
+      return next(errorHandler(403, "You can only delete your own listings"));
+    }
+
+    // Delete all bookings associated with this listing
+    await Booking.deleteMany({ listingId: listing._id });
+
+    // Then delete the listing
     await Listing.findByIdAndDelete(req.params.id);
-    res.status(200).json("Listing has been deleted!");
+
+    res.status(200).json({
+      success: true,
+      message: "Listing and all associated bookings have been deleted",
+    });
   } catch (error) {
     next(error);
   }
@@ -104,11 +112,11 @@ export const getListings = async (req, res, next) => {
     let listingType = req.query.listingType || "all";
     let propertyType = req.query.type || "all";
 
-    // Debug logs
     console.log("Received listingType:", listingType);
     console.log("Received propertyType:", propertyType);
 
     let query = {
+      status: "active", // Only fetch active listings
       price: { $gte: minPrice, $lte: maxPrice },
       bedrooms: { $gte: bedrooms },
       bathrooms: { $gte: bathrooms },
@@ -116,7 +124,7 @@ export const getListings = async (req, res, next) => {
 
     // Apply listingType filter
     if (listingType !== "all") {
-      query.rentOrSale = listingType === "buy" ? "Sale" : "Rent";
+      query.rentOrSale = listingType; // "Sale" or "Rent" directly from query
     }
 
     // Apply propertyType filter
@@ -135,10 +143,9 @@ export const getListings = async (req, res, next) => {
       ];
     }
     if (req.query.location) {
-      query.address = { $regex: req.query.location, $options: "i" }; // Case-insensitive match
+      query["address.city"] = { $regex: req.query.location, $options: "i" };
     }
 
-    // Debug log for final query
     console.log("Final Query:", query);
 
     const totalListings = await Listing.countDocuments(query);
@@ -174,6 +181,30 @@ export const getAllListings = async (req, res, next) => {
   try {
     const listings = await Listing.find();
     res.status(200).json(listings);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// This function updates the status of a listing (e.g., active, pending, sold, rented, inactive)
+export const updateListingStatus = async (req, res, next) => {
+  try {
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) {
+      return next(errorHandler(404, "Listing not found"));
+    }
+
+    if (req.user.id !== listing.userRef.toString()) {
+      return next(errorHandler(403, "You can only update your own listings"));
+    }
+
+    const updatedListing = await Listing.findByIdAndUpdate(
+      req.params.id,
+      { status: req.body.status },
+      { new: true }
+    );
+
+    res.status(200).json(updatedListing);
   } catch (error) {
     next(error);
   }

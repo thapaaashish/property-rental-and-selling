@@ -9,6 +9,7 @@ import {
   getListings,
   getListingsByUser,
   getAllListings,
+  updateListingStatus,
 } from "../controllers/listing.controller.js";
 
 const router = express.Router();
@@ -31,5 +32,7 @@ router.get("/listings", getListings);
 router.get("/user/:userId", getListingsByUser);
 
 router.get("/all", verifyAdminToken, getAllListings);
+
+router.post("/update-status/:id", verifyToken, updateListingStatus);
 
 export default router;

@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { Search, Sliders, X } from "lucide-react";
-import { useSearchParams } from "react-router-dom"; // Import useSearchParams
+import { useSearchParams } from "react-router-dom";
 
 const SearchFilters = ({ onFilter, className = "" }) => {
-  const [searchParams] = useSearchParams(); // Get query params from URL
+  const [searchParams] = useSearchParams();
   const [isExpanded, setIsExpanded] = useState(false);
   const [filters, setFilters] = useState({
-    type: "all",
-    propertyType: "",
-    priceMin: "",
-    priceMax: "",
-    bedrooms: "",
-    bathrooms: "",
-    location: searchParams.get("location") || "", // Pre-fill from URL
+    type: searchParams.get("listingType")?.toLowerCase() || "all", // Align with URL params
+    propertyType: searchParams.get("type")?.toLowerCase() || "",
+    priceMin: searchParams.get("priceMin") || "",
+    priceMax: searchParams.get("priceMax") || "",
+    bedrooms: searchParams.get("bedrooms") || "",
+    bathrooms: searchParams.get("bathrooms") || "",
+    location: searchParams.get("location") || "",
   });
 
   useEffect(() => {
@@ -80,7 +80,7 @@ const SearchFilters = ({ onFilter, className = "" }) => {
                   type="text"
                   id="location"
                   name="location"
-                  placeholder="City, zip, address"
+                  placeholder="City, address"
                   value={filters.location}
                   onChange={handleInputChange}
                   className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors duration-200"
@@ -92,7 +92,6 @@ const SearchFilters = ({ onFilter, className = "" }) => {
                 />
               </div>
             </div>
-
             <div className="flex gap-2 w-full md:w-auto">
               <button
                 type="button"
@@ -136,15 +135,15 @@ const SearchFilters = ({ onFilter, className = "" }) => {
               <button
                 type="button"
                 className={`flex-1 py-1 px-3 text-xs font-medium rounded-sm transition-colors duration-200 ${
-                  filters.type === "buy"
+                  filters.type === "sale"
                     ? "bg-blue-600 text-white"
                     : "text-gray-700 hover:bg-gray-100"
                 }`}
-                onClick={() => handleTypeChange("buy")}
-                aria-checked={filters.type === "buy"}
+                onClick={() => handleTypeChange("sale")}
+                aria-checked={filters.type === "sale"}
                 role="radio"
               >
-                Buy
+                For Sale
               </button>
               <button
                 type="button"
@@ -157,7 +156,7 @@ const SearchFilters = ({ onFilter, className = "" }) => {
                 aria-checked={filters.type === "rent"}
                 role="radio"
               >
-                Rent
+                For Rent
               </button>
             </div>
           </div>
@@ -187,13 +186,9 @@ const SearchFilters = ({ onFilter, className = "" }) => {
                     <option value="">Any</option>
                     <option value="house">House</option>
                     <option value="apartment">Apartment</option>
-                    <option value="condo">Condo</option>
-                    <option value="villa">Villa</option>
-                    <option value="office">Office</option>
-                    <option value="land">Land</option>
+                    <option value="room">Room</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Price
@@ -222,7 +217,6 @@ const SearchFilters = ({ onFilter, className = "" }) => {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label
                     htmlFor="bedrooms"
@@ -246,7 +240,6 @@ const SearchFilters = ({ onFilter, className = "" }) => {
                     <option value="5">5+</option>
                   </select>
                 </div>
-
                 <div>
                   <label
                     htmlFor="bathrooms"
@@ -270,7 +263,6 @@ const SearchFilters = ({ onFilter, className = "" }) => {
                   </select>
                 </div>
               </div>
-
               <div className="mt-3 flex justify-end">
                 <button
                   type="button"

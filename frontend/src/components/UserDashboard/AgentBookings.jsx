@@ -14,7 +14,7 @@ import {
   Filter,
   User,
 } from "lucide-react";
-import Popup from "../components/Popup";
+import Popup from "../Popup";
 
 const AgentBookings = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -39,38 +39,29 @@ const AgentBookings = () => {
       }
 
       try {
-        // Fetch properties first
         const propertiesResponse = await fetch(
           `/api/listings/user/${currentUser._id}`
         );
         const propertiesData = await propertiesResponse.json();
-
         if (!propertiesResponse.ok) {
           throw new Error(
             propertiesData.message || "Failed to fetch properties"
           );
         }
-
         setProperties(propertiesData);
 
-        // Then fetch all bookings for these properties
         const listingIds = propertiesData.map((property) => property._id);
         const bookingsResponse = await fetch(`/api/bookings/for-listings`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ listingIds }),
         });
         const bookingsData = await bookingsResponse.json();
-
         if (!bookingsResponse.ok) {
           throw new Error(bookingsData.message || "Failed to fetch bookings");
         }
-
         setBookings(bookingsData);
 
-        // Initialize expanded state for properties
         const expandedState = {};
         propertiesData.forEach((property) => {
           expandedState[property._id] = false;
@@ -113,37 +104,49 @@ const AgentBookings = () => {
         newStatus === "confirmed"
           ? `confirm/${bookingId}`
           : `cancel/${bookingId}`;
-
       const response = await fetch(`/api/bookings/${endpoint}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: currentUser._id,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: currentUser._id }),
       });
 
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to ${newStatus} booking`);
+      }
 
-      if (response.ok) {
-        setBookings((prev) =>
-          prev.map((booking) =>
-            booking._id === bookingId
-              ? { ...booking, status: newStatus }
-              : booking
+      // Update booking status locally
+      setBookings((prev) =>
+        prev.map((booking) =>
+          booking._id === bookingId
+            ? { ...booking, status: newStatus }
+            : booking
+        )
+      );
+
+      // If confirmed, update the listing status locally
+      if (newStatus === "confirmed") {
+        const booking = bookings.find((b) => b._id === bookingId);
+        const listingId = booking.listing._id;
+        const listingStatus =
+          booking.bookingType === "Rent" ? "rented" : "sold";
+
+        setProperties((prev) =>
+          prev.map((property) =>
+            property._id === listingId
+              ? { ...property, status: listingStatus }
+              : property
           )
         );
-        showPopup(`Booking ${newStatus} successfully!`);
+        showPopup("Booking confirmed and property status updated!");
       } else {
-        throw new Error(data.message || `Failed to ${newStatus} booking`);
+        showPopup(`Booking ${newStatus} successfully!`);
       }
     } catch (err) {
       showPopup(err.message, "error");
     }
   };
 
-  // Get bookings for each property, filtered by status
   const getPropertyBookings = (propertyId) => {
     return bookings
       .filter((booking) => booking.listing._id === propertyId)
@@ -153,12 +156,10 @@ const AgentBookings = () => {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   };
 
-  // Calculate days until expiration for pending bookings
   const getExpirationStatus = (expiresAt) => {
     const now = new Date();
     const expiryDate = new Date(expiresAt);
     const diffHours = Math.ceil((expiryDate - now) / (1000 * 60 * 60));
-
     if (diffHours <= 0) return "Expired";
     if (diffHours <= 24)
       return `Expires in ${diffHours} hour${diffHours !== 1 ? "s" : ""}`;
@@ -170,12 +171,12 @@ const AgentBookings = () => {
     const getStatusStyles = () => {
       switch (status) {
         case "confirmed":
-          return "bg-gray-100 text-gray-800 border-gray-200";
+          return "bg-green-100 text-green-800 border-green-200";
         case "cancelled":
-          return "bg-gray-50 text-gray-600 border-gray-200";
+          return "bg-red-100 text-red-800 border-red-200";
         case "pending":
         default:
-          return "bg-white text-gray-700 border-gray-200";
+          return "bg-yellow-100 text-yellow-800 border-yellow-200";
       }
     };
 
@@ -233,7 +234,6 @@ const AgentBookings = () => {
     );
   }
 
-  // Count bookings by status
   const bookingCounts = {
     all: bookings.length,
     pending: bookings.filter((b) => b.status === "pending").length,
@@ -241,7 +241,6 @@ const AgentBookings = () => {
     cancelled: bookings.filter((b) => b.status === "cancelled").length,
   };
 
-  // Filter properties with bookings that match the current filter
   const filteredProperties = properties.filter((property) => {
     const propertyBookings = getPropertyBookings(property._id);
     return propertyBookings.length > 0;
@@ -336,7 +335,6 @@ const AgentBookings = () => {
         <div className="space-y-6">
           {filteredProperties.map((property) => {
             const propertyBookings = getPropertyBookings(property._id);
-
             return (
               <div
                 key={property._id}
@@ -356,7 +354,8 @@ const AgentBookings = () => {
                         {propertyBookings.length}{" "}
                         {propertyBookings.length === 1 ? "booking" : "bookings"}{" "}
                         • ${property.price.toLocaleString()}{" "}
-                        {property.type === "rent" ? "/month" : ""}
+                        {property.rentOrSale === "Rent" ? "/month" : ""} •
+                        Status: {property.status}
                       </p>
                     </div>
                   </div>
@@ -371,7 +370,6 @@ const AgentBookings = () => {
                     )}
                   </div>
                 </div>
-
                 {expandedProperties[property._id] && (
                   <div className="divide-y divide-gray-100">
                     {propertyBookings.map((booking) => (
@@ -406,7 +404,6 @@ const AgentBookings = () => {
                               </div>
                             </div>
                           </div>
-
                           <div className="md:col-span-3 flex flex-col gap-2">
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4 text-gray-400" />
@@ -434,7 +431,6 @@ const AgentBookings = () => {
                               </p>
                             )}
                           </div>
-
                           <div className="md:col-span-2 flex flex-col gap-2">
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-4 w-4 text-gray-400" />
@@ -446,7 +442,6 @@ const AgentBookings = () => {
                               ${booking.totalPrice.toLocaleString()}
                             </p>
                           </div>
-
                           <div className="md:col-span-2 flex flex-col gap-2">
                             <div className="flex items-center gap-2">
                               <Tag className="h-4 w-4 text-gray-400" />
@@ -461,7 +456,6 @@ const AgentBookings = () => {
                               />
                             </div>
                           </div>
-
                           <div className="md:col-span-2 flex justify-end items-center gap-2">
                             {booking.status === "pending" && (
                               <>
@@ -502,7 +496,6 @@ const AgentBookings = () => {
                             )}
                           </div>
                         </div>
-
                         <div className="mt-4 pt-4 border-t border-gray-100">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="flex items-center gap-2">
@@ -555,7 +548,6 @@ const AgentBookings = () => {
           })}
         </div>
       )}
-
       {popup.visible && (
         <Popup
           message={popup.message}

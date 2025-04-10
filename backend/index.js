@@ -15,6 +15,8 @@ import bookingRouter from "./routes/booking.route.js";
 
 import { autoCancelExpiredBookings } from "./controllers/booking.controller.js";
 
+import emailRouter from "./routes/email.routes.js";
+
 dotenv.config();
 
 // Connect to MongoDB
@@ -47,6 +49,7 @@ app.use("/api/wishlist", wishlistRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/moving-services", movingServicesRouter);
 app.use("/api/bookings", bookingRouter);
+app.use("/api/email", emailRouter); // New route for sending emails from the property inquiry form
 
 // Global error handler
 app.use((err, req, res, next) => {

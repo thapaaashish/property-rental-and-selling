@@ -8,13 +8,17 @@ const Listings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1); // Current page
+  const [totalPages, setTotalPages] = useState(1); // Total pages from backend
+  const [totalListings, setTotalListings] = useState(0); // Total listings from backend
+  const limit = 12; // Match backend's limit or override default 9
 
   const handleFilterSubmit = useCallback(
     (filters) => {
       const params = new URLSearchParams();
       params.set(
         "listingType",
-        filters.type === "buy"
+        filters.type === "sale"
           ? "Sale"
           : filters.type === "rent"
           ? "Rent"
@@ -36,9 +40,16 @@ const Listings = () => {
     const fetchProperties = async () => {
       setLoading(true);
       try {
-        const query = searchParams.toString();
-        console.log("Fetching with query:", `/api/listings/listings?${query}`);
-        const response = await fetch(`/api/listings/listings?${query}`);
+        const query = new URLSearchParams(searchParams);
+        const startIndex = (page - 1) * limit; // Calculate startIndex from page
+        query.set("startIndex", startIndex);
+        query.set("limit", limit); // Override default 9
+        const queryString = query.toString();
+        console.log(
+          "Fetching with query:",
+          `/api/listings/listings?${queryString}`
+        );
+        const response = await fetch(`/api/listings/listings?${queryString}`);
         if (!response.ok)
           throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
@@ -66,16 +77,18 @@ const Listings = () => {
           createdAt: listing.createdAt,
           updatedAt: listing.updatedAt,
           agent: {
-            id: listing.userRef,
-            name: "Agent Name",
-            photo: "https://randomuser.me/api/portraits/men/1.jpg",
-            phone: "555-123-4567",
-            email: "agent@example.com",
+            id: listing.userRef._id, // Use populated userRef data
+            name: listing.userRef.fullname,
+            photo: listing.userRef.avatar,
+            phone: listing.userRef.phone,
+            email: listing.userRef.email,
           },
           location: listing.location,
         }));
         console.log("Mapped properties:", mappedProperties);
         setProperties(mappedProperties);
+        setTotalListings(data.totalListings || 0); // Set total listings
+        setTotalPages(data.totalPages || 1); // Use backend's totalPages
       } catch (error) {
         console.error("Error fetching properties:", error);
       } finally {
@@ -83,7 +96,7 @@ const Listings = () => {
       }
     };
     fetchProperties();
-  }, [searchParams]);
+  }, [searchParams, page]); // `page` triggers refetch
 
   const markers = properties
     .filter((property) => property.location?.coordinates)
@@ -106,7 +119,31 @@ const Listings = () => {
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
               ) : properties.length > 0 ? (
-                <PropertyGrid properties={properties} />
+                <>
+                  <PropertyGrid properties={properties} />
+                  <div className="mt-6 flex justify-between items-center">
+                    <button
+                      onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={page === 1 || loading}
+                      className="px-4 py-2 bg-gray-900 cursor-pointer text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors duration-200"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-gray-700 font-medium">
+                      Page {page} of {totalPages} ({properties.length} of{" "}
+                      {totalListings} listings)
+                    </span>
+                    <button
+                      onClick={() =>
+                        setPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                      disabled={page === totalPages || loading}
+                      className="px-4 py-2 cursor-pointer bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors duration-200"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
                   <h3 className="text-xl font-semibold mb-2">

@@ -86,8 +86,6 @@ export default function Footer() {
                   icon: Linkedin,
                   color: "hover:bg-blue-500",
                 },
-                { href: "#", icon: Twitter, color: "hover:bg-blue-400" },
-                { href: "#", icon: Youtube, color: "hover:bg-red-600" },
               ].map((social, index) => (
                 <motion.a
                   key={index}

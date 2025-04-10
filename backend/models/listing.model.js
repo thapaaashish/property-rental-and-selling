@@ -106,6 +106,11 @@ const listingSchema = new mongoose.Schema(
       ref: "User", // Reference to the User model
       required: true,
     },
+    status: {
+      type: String,
+      enum: ["active", "pending", "sold", "rented", "inactive"],
+      default: "active",
+    },
   },
   { timestamps: true }
 );

@@ -21,7 +21,7 @@ import {
 import AddToWishlist from "../components/AddToWishlist";
 import ShareButton from "../components/Share/ShareButton";
 import GoogleMapComponent from "./GoogleMap";
-import BookingForm from "../components/Booking";
+import BookingForm from "../components/user/Booking";
 
 const PropertyDetails = () => {
   const { id } = useParams();

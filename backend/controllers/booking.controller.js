@@ -1,7 +1,11 @@
 import Booking from "../models/booking.model.js";
 import Listing from "../models/listing.model.js";
 import User from "../models/user.model.js";
-import { sendBookingConfirmation, notifyAgent } from "../utils/email.js";
+import {
+  sendBookingConfirmation,
+  notifyAgent,
+  sendBookingRequestConfirmation,
+} from "../utils/email.js";
 
 export const createBooking = async (req, res, next) => {
   try {
@@ -66,6 +70,7 @@ export const createBooking = async (req, res, next) => {
       endDate,
       durationDays,
       totalPrice,
+      status: "pending", // Already correctly set to "pending"
     });
 
     await booking.save();
@@ -74,10 +79,11 @@ export const createBooking = async (req, res, next) => {
     if (!userExists.email) {
       console.warn("User email missing - cannot send confirmation");
     } else {
-      await sendBookingConfirmation(userExists.email, {
+      await sendBookingRequestConfirmation(userExists.email, {
         ...booking.toObject(),
         listing: listingExists,
         user: userExists,
+        userId: userExists._id, // Include userId for Notification
       });
     }
 
@@ -239,54 +245,17 @@ export const getAgentBookingRequests = async (req, res) => {
   }
 };
 
-// confirmBooking to check ownership
-// Confirm Booking
-export const confirmBooking = async (req, res) => {
-  try {
-    const bookingId = req.params.id;
-    const { userId } = req.body; // Get userId from request body
-
-    const booking = await Booking.findById(bookingId).populate("listing");
-
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    // Verify the requesting user owns the listing
-    if (booking.listing.userRef.toString() !== userId) {
-      return res.status(403).json({
-        message: "You can only confirm bookings for your own listings",
-      });
-    }
-
-    if (booking.status === "confirmed") {
-      return res.status(400).json({ message: "Booking is already confirmed" });
-    }
-
-    booking.status = "confirmed";
-    await booking.save();
-
-    res.status(200).json({ message: "Booking confirmed", booking });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to confirm booking", error: err.message });
-  }
-};
-
 // Cancel Booking
 export const cancelBooking = async (req, res) => {
   try {
     const bookingId = req.params.id;
-    const { userId } = req.body; // Get userId from request body
+    const { userId } = req.body;
 
     const booking = await Booking.findById(bookingId).populate("listing");
-
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // Verify the requesting user is either the booker or listing owner
     const isBooker = booking.user.toString() === userId;
     const isListingOwner = booking.listing.userRef.toString() === userId;
 
@@ -304,6 +273,20 @@ export const cancelBooking = async (req, res) => {
     booking.status = "cancelled";
     await booking.save();
 
+    // Notify user and agent
+    const user = await User.findById(booking.user);
+    const owner = await User.findById(booking.listing.userRef);
+    if (user?.email) {
+      await notifyBookingCancellation(user.email, booking.toObject(), "by you");
+    }
+    if (owner?.email && isBooker) {
+      await notifyAgent(owner.email, {
+        ...booking.toObject(),
+        user: user || { fullname: "Guest" },
+        cancellationReason: "Cancelled by guest",
+      });
+    }
+
     res.status(200).json({ message: "Booking cancelled", booking });
   } catch (err) {
     res
@@ -312,24 +295,44 @@ export const cancelBooking = async (req, res) => {
   }
 };
 
+// Cancel Booking (Delete on cancel)
+export const cancelBookingByGuest = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+
+    const deletedBooking = await Booking.findByIdAndDelete(bookingId);
+
+    if (!deletedBooking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.status(200).json({ message: "Booking deleted successfully" });
+  } catch (err) {
+    console.error("Error cancelling booking:", err);
+    res.status(500).json({ message: "Server error while cancelling booking" });
+  }
+};
+
 export const getBookingsForListings = async (req, res) => {
   try {
     const { listingIds } = req.body;
-    
+
     if (!listingIds || !Array.isArray(listingIds) || listingIds.length === 0) {
-      return res.status(400).json({ message: "Valid listing IDs array is required" });
+      return res
+        .status(400)
+        .json({ message: "Valid listing IDs array is required" });
     }
 
     const bookings = await Booking.find({
-      listing: { $in: listingIds }
+      listing: { $in: listingIds },
     })
       .populate({
         path: "listing",
-        select: "title price bedrooms bathrooms imageUrls type"
+        select: "title price bedrooms bathrooms imageUrls type",
       })
       .populate({
         path: "user",
-        select: "fullname email avatar phone"
+        select: "fullname email avatar phone",
       })
       .sort({ createdAt: -1 });
 
@@ -337,7 +340,64 @@ export const getBookingsForListings = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: "Failed to fetch bookings for listings",
-      error: err.message
+      error: err.message,
     });
+  }
+};
+
+export const confirmBooking = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    const { userId } = req.body;
+
+    // Find the booking and populate listing details
+    const booking = await Booking.findById(bookingId).populate("listing");
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // Verify the user is the listing owner
+    if (booking.listing.userRef.toString() !== userId) {
+      return res.status(403).json({
+        message: "You can only confirm bookings for your own listings",
+      });
+    }
+
+    // Check if already confirmed
+    if (booking.status === "confirmed") {
+      return res.status(400).json({ message: "Booking is already confirmed" });
+    }
+
+    // Update booking status
+    booking.status = "confirmed";
+    await booking.save();
+
+    // Update listing status based on booking type
+    const listing = await Listing.findById(booking.listing._id);
+    if (!listing) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+
+    // Set listing status to "rented" for Rent or "sold" for Sale
+    listing.status = booking.bookingType === "Rent" ? "rented" : "sold";
+    await listing.save();
+
+    // Fetch user details for email notification
+    const user = await User.findById(booking.user);
+    if (user?.email) {
+      await sendBookingConfirmation(user.email, {
+        ...booking.toObject(),
+        listing: listing.toObject(), // Include updated listing
+        userId: booking.user,
+      });
+    } else {
+      console.warn("User email missing - cannot send confirmation");
+    }
+
+    res.status(200).json({ message: "Booking confirmed", booking });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Failed to confirm booking", error: err.message });
   }
 };

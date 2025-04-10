@@ -2,17 +2,16 @@ import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 
-const Layout = () => {
+const Layout = ({ header = true, footer = true }) => {
   const location = useLocation();
 
   return (
     <>
-      {/* Show header on all pages EXCEPT Add Listing */}
-      <Header />
-      <main className="mt-14">
+      {header && <Header />}
+      <main className={header ? "mt-14" : "mt-0"}>
         <Outlet /> {/* This will render the page content */}
       </main>
-      {location.pathname !== "/wishlists" && <Footer />}
+      {footer && location.pathname !== "/wishlists" && <Footer />}
     </>
   );
 };

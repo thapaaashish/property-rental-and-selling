@@ -11,105 +11,107 @@ const Wishlists = () => {
 
   useEffect(() => {
     const fetchWishlistProperties = async () => {
-        try {
-          // Use credentials: 'include' to send cookies with the request
-          const response = await fetch("/api/wishlist/get", {
-            credentials: "include"
-          });
-  
-          // If token is expired, try to refresh it
-          if (response.status === 403 || response.status === 401) {
-            const refreshResponse = await fetch("/api/auth/refresh", {
-              credentials: "include"
-            });
-            
-            if (refreshResponse.ok) {
-              // Token refreshed, retry the original request
-              const retryResponse = await fetch("/api/wishlist/get", {
-                credentials: "include"
-              });
-              
-              if (!retryResponse.ok) {
-                throw new Error(`Error: ${retryResponse.status}`);
-              }
-              
-              const data = await retryResponse.json();
-              setWishlistItems(data);
-              return;
-            }
-          }
-  
-          if (!response.ok) {
-            throw new Error(`Error: ${response.status}`);
-          }
-  
-          const data = await response.json();
-          setWishlistItems(data);
-        } catch (error) {
-          console.error("Failed to fetch wishlist:", error);
-          setError(error.message || "Failed to fetch wishlist");
-        } finally {
-          setLoading(false);
-        }
-      };
-  
-      if (currentUser) {
-        fetchWishlistProperties();
-      } else {
-        setLoading(false);
-        setError("Please log in to view your wishlist");
-      }
-    }, [currentUser]);
+      try {
+        // Use credentials: 'include' to send cookies with the request
+        const response = await fetch("/api/wishlist/get", {
+          credentials: "include",
+        });
 
-    const handleRemoveFromWishlist = async (propertyId) => {
-        try {
-          const response = await fetch("/api/wishlist/remove", {
+        // If token is expired, try to refresh it
+        if (response.status === 403 || response.status === 401) {
+          const refreshResponse = await fetch("/api/auth/refresh", {
+            credentials: "include",
+          });
+
+          if (refreshResponse.ok) {
+            // Token refreshed, retry the original request
+            const retryResponse = await fetch("/api/wishlist/get", {
+              credentials: "include",
+            });
+
+            if (!retryResponse.ok) {
+              throw new Error(`Error: ${retryResponse.status}`);
+            }
+
+            const data = await retryResponse.json();
+            setWishlistItems(data);
+            return;
+          }
+        }
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setWishlistItems(data);
+      } catch (error) {
+        console.error("Failed to fetch wishlist:", error);
+        setError(error.message || "Failed to fetch wishlist");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (currentUser) {
+      fetchWishlistProperties();
+    } else {
+      setLoading(false);
+      setError("Please log in to view your wishlist");
+    }
+  }, [currentUser]);
+
+  const handleRemoveFromWishlist = async (propertyId) => {
+    try {
+      const response = await fetch("/api/wishlist/remove", {
+        method: "POST",
+        credentials: "include", // Include cookies
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ propertyId }),
+      });
+
+      // Handle token expiration
+      if (response.status === 403 || response.status === 401) {
+        const refreshResponse = await fetch("/api/auth/refresh", {
+          credentials: "include",
+        });
+
+        if (refreshResponse.ok) {
+          // Token refreshed, retry the original request
+          const retryResponse = await fetch("/api/wishlist/remove", {
             method: "POST",
-            credentials: "include", // Include cookies
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ propertyId }),
           });
-    
-          // Handle token expiration
-          if (response.status === 403 || response.status === 401) {
-            const refreshResponse = await fetch("/api/auth/refresh", {
-              credentials: "include"
-            });
-            
-            if (refreshResponse.ok) {
-              // Token refreshed, retry the original request
-              const retryResponse = await fetch("/api/wishlist/remove", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ propertyId }),
-              });
-              
-              if (!retryResponse.ok) {
-                throw new Error("Failed to remove from wishlist");
-              }
-              
-              // Update the UI
-              setWishlistItems(wishlistItems.filter((item) => item._id !== propertyId));
-              return;
-            }
-          }
-    
-          if (!response.ok) {
+
+          if (!retryResponse.ok) {
             throw new Error("Failed to remove from wishlist");
           }
-    
-          // Update the UI by filtering out the removed property
-          setWishlistItems(wishlistItems.filter((item) => item._id !== propertyId));
-        } catch (error) {
-          console.error("Error removing from wishlist:", error);
-          setError("Failed to remove property from wishlist.");
+
+          // Update the UI
+          setWishlistItems(
+            wishlistItems.filter((item) => item._id !== propertyId)
+          );
+          return;
         }
-      };
+      }
+
+      if (!response.ok) {
+        throw new Error("Failed to remove from wishlist");
+      }
+
+      // Update the UI by filtering out the removed property
+      setWishlistItems(wishlistItems.filter((item) => item._id !== propertyId));
+    } catch (error) {
+      console.error("Error removing from wishlist:", error);
+      setError("Failed to remove property from wishlist.");
+    }
+  };
 
   if (loading) {
     return (

@@ -13,17 +13,18 @@ import { UserPrivateRoute, AdminPrivateRoute } from "./components/PrivateRoute";
 import Listings from "./pages/Listings";
 import AdminDashboard from "./pages/AdminDashboard";
 import HelpCenter from "./pages/HelpCenter";
-import Wistlists from "./pages/Wishlists";
+import Wishlists from "./pages/Wishlists";
 import ListingLandingPage from "./pages/ListingLandingPage";
 import UserDashboard from "./pages/UserDashboard";
 import MyBookings from "./pages/Booking/MyBookings";
+import Notifications from "./pages/Notifications";
 import axios from "axios";
 
 export const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Wrap all pages that should include Header inside Layout */}
+        {/* Public Routes with Header and Footer */}
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/sign-in" element={<SignIn />} />
@@ -31,30 +32,44 @@ export const App = () => {
           <Route path="/sign-up" element={<SignUp />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/about-us" element={<AboutUs />} />
-          <Route element={<UserPrivateRoute />}>
-            <Route path="/profile" element={<Profile />} />
-          </Route>
           <Route path="/property/:id" element={<PropertyDetails />} />
           <Route path="/listings" element={<Listings />} />
           <Route path="/help-center" element={<HelpCenter />} />
-          <Route path="/wishlists" element={<Wistlists />} />
-          <Route
-            path="/create-listing-landing"
-            element={<ListingLandingPage />}
-          />
-          <Route path="/my-bookings" element={<MyBookings />} />
         </Route>
 
-        {/* Keep pages outside Layout (No Header Here) */}
+        {/* User Private Routes with Header and Footer */}
+        <Route element={<UserPrivateRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/my-bookings" element={<MyBookings />} />
+
+            <Route
+              path="/create-listing-landing"
+              element={<ListingLandingPage />}
+            />
+          </Route>
+        </Route>
+
+        {/* User Private Routes with Header Only (No Footer) */}
+        <Route element={<UserPrivateRoute />}>
+          <Route element={<Layout footer={false} />}>
+            <Route path="/wishlists" element={<Wishlists />} />
+            <Route path="/notifications" element={<Notifications />} />
+          </Route>
+        </Route>
+
+        {/* User Private Routes with No Header and No Footer */}
         <Route element={<UserPrivateRoute />}>
           <Route path="/create-listing" element={<CreateListing />} />
           <Route path="/user-dashboard" element={<UserDashboard />} />
         </Route>
 
-        {/* <Route element={<AdminPrivateRoute />}>
+        {/* //Admin Private Routes with No Header and No Footer
+        <Route element={<AdminPrivateRoute />}>
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Route> */}
 
+        {/* Uncomment if you add a Payment page - Customize as needed */}
         {/* <Route path="/payment" element={<Payment />} /> */}
       </Routes>
     </BrowserRouter>

@@ -8,6 +8,7 @@ import {
   editBooking,
   getAgentBookingRequests,
   getBookingsForListings,
+  cancelBookingByGuest,
 } from "../controllers/booking.controller.js";
 import rateLimit from "express-rate-limit";
 import { verifyToken } from "../utils/verifyUser.js";
@@ -25,6 +26,7 @@ router.post("/create-booking", createBookingLimiter, createBooking);
 router.get("/my-bookings/:userId", getUserBookings);
 router.put("/confirm/:id", confirmBooking);
 router.put("/cancel/:id", cancelBooking);
+router.put("/cancel-guest/:id", cancelBookingByGuest);
 router.post("/check-booking", checkBooking);
 router.put("/edit/:id", editBooking);
 router.get("/agent-requests/:userId", getAgentBookingRequests);

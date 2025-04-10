@@ -7,21 +7,83 @@ import {
   signOutUserFailure,
   signOutUserSuccess,
 } from "../redux/user/userSlice";
-import { signoutAdmin } from "../redux/admin/adminSlice";
 import { IoMdMenu } from "react-icons/io";
+import { IoMdNotificationsOutline } from "react-icons/io";
+import axios from "axios";
+import { Bell } from "lucide-react";
 
 const Header = () => {
   const { currentUser } = useSelector((state) => state.user);
-  const { currentAdmin } = useSelector((state) => state.admin);
   const dispatch = useDispatch();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const profileButtonRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const profilePopupRef = useRef(null);
   const mobilePopupRef = useRef(null);
+  const notificationRef = useRef(null);
+  const notificationButtonRef = useRef(null);
+  const backdropRef = useRef(null);
   const navigate = useNavigate();
+
+  // Fetch notifications
+  useEffect(() => {
+    if (currentUser) {
+      fetchNotifications();
+    }
+  }, [currentUser]);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await axios.get("/api/notifications");
+      setNotifications(res.data);
+      setUnreadCount(res.data.filter((n) => !n.read).length);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    try {
+      await axios.put(`/api/notifications/${notification._id}/read`);
+
+      if (notification.relatedEntityModel === "Booking") {
+        navigate(`/bookings/${notification.relatedEntity}`);
+      }
+
+      setNotifications(
+        notifications.map((n) =>
+          n._id === notification._id ? { ...n, read: true } : n
+        )
+      );
+      setUnreadCount(unreadCount - 1);
+      setIsNotificationOpen(false);
+    } catch (error) {
+      console.error("Error handling notification:", error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await axios.put("/api/notifications/read-all");
+      setNotifications(notifications.map((n) => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
+  };
+
+  const toggleNotifications = (e) => {
+    e.stopPropagation();
+    setIsNotificationOpen(!isNotificationOpen);
+    setIsProfilePopupOpen(false);
+    setIsMobileMenuOpen(false);
+  };
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -40,68 +102,87 @@ const Header = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        profileButtonRef.current &&
-        !profileButtonRef.current.contains(event.target) &&
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(event.target) &&
-        profilePopupRef.current &&
-        !profilePopupRef.current.contains(event.target) &&
-        mobilePopupRef.current &&
-        !mobilePopupRef.current.contains(event.target)
-      ) {
-        setIsProfilePopupOpen(false);
-        setIsMobileMenuOpen(false);
+      // Mobile menu
+      if (isMobileMenuOpen) {
+        if (backdropRef.current && backdropRef.current.contains(event.target)) {
+          setIsMobileMenuOpen(false);
+          return;
+        }
+        if (
+          mobileMenuRef.current &&
+          !mobileMenuRef.current.contains(event.target) &&
+          mobilePopupRef.current &&
+          !mobilePopupRef.current.contains(event.target)
+        ) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+
+      // Profile popup
+      if (isProfilePopupOpen) {
+        if (
+          profileButtonRef.current &&
+          !profileButtonRef.current.contains(event.target) &&
+          profilePopupRef.current &&
+          !profilePopupRef.current.contains(event.target)
+        ) {
+          setIsProfilePopupOpen(false);
+        }
+      }
+
+      // Notification popup
+      if (isNotificationOpen) {
+        if (
+          notificationButtonRef.current &&
+          !notificationButtonRef.current.contains(event.target) &&
+          notificationRef.current &&
+          !notificationRef.current.contains(event.target)
+        ) {
+          setIsNotificationOpen(false);
+        }
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isMobileMenuOpen, isProfilePopupOpen, isNotificationOpen]);
 
   const toggleMobileMenu = (e) => {
     e.stopPropagation();
     setIsMobileMenuOpen(!isMobileMenuOpen);
     setIsProfilePopupOpen(false);
+    setIsNotificationOpen(false);
   };
 
   const toggleProfilePopup = (e) => {
     e.stopPropagation();
     setIsProfilePopupOpen(!isProfilePopupOpen);
     setIsMobileMenuOpen(false);
+    setIsNotificationOpen(false);
   };
 
   const handleMenuItemClick = (path) => (e) => {
     e.stopPropagation();
     setIsProfilePopupOpen(false);
     setIsMobileMenuOpen(false);
+    setIsNotificationOpen(false);
     navigate(path);
   };
 
   const handleSignOut = async (e) => {
     e.stopPropagation();
     try {
-      if (currentAdmin) {
-        await fetch("/api/admin/signout", { method: "POST" });
-        dispatch(signoutAdmin());
-      } else if (currentUser) {
-        dispatch(signOutUserStart());
-        await fetch("/api/auth/signout", { method: "POST" });
-        dispatch(signOutUserSuccess());
-      }
+      dispatch(signOutUserStart());
+      await fetch("/api/auth/signout", { method: "POST" });
+      dispatch(signOutUserSuccess());
       setIsProfilePopupOpen(false);
       setIsMobileMenuOpen(false);
+      setIsNotificationOpen(false);
       navigate("/");
     } catch (error) {
-      if (currentAdmin) {
-        console.error("Admin sign out failed:", error);
-      } else {
-        dispatch(signOutUserFailure(error.message));
-      }
+      dispatch(signOutUserFailure(error.message));
     }
   };
-
-  const isAdmin = !!currentAdmin;
-  const currentEntity = currentAdmin || currentUser;
 
   return (
     <header
@@ -136,8 +217,95 @@ const Header = () => {
                 List Your Property
               </button>
             </Link>
+
+            {/* Notification Dropdown */}
+            {currentUser && (
+              <div className="relative">
+                <button
+                  ref={notificationButtonRef}
+                  onClick={toggleNotifications}
+                  className="p-2 rounded-full hover:bg-gray-100 focus:outline-none relative"
+                  aria-label="Notifications"
+                >
+                  <Bell className="text-gray-600 w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-black rounded-full" />
+                  )}
+                </button>
+
+                {isNotificationOpen && (
+                  <div
+                    ref={notificationRef}
+                    className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg z-50 text-sm"
+                  >
+                    <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                      <span className="font-medium text-gray-900">
+                        Notifications
+                      </span>
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-xs text-gray-500 hover:text-black cursor-pointer"
+                      >
+                        Mark all as read
+                      </button>
+                    </div>
+
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-500">
+                          No notifications
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification._id}
+                            onClick={() =>
+                              handleNotificationClick(notification)
+                            }
+                            className={`px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors ${
+                              !notification.read ? "bg-gray-50" : "bg-white"
+                            } hover:bg-gray-100`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <span className="font-medium text-gray-900">
+                                {notification.title}
+                              </span>
+                              <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">
+                                {new Date(
+                                  notification.createdAt
+                                ).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                            <p className="text-gray-600 mt-1">
+                              {notification.message}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="p-2 border-t border-gray-200 text-center">
+                      <button
+                        onClick={() => {
+                          navigate("/notifications");
+                          setIsNotificationOpen(false);
+                        }}
+                        className="text-xs text-gray-500 hover:text-black cursor-pointer"
+                      >
+                        View all notifications
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Profile Dropdown */}
             <div className="relative">
-              {currentEntity ? (
+              {currentUser ? (
                 <button
                   ref={profileButtonRef}
                   onClick={toggleProfilePopup}
@@ -146,7 +314,7 @@ const Header = () => {
                   <IoMdMenu className="text-gray-600 w-5 h-5" />
                   <div className="w-7 h-7 rounded-full overflow-hidden">
                     <img
-                      src={currentEntity.avatar}
+                      src={currentUser.avatar}
                       alt="Avatar"
                       className="h-full w-full object-cover"
                     />
@@ -172,28 +340,26 @@ const Header = () => {
                   className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-xl shadow-lg z-50"
                 >
                   <ul className="py-2">
-                    {!isAdmin && (
-                      <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
-                        <button
-                          onClick={handleMenuItemClick("/profile")}
-                          className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
-                        >
-                          Profile
-                        </button>
-                        <button
-                          onClick={handleMenuItemClick("/wishlists")}
-                          className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
-                        >
-                          Wishlists
-                        </button>
-                        <button
-                          onClick={handleMenuItemClick("/my-bookings")}
-                          className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
-                        >
-                          My Bookings
-                        </button>
-                      </li>
-                    )}
+                    <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
+                      <button
+                        onClick={handleMenuItemClick("/profile")}
+                        className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
+                      >
+                        Profile
+                      </button>
+                      <button
+                        onClick={handleMenuItemClick("/wishlists")}
+                        className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
+                      >
+                        Wishlists
+                      </button>
+                      <button
+                        onClick={handleMenuItemClick("/my-bookings")}
+                        className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
+                      >
+                        My Bookings
+                      </button>
+                    </li>
                     <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
                       <button
                         onClick={handleMenuItemClick("/help-center")}
@@ -204,12 +370,10 @@ const Header = () => {
                     </li>
                     <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
                       <button
-                        onClick={handleMenuItemClick(
-                          isAdmin ? "/admin-dashboard" : "/user-dashboard"
-                        )}
+                        onClick={handleMenuItemClick("/user-dashboard")}
                         className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
                       >
-                        {isAdmin ? "Admin Dashboard" : "User Dashboard"}
+                        User Dashboard
                       </button>
                     </li>
                     <li className="mx-2">
@@ -226,17 +390,31 @@ const Header = () => {
             </div>
           </div>
 
-          <div className="md:hidden flex items-center">
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center space-x-2">
+            {currentUser && (
+              <button
+                ref={notificationButtonRef}
+                onClick={toggleNotifications}
+                className="p-1 rounded-full hover:bg-gray-200 relative"
+              >
+                <IoMdNotificationsOutline className="text-gray-600 w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+            )}
+
             <button
               ref={mobileMenuRef}
               onClick={toggleMobileMenu}
               className="h-9 flex items-center px-2 border border-gray-500 rounded-full gap-1 bg-white cursor-pointer hover:shadow-lg"
             >
               <IoMdMenu className="text-gray-600 w-4 h-4" />
-              {currentEntity ? (
+              {currentUser ? (
                 <div className="w-6 h-6 rounded-full overflow-hidden">
                   <img
-                    src={currentEntity.avatar}
+                    src={currentUser.avatar}
                     alt="Avatar"
                     className="h-full w-full object-cover"
                   />
@@ -256,110 +434,131 @@ const Header = () => {
           </div>
         </div>
 
+        {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div
-            ref={mobilePopupRef}
-            className="fixed top-[64px] left-4 right-4 bg-white border border-gray-200 rounded-xl shadow-lg z-50 md:hidden mx-4"
-          >
-            <div className="px-4 py-4">
-              <ul className="space-y-1">
-                <li className="border-b border-gray-200 pb-2 mb-2">
-                  <Link
-                    to="/"
-                    onClick={() => {
-                      scrollToTop();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
-                  >
-                    Home
-                  </Link>
-                  <Link
-                    to="/listings"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
-                  >
-                    Listings
-                  </Link>
-                </li>
+          <>
+            {/* Backdrop */}
+            <div
+              ref={backdropRef}
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            />
 
-                <li className="border-b border-gray-200 pb-2 mb-2">
-                  <Link
-                    to="/create-listing-landing"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
-                  >
-                    List Your Property
-                  </Link>
-                </li>
-
-                {currentEntity ? (
-                  <>
-                    <li className="border-b border-gray-200 pb-2 mb-2">
-                      {!isAdmin && (
-                        <>
-                          <button
-                            onClick={handleMenuItemClick("/profile")}
-                            className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
-                          >
-                            Profile
-                          </button>
-                          <button
-                            onClick={handleMenuItemClick("/wishlists")}
-                            className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
-                          >
-                            Wishlists
-                          </button>
-                          <button
-                            onClick={handleMenuItemClick("/my-bookings")}
-                            className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
-                          >
-                            My Bookings
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={handleMenuItemClick("/help-center")}
-                        className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
-                      >
-                        Help Center
-                      </button>
-                    </li>
-
-                    <li className="border-b border-gray-200 pb-2 mb-2">
-                      <button
-                        onClick={handleMenuItemClick(
-                          isAdmin ? "/admin-dashboard" : "/user-dashboard"
-                        )}
-                        className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
-                      >
-                        {isAdmin ? "Admin Dashboard" : "User Dashboard"}
-                      </button>
-                    </li>
-
-                    <li>
-                      <button
-                        onClick={handleSignOut}
-                        className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
-                      >
-                        Log Out
-                      </button>
-                    </li>
-                  </>
-                ) : (
-                  <li>
+            <div
+              ref={mobilePopupRef}
+              className="fixed top-[64px] left-4 right-4 bg-white border border-gray-200 rounded-xl shadow-lg z-50 md:hidden mx-4"
+            >
+              <div className="px-4 py-4">
+                <ul className="space-y-1">
+                  <li className="border-b border-gray-200 pb-2 mb-2">
                     <Link
-                      to="/sign-in"
+                      to="/"
+                      onClick={() => {
+                        scrollToTop();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                    >
+                      Home
+                    </Link>
+                    <Link
+                      to="/listings"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
                     >
-                      Sign In
+                      Listings
                     </Link>
                   </li>
-                )}
-              </ul>
+
+                  <li className="border-b border-gray-200 pb-2 mb-2">
+                    <Link
+                      to="/create-listing-landing"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                    >
+                      List Your Property
+                    </Link>
+                  </li>
+
+                  {currentUser && (
+                    <li className="border-b border-gray-200 pb-2 mb-2">
+                      <button
+                        onClick={() => {
+                          navigate("/notifications");
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="flex items-center w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                      >
+                        <IoMdNotificationsOutline className="text-gray-600 w-5 h-5" />
+                        Notifications
+                        {unreadCount > 0 && (
+                          <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
+                        )}
+                      </button>
+                    </li>
+                  )}
+
+                  {currentUser ? (
+                    <>
+                      <li className="border-b border-gray-200 pb-2 mb-2">
+                        <button
+                          onClick={handleMenuItemClick("/profile")}
+                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                        >
+                          Profile
+                        </button>
+                        <button
+                          onClick={handleMenuItemClick("/wishlists")}
+                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                        >
+                          Wishlists
+                        </button>
+                        <button
+                          onClick={handleMenuItemClick("/my-bookings")}
+                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                        >
+                          My Bookings
+                        </button>
+                        <button
+                          onClick={handleMenuItemClick("/help-center")}
+                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                        >
+                          Help Center
+                        </button>
+                      </li>
+
+                      <li className="border-b border-gray-200 pb-2 mb-2">
+                        <button
+                          onClick={handleMenuItemClick("/user-dashboard")}
+                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                        >
+                          User Dashboard
+                        </button>
+                      </li>
+
+                      <li>
+                        <button
+                          onClick={handleSignOut}
+                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                        >
+                          Log Out
+                        </button>
+                      </li>
+                    </>
+                  ) : (
+                    <li>
+                      <Link
+                        to="/sign-in"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
+                      >
+                        Sign In
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </header>

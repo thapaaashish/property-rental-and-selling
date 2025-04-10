@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
   XCircle,
@@ -9,8 +10,8 @@ import {
   X,
   AlertCircle,
   Hourglass,
+  AlertTriangle,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import Popup from "../../components/Popup";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -52,7 +53,6 @@ const MyBookings = () => {
         );
         const data = await response.json();
         if (response.ok) {
-          // Check for expired pending bookings
           const now = new Date();
           const updatedBookings = data.map((booking) => {
             if (
@@ -86,18 +86,24 @@ const MyBookings = () => {
         booking.status === "pending" &&
         booking.expiresAt &&
         new Date(booking.expiresAt) < new Date()
-      )
+      ) &&
+      booking.status !== "property_deleted"
   );
 
   const pendingExpiredBookings = bookings.filter(
     (booking) =>
-      booking.status === "pending" &&
-      booking.expiresAt &&
-      new Date(booking.expiresAt) < new Date()
+      (booking.status === "pending" &&
+        booking.expiresAt &&
+        new Date(booking.expiresAt) < new Date()) ||
+      booking.status === "expired"
   );
 
   const cancelledBookings = bookings.filter(
     (booking) => booking.status === "cancelled"
+  );
+
+  const deletedPropertyBookings = bookings.filter(
+    (booking) => booking.status === "property_deleted"
   );
 
   const showPopup = (message, type = "success") => {
@@ -110,7 +116,7 @@ const MyBookings = () => {
 
     try {
       const response = await fetch(
-        `/api/bookings/cancel/${cancelPopup.bookingId}`,
+        `/api/bookings/cancel-guest/${cancelPopup.bookingId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -149,10 +155,6 @@ const MyBookings = () => {
     setEditLoading(true);
 
     try {
-      if (!currentUser._id) {
-        throw new Error("User ID is missing");
-      }
-
       const response = await fetch(
         `/api/bookings/edit/${editPopup.booking._id}`,
         {
@@ -206,12 +208,16 @@ const MyBookings = () => {
   const renderBookingCard = (booking) => (
     <div
       key={booking._id}
-      className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors"
+      className={`bg-white border rounded-lg overflow-hidden transition-colors ${
+        booking.status === "property_deleted"
+          ? "border-red-200 bg-red-50"
+          : "border-gray-200 hover:border-gray-300"
+      }`}
     >
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">
           <h2 className="text-xl font-medium text-gray-900">
-            {booking.listing.title}
+            {booking.listing?.title || "Property No Longer Available"}
           </h2>
           <div className="flex items-center">
             <span
@@ -219,6 +225,8 @@ const MyBookings = () => {
                 booking.status === "confirmed"
                   ? "bg-green-100 text-green-800"
                   : booking.status === "cancelled"
+                  ? "bg-red-100 text-red-800"
+                  : booking.status === "property_deleted"
                   ? "bg-red-100 text-red-800"
                   : booking.expiresAt &&
                     new Date(booking.expiresAt) < new Date()
@@ -230,6 +238,8 @@ const MyBookings = () => {
               booking.expiresAt &&
               new Date(booking.expiresAt) < new Date()
                 ? "expired"
+                : booking.status === "property_deleted"
+                ? "property deleted"
                 : booking.status}
             </span>
             {booking.status === "pending" && booking.expiresAt && (
@@ -245,42 +255,52 @@ const MyBookings = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <p className="text-sm text-gray-500">Booking Type</p>
-            <p className="font-medium">{booking.bookingType}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Total Price</p>
-            <p className="font-medium">
-              ${booking.totalPrice.toLocaleString()}
+        {booking.status === "property_deleted" ? (
+          <div className="flex items-start mb-4">
+            <AlertTriangle className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+            <p className="text-red-600">
+              The property associated with this booking has been removed by the
+              owner. Please contact support if you need assistance.
             </p>
           </div>
-          {booking.bookingType === "Rent" && (
-            <>
-              <div>
-                <p className="text-sm text-gray-500">Start Date</p>
-                <p className="font-medium">
-                  {booking.startDate
-                    ? new Date(booking.startDate).toLocaleDateString()
-                    : "N/A"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">End Date</p>
-                <p className="font-medium">
-                  {booking.endDate
-                    ? new Date(booking.endDate).toLocaleDateString()
-                    : "N/A"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Duration</p>
-                <p className="font-medium">{booking.durationDays} days</p>
-              </div>
-            </>
-          )}
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-sm text-gray-500">Booking Type</p>
+              <p className="font-medium">{booking.bookingType}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Price</p>
+              <p className="font-medium">
+                ${booking.totalPrice.toLocaleString()}
+              </p>
+            </div>
+            {booking.bookingType === "Rent" && (
+              <>
+                <div>
+                  <p className="text-sm text-gray-500">Start Date</p>
+                  <p className="font-medium">
+                    {booking.startDate
+                      ? new Date(booking.startDate).toLocaleDateString()
+                      : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">End Date</p>
+                  <p className="font-medium">
+                    {booking.endDate
+                      ? new Date(booking.endDate).toLocaleDateString()
+                      : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Duration</p>
+                  <p className="font-medium">{booking.durationDays} days</p>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="flex justify-end space-x-4">
           {booking.status === "pending" &&
@@ -303,12 +323,14 @@ const MyBookings = () => {
                 </button>
               </>
             )}
-          <button
-            onClick={() => navigate(`/property/${booking.listing._id}`)}
-            className="flex items-center text-gray-800 font-medium hover:text-gray-600 transition-colors"
-          >
-            View property <ArrowRight className="ml-1 h-4 w-4" />
-          </button>
+          {booking.listing?._id && (
+            <button
+              onClick={() => navigate(`/property/${booking.listing._id}`)}
+              className="flex items-center text-gray-800 font-medium hover:text-gray-600 transition-colors"
+            >
+              View property <ArrowRight className="ml-1 h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -388,6 +410,22 @@ const MyBookings = () => {
               </div>
               <div className="space-y-4">
                 {pendingExpiredBookings.map(renderBookingCard)}
+              </div>
+            </div>
+          )}
+
+          {/* Deleted Property Bookings Section */}
+          {deletedPropertyBookings.length > 0 && (
+            <div>
+              <div className="flex items-center mb-4">
+                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                <h2 className="text-xl font-medium">Unavailable Properties</h2>
+                <span className="ml-2 text-sm text-gray-500">
+                  {deletedPropertyBookings.length}
+                </span>
+              </div>
+              <div className="space-y-4">
+                {deletedPropertyBookings.map(renderBookingCard)}
               </div>
             </div>
           )}
