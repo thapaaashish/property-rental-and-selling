@@ -1,20 +1,18 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { FaSearch, FaArrowUp } from "react-icons/fa";
-import { useSearchParams, useNavigate } from "react-router-dom"; // Replace Link with useNavigate
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useInView } from "react-intersection-observer";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwipeable } from "react-swipeable";
 import MovingServicesSection from "../components/MovingServicesCard.jsx";
 
-// Lazy loaded components
 const CitySection = React.lazy(() => import("../components/home/CitySection"));
 const Features = React.lazy(() => import("../components/home/Features"));
 const FeaturedProperties = React.lazy(() =>
   import("../components/home/FeaturedProperties")
 );
 
-// Placeholder loading component
 const LoadingPlaceholder = () => (
   <div className="w-full h-64 bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
     <div className="text-gray-400">Loading...</div>
@@ -27,7 +25,6 @@ const heroImages = [
   "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1741414191/frames-for-your-heart-mR1CIDduGLc-unsplash_hffrlb.jpg",
 ];
 
-// Animation variants for scroll effects
 const fadeInUp = {
   hidden: { opacity: 0, y: 60 },
   visible: {
@@ -39,7 +36,7 @@ const fadeInUp = {
 
 const Home = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate(); // Added useNavigate
+  const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const listingType = searchParams.get("listing") || "all";
   const propertyType = searchParams.get("type") || "all";
@@ -53,10 +50,8 @@ const Home = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isLoaded, setIsLoaded] = useState(true);
 
-  // Refs for parallax effect
   const parallaxRef = useRef(null);
 
-  // Intersection observers for animation triggers
   const [featuredRef, featuredInView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
@@ -72,7 +67,6 @@ const Home = () => {
     threshold: 0.1,
   });
 
-  // Swipe handlers for hero image carousel
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => {
       setIsLoaded(false);
@@ -101,47 +95,54 @@ const Home = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `api/listings/listings?type=${propertyType}&listingType=${listingType}`
+          `/api/listings/listings-home?type=${propertyType}&listingType=${listingType}&status=active&limit=5`
         );
-        if (!response.ok)
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        if (data && Array.isArray(data.listings)) {
-          setProperties(
-            data.listings.map((listing) => ({
-              id: listing._id,
-              title: listing.title,
-              description: listing.description,
-              price: listing.price,
-              priceUnit: listing.rentOrSale === "Rent" ? "monthly" : "total",
-              address: listing.address,
-              bedrooms: listing.bedrooms,
-              bathrooms: listing.bathrooms,
-              area: listing.area,
-              images: listing.imageUrls,
-              type: listing.listingType.toLowerCase(),
-              listingType: listing.rentOrSale.toLowerCase(),
-              amenities: listing.amenities || [],
-              isNew:
-                new Date(listing.createdAt).getTime() >
-                Date.now() - 30 * 24 * 60 * 60 * 1000,
-              agent: {
-                id: listing.userRef,
-                name: listing.userRef?.fullname || "Agent Name",
-                photo:
-                  listing.userRef?.avatar ||
-                  "https://randomuser.me/api/portraits/men/1.jpg",
-                phone: listing.userRef?.phone || "N/A",
-                email: listing.userRef?.email || "N/A",
-              },
-            }))
+        if (!response.ok) {
+          console.error(
+            `Fetch failed with status: ${response.status}`,
+            await response.text()
           );
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log("Fetched data:", data);
+        if (data && Array.isArray(data.listings)) {
+          const mappedProperties = data.listings.map((listing) => ({
+            id: listing._id,
+            title: listing.title,
+            description: listing.description,
+            price: listing.price,
+            priceUnit: listing.rentOrSale === "Rent" ? "monthly" : "total",
+            address: listing.address,
+            bedrooms: listing.bedrooms,
+            bathrooms: listing.bathrooms,
+            area: listing.area,
+            images: listing.imageUrls,
+            type: listing.listingType.toLowerCase(),
+            listingType: listing.rentOrSale.toLowerCase(),
+            amenities: listing.amenities || [],
+            isNew:
+              new Date(listing.createdAt).getTime() >
+              Date.now() - 30 * 24 * 60 * 60 * 1000,
+            agent: {
+              id: listing.userRef,
+              name: listing.userRef?.fullname || "Agent Name",
+              photo:
+                listing.userRef?.avatar ||
+                "https://randomuser.me/api/portraits/men/1.jpg",
+              phone: listing.userRef?.phone || "N/A",
+              email: listing.userRef?.email || "N/A",
+            },
+          }));
+          setProperties(mappedProperties);
+          console.log("Mapped properties:", mappedProperties);
         } else {
           console.error("Error: Listings data is not an array", data);
           setProperties([]);
         }
       } catch (error) {
-        console.error("Error fetching properties:", error);
+        console.error("Error fetching properties:", error.message);
+        setProperties([]);
       } finally {
         setLoading(false);
       }
@@ -149,7 +150,6 @@ const Home = () => {
     fetchProperties();
   }, [listingType, propertyType]);
 
-  // Handle scroll to show/hide the scroll to top button and parallax effect
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 300) {
@@ -190,7 +190,6 @@ const Home = () => {
 
   const handleSearch = () => {
     if (formData.name.trim()) {
-      // Only navigate if input is not empty
       navigate(`/listings?location=${encodeURIComponent(formData.name)}`);
     }
   };
@@ -202,7 +201,6 @@ const Home = () => {
     });
   };
 
-  // Preload next image for smoother transitions
   useEffect(() => {
     const nextIndex = (currentImageIndex + 1) % heroImages.length;
     const img = new Image();
@@ -211,7 +209,6 @@ const Home = () => {
 
   return (
     <div className="bg-white">
-      {/* Hero Section with Parallax and Swipe Support */}
       <section
         className="relative -mt-14 h-screen w-full overflow-hidden"
         {...swipeHandlers}
@@ -258,12 +255,17 @@ const Home = () => {
               <input
                 type="text"
                 id="name"
-                placeholder="Enter Name, City, Keywords..."
+                placeholder="Enter City, Address..."
                 className="w-full p-4 outline-none"
                 value={formData.name}
                 onChange={handleChange}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch();
+                  }
+                }}
               />
-              <button // Replaced Link with button
+              <button
                 onClick={handleSearch}
                 className="bg-teal-500 p-4 m-2 rounded-lg text-white hover:bg-teal-600 transition-colors duration-300 flex items-center justify-center"
               >
@@ -273,7 +275,6 @@ const Home = () => {
           </motion.div>
         </div>
 
-        {/* Swipe instruction for mobile users */}
         <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 z-20 text-white text-sm md:hidden opacity-70">
           <p>Swipe left or right to see more</p>
         </div>
@@ -300,7 +301,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Featured Properties Section with Animation */}
       <motion.section
         ref={featuredRef}
         initial="hidden"
@@ -315,7 +315,6 @@ const Home = () => {
         </div>
       </motion.section>
 
-      {/* City Section with Animation */}
       <motion.section
         ref={cityRef}
         initial="hidden"
@@ -329,7 +328,6 @@ const Home = () => {
 
       <MovingServicesSection />
 
-      {/* Features Section with Animation */}
       <motion.section
         ref={featuresRef}
         initial="hidden"
@@ -341,7 +339,6 @@ const Home = () => {
         </Suspense>
       </motion.section>
 
-      {/* Scroll to Top Button */}
       <motion.button
         onClick={scrollToTop}
         animate={{

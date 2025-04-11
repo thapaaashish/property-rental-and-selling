@@ -14,7 +14,8 @@ const UserSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1742463191/blank-profile-picture-973460_1280_u3cxlw.webp",
+      default:
+        "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1742463191/blank-profile-picture-973460_1280_u3cxlw.webp",
     },
     password: {
       type: String,
@@ -46,9 +47,14 @@ const UserSchema = new mongoose.Schema(
     province: { type: String, default: "None" },
     zipCode: { type: String, default: "None" },
     profileCompleted: { type: Boolean, default: false },
-    refreshToken: { // for refresh token storage
+    refreshToken: {
       type: String,
       required: false,
+    },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user", // Default to regular user
     },
   },
   { timestamps: true }

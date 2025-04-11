@@ -18,72 +18,75 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  // const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  // const [notifications, setNotifications] = useState([]);
+  // const [unreadCount, setUnreadCount] = useState(0);
 
   const profileButtonRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const profilePopupRef = useRef(null);
   const mobilePopupRef = useRef(null);
-  const notificationRef = useRef(null);
+  // const notificationRef = useRef(null);
   const notificationButtonRef = useRef(null);
   const backdropRef = useRef(null);
   const navigate = useNavigate();
 
+  // Check if user is an admin
+  const isAdmin = currentUser && currentUser.role === "admin";
+
   // Fetch notifications
-  useEffect(() => {
-    if (currentUser) {
-      fetchNotifications();
-    }
-  }, [currentUser]);
+  // useEffect(() => {
+  //   if (currentUser) {
+  //     fetchNotifications();
+  //   }
+  // }, [currentUser]);
 
-  const fetchNotifications = async () => {
-    try {
-      const res = await axios.get("/api/notifications");
-      setNotifications(res.data);
-      setUnreadCount(res.data.filter((n) => !n.read).length);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  };
+  // const fetchNotifications = async () => {
+  //   try {
+  //     const res = await axios.get("/api/notifications");
+  //     setNotifications(res.data);
+  //     setUnreadCount(res.data.filter((n) => !n.read).length);
+  //   } catch (error) {
+  //     console.error("Error fetching notifications:", error);
+  //   }
+  // };
 
-  const handleNotificationClick = async (notification) => {
-    try {
-      await axios.put(`/api/notifications/${notification._id}/read`);
+  // const handleNotificationClick = async (notification) => {
+  //   try {
+  //     await axios.put(`/api/notifications/${notification._id}/read`);
 
-      if (notification.relatedEntityModel === "Booking") {
-        navigate(`/bookings/${notification.relatedEntity}`);
-      }
+  //     if (notification.relatedEntityModel === "Booking") {
+  //       navigate(`/bookings/${notification.relatedEntity}`);
+  //     }
 
-      setNotifications(
-        notifications.map((n) =>
-          n._id === notification._id ? { ...n, read: true } : n
-        )
-      );
-      setUnreadCount(unreadCount - 1);
-      setIsNotificationOpen(false);
-    } catch (error) {
-      console.error("Error handling notification:", error);
-    }
-  };
+  //     setNotifications(
+  //       notifications.map((n) =>
+  //         n._id === notification._id ? { ...n, read: true } : n
+  //       )
+  //     );
+  //     setUnreadCount(unreadCount - 1);
+  //     setIsNotificationOpen(false);
+  //   } catch (error) {
+  //     console.error("Error handling notification:", error);
+  //   }
+  // };
 
-  const markAllAsRead = async () => {
-    try {
-      await axios.put("/api/notifications/read-all");
-      setNotifications(notifications.map((n) => ({ ...n, read: true })));
-      setUnreadCount(0);
-    } catch (error) {
-      console.error("Error marking all as read:", error);
-    }
-  };
+  // const markAllAsRead = async () => {
+  //   try {
+  //     await axios.put("/api/notifications/read-all");
+  //     setNotifications(notifications.map((n) => ({ ...n, read: true })));
+  //     setUnreadCount(0);
+  //   } catch (error) {
+  //     console.error("Error marking all as read:", error);
+  //   }
+  // };
 
-  const toggleNotifications = (e) => {
-    e.stopPropagation();
-    setIsNotificationOpen(!isNotificationOpen);
-    setIsProfilePopupOpen(false);
-    setIsMobileMenuOpen(false);
-  };
+  // const toggleNotifications = (e) => {
+  //   e.stopPropagation();
+  //   setIsNotificationOpen(!isNotificationOpen);
+  //   setIsProfilePopupOpen(false);
+  //   setIsMobileMenuOpen(false);
+  // };
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -102,7 +105,6 @@ const Header = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Mobile menu
       if (isMobileMenuOpen) {
         if (backdropRef.current && backdropRef.current.contains(event.target)) {
           setIsMobileMenuOpen(false);
@@ -118,7 +120,6 @@ const Header = () => {
         }
       }
 
-      // Profile popup
       if (isProfilePopupOpen) {
         if (
           profileButtonRef.current &&
@@ -130,42 +131,41 @@ const Header = () => {
         }
       }
 
-      // Notification popup
-      if (isNotificationOpen) {
-        if (
-          notificationButtonRef.current &&
-          !notificationButtonRef.current.contains(event.target) &&
-          notificationRef.current &&
-          !notificationRef.current.contains(event.target)
-        ) {
-          setIsNotificationOpen(false);
-        }
-      }
+      // if (isNotificationOpen) {
+      //   if (
+      //     notificationButtonRef.current &&
+      //     !notificationButtonRef.current.contains(event.target) &&
+      //     notificationRef.current &&
+      //     !notificationRef.current.contains(event.target)
+      //   ) {
+      //     setIsNotificationOpen(false);
+      //   }
+      // }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isMobileMenuOpen, isProfilePopupOpen, isNotificationOpen]);
+  }, [isMobileMenuOpen, isProfilePopupOpen /*, isNotificationOpen*/]);
 
   const toggleMobileMenu = (e) => {
     e.stopPropagation();
     setIsMobileMenuOpen(!isMobileMenuOpen);
     setIsProfilePopupOpen(false);
-    setIsNotificationOpen(false);
+    // setIsNotificationOpen(false);
   };
 
   const toggleProfilePopup = (e) => {
     e.stopPropagation();
     setIsProfilePopupOpen(!isProfilePopupOpen);
     setIsMobileMenuOpen(false);
-    setIsNotificationOpen(false);
+    // setIsNotificationOpen(false);
   };
 
   const handleMenuItemClick = (path) => (e) => {
     e.stopPropagation();
     setIsProfilePopupOpen(false);
     setIsMobileMenuOpen(false);
-    setIsNotificationOpen(false);
+    // setIsNotificationOpen(false);
     navigate(path);
   };
 
@@ -177,7 +177,7 @@ const Header = () => {
       dispatch(signOutUserSuccess());
       setIsProfilePopupOpen(false);
       setIsMobileMenuOpen(false);
-      setIsNotificationOpen(false);
+      // setIsNotificationOpen(false);
       navigate("/");
     } catch (error) {
       dispatch(signOutUserFailure(error.message));
@@ -223,17 +223,17 @@ const Header = () => {
               <div className="relative">
                 <button
                   ref={notificationButtonRef}
-                  onClick={toggleNotifications}
+                  // onClick={toggleNotifications}
                   className="p-2 rounded-full hover:bg-gray-100 focus:outline-none relative"
                   aria-label="Notifications"
                 >
                   <Bell className="text-gray-600 w-5 h-5" />
-                  {unreadCount > 0 && (
+                  {/* {unreadCount > 0 && (
                     <span className="absolute top-1 right-1 w-2 h-2 bg-black rounded-full" />
-                  )}
+                  )} */}
                 </button>
 
-                {isNotificationOpen && (
+                {/* {isNotificationOpen && (
                   <div
                     ref={notificationRef}
                     className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg z-50 text-sm"
@@ -299,7 +299,7 @@ const Header = () => {
                       </button>
                     </div>
                   </div>
-                )}
+                )} */}
               </div>
             )}
 
@@ -340,26 +340,30 @@ const Header = () => {
                   className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-xl shadow-lg z-50"
                 >
                   <ul className="py-2">
-                    <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
-                      <button
-                        onClick={handleMenuItemClick("/profile")}
-                        className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
-                      >
-                        Profile
-                      </button>
-                      <button
-                        onClick={handleMenuItemClick("/wishlists")}
-                        className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
-                      >
-                        Wishlists
-                      </button>
-                      <button
-                        onClick={handleMenuItemClick("/my-bookings")}
-                        className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
-                      >
-                        My Bookings
-                      </button>
-                    </li>
+                    {!isAdmin && (
+                      <>
+                        <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
+                          <button
+                            onClick={handleMenuItemClick("/profile")}
+                            className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
+                          >
+                            Profile
+                          </button>
+                          <button
+                            onClick={handleMenuItemClick("/wishlists")}
+                            className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
+                          >
+                            Wishlists
+                          </button>
+                          <button
+                            onClick={handleMenuItemClick("/my-bookings")}
+                            className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
+                          >
+                            My Bookings
+                          </button>
+                        </li>
+                      </>
+                    )}
                     <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
                       <button
                         onClick={handleMenuItemClick("/help-center")}
@@ -370,10 +374,12 @@ const Header = () => {
                     </li>
                     <li className="border-b border-gray-200 pb-2 mb-2 mx-2">
                       <button
-                        onClick={handleMenuItemClick("/user-dashboard")}
+                        onClick={handleMenuItemClick(
+                          isAdmin ? "/admin-dashboard" : "/user-dashboard"
+                        )}
                         className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
                       >
-                        User Dashboard
+                        {isAdmin ? "Admin Dashboard" : "User Dashboard"}
                       </button>
                     </li>
                     <li className="mx-2">
@@ -395,13 +401,13 @@ const Header = () => {
             {currentUser && (
               <button
                 ref={notificationButtonRef}
-                onClick={toggleNotifications}
+                // onClick={toggleNotifications}
                 className="p-1 rounded-full hover:bg-gray-200 relative"
               >
                 <IoMdNotificationsOutline className="text-gray-600 w-5 h-5" />
-                {unreadCount > 0 && (
+                {/* {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                )}
+                )} */}
               </button>
             )}
 
@@ -479,7 +485,7 @@ const Header = () => {
                     </Link>
                   </li>
 
-                  {currentUser && (
+                  {/* {currentUser && (
                     <li className="border-b border-gray-200 pb-2 mb-2">
                       <button
                         onClick={() => {
@@ -495,29 +501,33 @@ const Header = () => {
                         )}
                       </button>
                     </li>
-                  )}
+                  )} */}
 
                   {currentUser ? (
                     <>
+                      {!isAdmin && (
+                        <li className="border-b border-gray-200 pb-2 mb-2">
+                          <button
+                            onClick={handleMenuItemClick("/profile")}
+                            className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                          >
+                            Profile
+                          </button>
+                          <button
+                            onClick={handleMenuItemClick("/wishlists")}
+                            className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                          >
+                            Wishlists
+                          </button>
+                          <button
+                            onClick={handleMenuItemClick("/my-bookings")}
+                            className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                          >
+                            My Bookings
+                          </button>
+                        </li>
+                      )}
                       <li className="border-b border-gray-200 pb-2 mb-2">
-                        <button
-                          onClick={handleMenuItemClick("/profile")}
-                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
-                        >
-                          Profile
-                        </button>
-                        <button
-                          onClick={handleMenuItemClick("/wishlists")}
-                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
-                        >
-                          Wishlists
-                        </button>
-                        <button
-                          onClick={handleMenuItemClick("/my-bookings")}
-                          className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
-                        >
-                          My Bookings
-                        </button>
                         <button
                           onClick={handleMenuItemClick("/help-center")}
                           className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
@@ -525,16 +535,16 @@ const Header = () => {
                           Help Center
                         </button>
                       </li>
-
                       <li className="border-b border-gray-200 pb-2 mb-2">
                         <button
-                          onClick={handleMenuItemClick("/user-dashboard")}
+                          onClick={handleMenuItemClick(
+                            isAdmin ? "/admin-dashboard" : "/user-dashboard"
+                          )}
                           className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
                         >
-                          User Dashboard
+                          {isAdmin ? "Admin Dashboard" : "User Dashboard"}
                         </button>
                       </li>
-
                       <li>
                         <button
                           onClick={handleSignOut}

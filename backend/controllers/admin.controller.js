@@ -1,126 +1,97 @@
-import Admin from "../models/admin.model.js";
 import { errorHandler } from "../utils/error.js";
-import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
+import Listing from "../models/listing.model.js";
+import Booking from "../models/booking.model.js";
 import bcryptjs from "bcryptjs";
 
-export const signupAdmin = async (req, res, next) => {
+// Get all users (Admin only)
+export const getAllUsers = async (req, res, next) => {
   try {
-    const { fullname, email, password, phone, role } = req.body;
+    const users = await User.find().select(
+      "-password -otp -resetPasswordOTP -refreshToken"
+    );
+    res.status(200).json(users);
+  } catch (error) {
+    next(errorHandler(500, "Error fetching users"));
+  }
+};
 
-    // Validate required fields
-    if (!fullname || !email || !password) {
-      return next(
-        errorHandler(400, "Fullname, email, and password are required")
-      );
+// Get all listings (Admin only)
+export const getAllListings = async (req, res, next) => {
+  try {
+    const listings = await Listing.find().populate("userRef", "fullname email");
+    res.status(200).json(listings);
+  } catch (error) {
+    next(errorHandler(500, "Error fetching listings"));
+  }
+};
+
+// Delete a listing (Admin only)
+export const deleteListing = async (req, res, next) => {
+  try {
+    const listing = await Listing.findByIdAndDelete(req.params.id);
+    if (!listing) {
+      return next(errorHandler(404, "Listing not found"));
     }
+    res.status(200).json({ message: "Listing deleted successfully" });
+  } catch (error) {
+    next(errorHandler(500, "Error deleting listing"));
+  }
+};
 
-    // Check if email is already in use
-    const existingAdmin = await Admin.findOne({ email });
-    if (existingAdmin) return next(errorHandler(400, "Email already in use"));
+// Get all bookings (Admin only)
+export const getAllBookings = async (req, res, next) => {
+  try {
+    const bookings = await Booking.find()
+      .populate("user", "fullname email")
+      .populate("listing", "title");
+    res.status(200).json(bookings);
+  } catch (error) {
+    next(errorHandler(500, "Error fetching bookings"));
+  }
+};
+
+export const deleteUser = async (req, res, next) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return next(errorHandler(404, "User not found"));
+    }
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    next(errorHandler(500, "Error deleting user"));
+  }
+};
+
+// Create a new admin (Admin only)
+export const createAdmin = async (req, res, next) => {
+  const { fullname, email, password } = req.body;
+
+  try {
+    // Check if email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return next(errorHandler(400, "Email already exists"));
+    }
 
     // Hash the password
     const hashedPassword = bcryptjs.hashSync(password, 10);
 
     // Create new admin
-    const newAdmin = new Admin({
+    const newAdmin = new User({
       fullname,
       email,
       password: hashedPassword,
-      phone,
-      role: role || "moderator", // Default role to 'moderator' if not provided
+      role: "admin", // Force role to admin
+      emailVerified: true, // Auto-verify for simplicity
     });
 
-    // Save to database
     await newAdmin.save();
 
-    res.status(201).json({ message: "Admin created successfully" });
+    // Return the new admin without sensitive fields
+    const { password: _, ...adminData } = newAdmin._doc;
+    res.status(201).json(adminData);
   } catch (error) {
-    next(errorHandler(500, "Internal Server Error"));
-  }
-};
-
-// Admin Sign In
-export const signinAdmin = async (req, res, next) => {
-  const { email, password } = req.body;
-
-  try {
-    const admin = await Admin.findOne({ email });
-    if (!admin) return next(errorHandler(404, "Admin not found"));
-
-    const validPassword = bcryptjs.compareSync(password, admin.password);
-    if (!validPassword) return next(errorHandler(401, "Invalid credentials"));
-
-    const token = jwt.sign(
-      { id: admin._id, role: admin.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    admin.lastLogin = new Date();
-    await admin.save();
-
-    const { password: _, ...adminData } = admin._doc;
-    res
-      .cookie("admin_access_token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-      })
-      .status(200)
-      .json(adminData);
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Admin Sign Out
-export const signoutAdmin = (req, res) => {
-  res
-    .clearCookie("admin_access_token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    })
-    .status(200)
-    .json({ message: "Signed out successfully" });
-};
-
-// Update Admin Profile
-export const updateAdminProfile = async (req, res, next) => {
-  const { fullname, email } = req.body;
-
-  try {
-    const admin = await Admin.findById(req.admin.id);
-    if (!admin) return next(errorHandler(404, "Admin not found"));
-
-    admin.fullname = fullname || admin.fullname;
-    admin.email = email || admin.email;
-
-    const updatedAdmin = await admin.save();
-    const { password, ...adminData } = updatedAdmin._doc;
-    res.status(200).json(adminData);
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Update Admin Password
-export const updateAdminPassword = async (req, res, next) => {
-  const { currentPassword, newPassword } = req.body;
-
-  try {
-    const admin = await Admin.findById(req.admin.id);
-    if (!admin) return next(errorHandler(404, "Admin not found"));
-
-    const validPassword = bcryptjs.compareSync(currentPassword, admin.password);
-    if (!validPassword)
-      return next(errorHandler(401, "Invalid current password"));
-
-    admin.password = bcryptjs.hashSync(newPassword, 10);
-    await admin.save();
-
-    res.status(200).json({ message: "Password updated successfully" });
-  } catch (error) {
-    next(error);
+    next(errorHandler(500, "Error creating admin"));
   }
 };

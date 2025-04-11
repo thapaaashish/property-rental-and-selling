@@ -159,51 +159,58 @@ const DashboardOverview = ({
       </div>
       <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Activity</h2>
       <div className="space-y-4">
-        {listings.slice(0, 3).map((listing) => (
-          <div
-            key={listing._id}
-            className="flex items-center p-4 border rounded-lg"
-          >
-            <div className="flex-shrink-0 h-16 w-16 bg-gray-200 rounded-md overflow-hidden">
-              {listing.imageUrls && listing.imageUrls.length > 0 ? (
-                <img
-                  src={listing.imageUrls[0]}
-                  alt={listing.title}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center bg-gray-200">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+        {listings.length > 0 ? (
+          listings
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 3)
+            .map((listing) => (
+              <div
+                key={listing._id}
+                className="flex items-center p-4 border rounded-lg"
+              >
+                <div className="flex-shrink-0 h-16 w-16 bg-gray-200 rounded-md overflow-hidden">
+                  {listing.imageUrls && listing.imageUrls.length > 0 ? (
+                    <img
+                      src={listing.imageUrls[0]}
+                      alt={listing.title}
+                      className="h-full w-full object-cover"
                     />
-                  </svg>
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center bg-gray-200">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                        />
+                      </svg>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className="ml-4 flex-1">
-              <h3 className="text-sm font-medium text-gray-800">
-                {listing.title}
-              </h3>
-              <p className="text-sm text-gray-600">
-                ${listing.price} · {listing.bedrooms} BD · {listing.bathrooms}{" "}
-                BA
-              </p>
-            </div>
-            <div className="text-sm text-gray-500">
-              Posted on {formatDate(listing.createdAt)}
-            </div>
-          </div>
-        ))}
+                <div className="ml-4 flex-1">
+                  <h3 className="text-sm font-medium text-gray-800">
+                    {listing.title}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    ${listing.price} · {listing.bedrooms} BD ·{" "}
+                    {listing.bathrooms} BA
+                  </p>
+                </div>
+                <div className="text-sm text-gray-500">
+                  Posted on {formatDate(listing.createdAt)}
+                </div>
+              </div>
+            ))
+        ) : (
+          <p className="text-gray-500">No recent listings available.</p>
+        )}
       </div>
     </div>
   );

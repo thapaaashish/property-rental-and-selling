@@ -209,3 +209,32 @@ export const updateListingStatus = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getListingsForHomePage = async (req, res) => {
+  const { type, listingType, status, limit } = req.query;
+
+  // Build query object
+  const query = {};
+  if (type && type !== "all") query.listingType = type;
+  if (listingType && listingType !== "all") query.rentOrSale = listingType;
+  if (status) query.status = status;
+
+  try {
+    // Fetch listings with query, limit, and populate user details
+    const listings = await Listing.find(query)
+      .limit(Math.min(parseInt(limit) || 5, 10)) // Default to 5, max 10
+      .populate("userRef", "fullname avatar phone email")
+      .lean(); // Optional: lean() for faster performance if you don’t need Mongoose docs
+
+    if (!listings || listings.length === 0) {
+      return res
+        .status(200)
+        .json({ listings: [], message: "No listings found" });
+    }
+
+    res.status(200).json({ listings });
+  } catch (error) {
+    console.error("Error fetching listings:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

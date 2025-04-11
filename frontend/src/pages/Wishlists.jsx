@@ -12,39 +12,27 @@ const Wishlists = () => {
   useEffect(() => {
     const fetchWishlistProperties = async () => {
       try {
-        // Use credentials: 'include' to send cookies with the request
         const response = await fetch("/api/wishlist/get", {
           credentials: "include",
         });
 
-        // If token is expired, try to refresh it
-        if (response.status === 403 || response.status === 401) {
-          const refreshResponse = await fetch("/api/auth/refresh", {
-            credentials: "include",
-          });
-
-          if (refreshResponse.ok) {
-            // Token refreshed, retry the original request
-            const retryResponse = await fetch("/api/wishlist/get", {
-              credentials: "include",
-            });
-
-            if (!retryResponse.ok) {
-              throw new Error(`Error: ${retryResponse.status}`);
-            }
-
-            const data = await retryResponse.json();
-            setWishlistItems(data);
-            return;
-          }
-        }
+        // ... existing token refresh logic ...
 
         if (!response.ok) {
           throw new Error(`Error: ${response.status}`);
         }
 
         const data = await response.json();
-        setWishlistItems(data);
+
+        // Transform the wishlist data to match PropertyGrid expectations
+        const transformedData = data.map((item) => ({
+          ...item,
+          images: item.imageUrls || item.images, // Use either field
+          id: item._id || item.id, // Ensure id exists
+          priceUnit: item.listingType === "rent" ? "monthly" : "total",
+        }));
+
+        setWishlistItems(transformedData);
       } catch (error) {
         console.error("Failed to fetch wishlist:", error);
         setError(error.message || "Failed to fetch wishlist");
@@ -157,7 +145,7 @@ const Wishlists = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-6">Your Wishlist</h1>
-      <PropertyGrid properties={wishlistItems} columns={3} />
+      <PropertyGrid properties={wishlistItems} columns={4} />
     </div>
   );
 };

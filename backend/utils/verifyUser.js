@@ -1,82 +1,66 @@
 import jwt from "jsonwebtoken";
 import { errorHandler } from "./error.js";
 import User from "../models/user.model.js";
-import Admin from "../models/admin.model.js"; // Import Admin model
 
 export const verifyToken = async (req, res, next) => {
-  const token = req.cookies.access_token;
-  const refreshToken = req.cookies.refresh_token;
+  // Check for token in cookies (existing) or headers (for AdminDashboard)
+  const token =
+    req.cookies?.access_token || req.headers.authorization?.split(" ")[1];
+  const refreshToken = req.cookies?.refresh_token;
 
   if (!token) {
     return next(errorHandler(401, "Unauthorized: No access token provided"));
   }
 
   try {
-    // Verify the access token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.type === "admin") {
-      req.admin = { id: decoded.id, role: decoded.role };
-    } else {
-      req.user = { id: decoded.id };
-    }
+    const user = await User.findById(decoded.id).select(
+      "-password -otp -resetPasswordOTP"
+    );
+    if (!user) return next(errorHandler(404, "User not found"));
+
+    req.user = user; // Store full user object, including role
     next();
   } catch (err) {
     if (err.name === "TokenExpiredError" && refreshToken) {
       try {
-        // Verify the refresh token
         const refreshDecoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
-        let entity;
+        const user = await User.findById(refreshDecoded.id);
 
-        // Check the appropriate model based on type
-        if (refreshDecoded.type === "admin") {
-          entity = await Admin.findById(refreshDecoded.id);
-          if (!entity || entity.refreshToken !== refreshToken) {
-            return next(errorHandler(403, "Forbidden: Invalid refresh token"));
-          }
-          req.admin = { id: refreshDecoded.id, role: entity.role };
-        } else {
-          entity = await User.findById(refreshDecoded.id);
-          if (!entity || entity.refreshToken !== refreshToken) {
-            return next(errorHandler(403, "Forbidden: Invalid refresh token"));
-          }
-          req.user = { id: refreshDecoded.id };
+        if (!user || user.refreshToken !== refreshToken) {
+          return next(errorHandler(403, "Forbidden: Invalid refresh token"));
         }
 
         const newAccessToken = jwt.sign(
-          {
-            id: refreshDecoded.id,
-            type: refreshDecoded.type,
-            role: entity?.role,
-          },
+          { id: refreshDecoded.id },
           process.env.JWT_SECRET,
-          { expiresIn: "7d" } // Access token lasts 7 days
+          { expiresIn: "7d" }
         );
 
         const newRefreshToken = jwt.sign(
-          { id: refreshDecoded.id, type: refreshDecoded.type },
+          { id: refreshDecoded.id },
           process.env.JWT_SECRET,
-          { expiresIn: "30d" } // Refresh token lasts 30 days
+          { expiresIn: "30d" }
         );
 
-        // Update refresh token in the database
-        entity.refreshToken = newRefreshToken;
-        await entity.save();
+        user.refreshToken = newRefreshToken;
+        await user.save();
 
-        // Set cookies
         res.cookie("access_token", newAccessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         res.cookie("refresh_token", newRefreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
-          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+          maxAge: 30 * 24 * 60 * 60 * 1000,
         });
 
+        req.user = user; // Store full user object
         next();
       } catch (refreshErr) {
         console.error("Refresh token error:", refreshErr);
@@ -91,4 +75,11 @@ export const verifyToken = async (req, res, next) => {
       );
     }
   }
+};
+
+export const isAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== "admin") {
+    return next(errorHandler(403, "Admin access required"));
+  }
+  next();
 };

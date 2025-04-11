@@ -3,13 +3,12 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import cron from "node-cron";
-
+import adminRoutes from "./routes/admin.route.js";
 import userRouter from "./routes/user.route.js";
 import authRouter from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
 import listingRouter from "./routes/listing.route.js";
 import wishlistRouter from "./routes/wishlist.route.js";
-import adminRouter from "./routes/admin.route.js";
 import movingServicesRouter from "./routes/movingServices.route.js";
 import bookingRouter from "./routes/booking.route.js";
 
@@ -42,11 +41,11 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Use routes
+app.use("/api/admin", adminRoutes);
 app.use("/api/user", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/listings", listingRouter);
 app.use("/api/wishlist", wishlistRouter);
-app.use("/api/admin", adminRouter);
 app.use("/api/moving-services", movingServicesRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/email", emailRouter); // New route for sending emails from the property inquiry form

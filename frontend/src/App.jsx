@@ -17,7 +17,7 @@ import Wishlists from "./pages/Wishlists";
 import ListingLandingPage from "./pages/ListingLandingPage";
 import UserDashboard from "./pages/UserDashboard";
 import MyBookings from "./pages/Booking/MyBookings";
-import Notifications from "./pages/Notifications";
+// import Notifications from "./pages/Notifications";
 import axios from "axios";
 
 export const App = () => {
@@ -54,7 +54,7 @@ export const App = () => {
         <Route element={<UserPrivateRoute />}>
           <Route element={<Layout footer={false} />}>
             <Route path="/wishlists" element={<Wishlists />} />
-            <Route path="/notifications" element={<Notifications />} />
+            {/* <Route path="/notifications" element={<Notifications />} /> */}
           </Route>
         </Route>
 
@@ -62,11 +62,12 @@ export const App = () => {
         <Route element={<UserPrivateRoute />}>
           <Route path="/create-listing" element={<CreateListing />} />
           <Route path="/user-dashboard" element={<UserDashboard />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Route>
 
         {/* //Admin Private Routes with No Header and No Footer
         <Route element={<AdminPrivateRoute />}>
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          
         </Route> */}
 
         {/* Uncomment if you add a Payment page - Customize as needed */}

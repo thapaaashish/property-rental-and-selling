@@ -1,13 +1,22 @@
 import express from "express";
-import { signupAdmin, signinAdmin, signoutAdmin, updateAdminProfile, updateAdminPassword } from "../controllers/admin.controller.js";
-import { verifyAdminToken } from "../utils/verifyAdmin.js";
+import { verifyToken, isAdmin } from "../utils/verifyUser.js";
+import {
+  getAllUsers,
+  getAllListings,
+  deleteListing,
+  getAllBookings,
+  deleteUser,
+  createAdmin,
+} from "../controllers/admin.controller.js";
 
 const router = express.Router();
 
-router.post("/signup", signupAdmin);
-router.post("/signin", signinAdmin);
-router.post("/signout", signoutAdmin);
-router.post("/update/:id", verifyAdminToken, updateAdminProfile);
-router.post("/update-password", verifyAdminToken, updateAdminPassword);
+// Admin routes with verifyToken and isAdmin middleware
+router.get("/users", verifyToken, isAdmin, getAllUsers);
+router.get("/listings", verifyToken, isAdmin, getAllListings);
+router.delete("/listings/:id", verifyToken, isAdmin, deleteListing);
+router.get("/bookings", verifyToken, isAdmin, getAllBookings);
+router.delete("/users/:id", verifyToken, isAdmin, deleteUser);
+router.post("/create-admin", verifyToken, isAdmin, createAdmin);
 
 export default router;

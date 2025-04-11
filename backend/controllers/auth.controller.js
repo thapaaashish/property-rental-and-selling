@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/user.model.js";
 import dotenv from "dotenv";
-import Admin from "../models/admin.model.js";
+
 
 dotenv.config();
 
@@ -46,54 +46,41 @@ const sendOTP = (email, otp) => {
 export const signin = async (req, res, next) => {
   const { email, password } = req.body;
   try {
-    let user =
-      (await User.findOne({ email })) || (await Admin.findOne({ email }));
+    const user = await User.findOne({ email });
     if (!user) return next(errorHandler(404, "User not found"));
 
     const validPassword = bcryptjs.compareSync(password, user.password);
     if (!validPassword) return next(errorHandler(401, "Invalid credentials"));
 
-    const isAdmin = user instanceof Admin;
-    const tokenPayload = {
-      id: user._id,
-      type: isAdmin ? "admin" : "user",
-      ...(isAdmin && { role: user.role }),
-    };
-
-    // Make token expiration match cookie maxAge
+    const tokenPayload = { id: user._id };
     const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
-    const refreshToken = jwt.sign(
-      { id: user._id, type: isAdmin ? "admin" : "user" },
-      process.env.JWT_SECRET,
-      { expiresIn: "30d" }
-    );
+    const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
 
-    // Update user with refresh token
     user.refreshToken = refreshToken;
     await user.save();
 
-    // Set cookies with matching expiration
     res
-      .cookie(isAdmin ? "admin_access_token" : "access_token", accessToken, {
+      .cookie("access_token", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .cookie("refresh_token", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        maxAge: 30 * 24 * 60 * 60 * 1000,
       })
       .status(200)
       .json({
         ...user.toObject(),
         password: undefined,
-        accountType: isAdmin ? "admin" : "user",
-        token: accessToken, // For client-side use if needed
+        token: accessToken,
       });
   } catch (error) {
     next(error);

@@ -7,7 +7,6 @@ import {
   signInStart,
   signInSuccess,
 } from "../redux/user/userSlice";
-import { setAdmin } from "../redux/admin/adminSlice";
 import OAuth from "../components/OAuth";
 
 const SignIn = () => {
@@ -47,17 +46,12 @@ const SignIn = () => {
       const data = await res.json();
 
       if (data.success === false) {
-        dispatch(signInFailure(data.message));
+        dispatch(signInFailure(data.message || "Sign-in failed"));
         return;
       }
 
-      if (data.accountType === "admin") {
-        dispatch(setAdmin(data));
-        navigate("/");
-      } else {
-        dispatch(signInSuccess(data));
-        navigate("/");
-      }
+      dispatch(signInSuccess(data));
+      navigate("/");
     } catch (error) {
       dispatch(signInFailure(error.message));
     }
@@ -128,7 +122,7 @@ const SignIn = () => {
             disabled={loading}
             className="w-full text-white p-2 rounded bg-teal-500 hover:bg-teal-400 disabled:bg-teal-300"
           >
-            Sign in
+            {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
