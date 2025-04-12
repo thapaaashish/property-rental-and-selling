@@ -6,8 +6,14 @@ export const UserPrivateRoute = () => {
   return currentUser ? <Outlet /> : <Navigate to="/sign-in" />;
 };
 
-
 export const AdminPrivateRoute = () => {
-  const { currentAdmin } = useSelector((state) => state.admin);
-  return currentAdmin ? <Outlet /> : <Navigate to="/sign-in" />;
+  const { currentUser } = useSelector((state) => state.user);
+  // Check if user is authenticated and has admin role
+  if (!currentUser) {
+    return <Navigate to="/sign-in" />;
+  }
+  if (currentUser.role !== "admin") {
+    return <Navigate to="/" />;
+  }
+  return <Outlet />;
 };

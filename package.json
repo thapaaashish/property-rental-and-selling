@@ -29,6 +29,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.0",
     "nodemon": "^3.1.9",
-    "react-share": "^5.2.2"
+    "react-share": "^5.2.2",
+    "redis": "^4.7.0"
   }
 }

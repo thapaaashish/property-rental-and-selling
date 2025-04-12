@@ -13,6 +13,7 @@ import {
   ChevronUp,
   Filter,
   User,
+  Loader2,
 } from "lucide-react";
 import Popup from "../Popup";
 
@@ -29,6 +30,7 @@ const AgentBookings = () => {
   });
   const [statusFilter, setStatusFilter] = useState("all");
   const [expandedProperties, setExpandedProperties] = useState({});
+  const [processing, setProcessing] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -90,23 +92,24 @@ const AgentBookings = () => {
   };
 
   const handleStatusChange = async (bookingId, newStatus) => {
+    setProcessing((prev) => ({ ...prev, [bookingId]: true }));
     try {
       if (!currentUser?._id) {
         showPopup("Please sign in to modify bookings", "error");
         return;
       }
 
-      if (!["confirmed", "cancelled"].includes(newStatus)) {
-        throw new Error("Invalid status change");
-      }
-
       const endpoint =
         newStatus === "confirmed"
           ? `confirm/${bookingId}`
           : `cancel/${bookingId}`;
+
       const response = await fetch(`/api/bookings/${endpoint}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
         body: JSON.stringify({ userId: currentUser._id }),
       });
 
@@ -115,7 +118,7 @@ const AgentBookings = () => {
         throw new Error(data.message || `Failed to ${newStatus} booking`);
       }
 
-      // Update booking status locally
+      // Update bookings state immediately
       setBookings((prev) =>
         prev.map((booking) =>
           booking._id === bookingId
@@ -124,26 +127,37 @@ const AgentBookings = () => {
         )
       );
 
-      // If confirmed, update the listing status locally
+      // Update properties state
+      const booking = bookings.find((b) => b._id === bookingId);
       if (newStatus === "confirmed") {
-        const booking = bookings.find((b) => b._id === bookingId);
-        const listingId = booking.listing._id;
-        const listingStatus =
-          booking.bookingType === "Rent" ? "rented" : "sold";
-
         setProperties((prev) =>
           prev.map((property) =>
-            property._id === listingId
-              ? { ...property, status: listingStatus }
+            property._id === booking.listing._id
+              ? {
+                  ...property,
+                  status: booking.bookingType === "Rent" ? "rented" : "sold",
+                }
               : property
           )
         );
         showPopup("Booking confirmed and property status updated!");
+      } else if (newStatus === "cancelled" && booking.status === "confirmed") {
+        // Revert property status to active if cancelling a confirmed booking
+        setProperties((prev) =>
+          prev.map((property) =>
+            property._id === booking.listing._id
+              ? { ...property, status: "active" }
+              : property
+          )
+        );
+        showPopup("Booking cancelled and property status reverted to active!");
       } else {
         showPopup(`Booking ${newStatus} successfully!`);
       }
     } catch (err) {
       showPopup(err.message, "error");
+    } finally {
+      setProcessing((prev) => ({ ...prev, [bookingId]: false }));
     }
   };
 
@@ -195,7 +209,7 @@ const AgentBookings = () => {
     return (
       <div className="flex flex-col">
         <div
-          className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border ${getStatusStyles()}`}
+          className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border ${getStatusStyles()}`}
         >
           {getStatusIcon()}
           <span>{status}</span>
@@ -221,7 +235,7 @@ const AgentBookings = () => {
     return (
       <div className="flex justify-center items-center min-h-screen px-4">
         <div className="max-w-md text-center">
-          <div className="text-lg font-medium text-gray-800 mb-2">Error</div>
+          <div className="text-lg text-gray-800 mb-2">Error</div>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -249,9 +263,7 @@ const AgentBookings = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-light text-gray-900 mb-2">
-          Booking Requests
-        </h1>
+        <h1 className="text-3xl text-gray-900 mb-2">Booking Requests</h1>
         <p className="text-gray-500">
           Manage booking requests for your {properties.length}{" "}
           {properties.length === 1 ? "property" : "properties"}
@@ -341,7 +353,7 @@ const AgentBookings = () => {
                 className="border border-gray-200 rounded-lg overflow-hidden"
               >
                 <div
-                  className="p-4 border-b border-gray-200 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="p-4 borderioned items-center cursor-pointer hover:bg-gray-50 transition-colors"
                   onClick={() => togglePropertyExpand(property._id)}
                 >
                   <div className="flex items-center gap-4">
@@ -463,17 +475,33 @@ const AgentBookings = () => {
                                   onClick={() =>
                                     handleStatusChange(booking._id, "confirmed")
                                   }
-                                  className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                                  className="flex items-center px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-500"
+                                  disabled={processing[booking._id]}
                                 >
-                                  Confirm
+                                  {processing[booking._id] ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Processing...
+                                    </>
+                                  ) : (
+                                    "Confirm"
+                                  )}
                                 </button>
                                 <button
                                   onClick={() =>
                                     handleStatusChange(booking._id, "cancelled")
                                   }
-                                  className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                  className="flex items-center px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:border-gray-200 disabled:text-gray-400"
+                                  disabled={processing[booking._id]}
                                 >
-                                  Reject
+                                  {processing[booking._id] ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Processing...
+                                    </>
+                                  ) : (
+                                    "Reject"
+                                  )}
                                 </button>
                               </>
                             )}
@@ -487,11 +515,19 @@ const AgentBookings = () => {
                                       : "confirmed"
                                   )
                                 }
-                                className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                className="flex items-center px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:border-gray-200 disabled:text-gray-400"
+                                disabled={processing[booking._id]}
                               >
-                                {booking.status === "confirmed"
-                                  ? "Cancel"
-                                  : "Reconfirm"}
+                                {processing[booking._id] ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Processing...
+                                  </>
+                                ) : booking.status === "confirmed" ? (
+                                  "Cancel"
+                                ) : (
+                                  "Reconfirm"
+                                )}
                               </button>
                             )}
                           </div>

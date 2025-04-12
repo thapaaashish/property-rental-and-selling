@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -8,13 +8,21 @@ import {
   signInSuccess,
 } from "../redux/user/userSlice";
 import OAuth from "../components/OAuth";
+import Popup from "../components/Popup";
 
 const SignIn = () => {
   const dispatch = useDispatch();
-  const { loading, error } = useSelector((state) => state.user);
+  const { loading, error, currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (currentUser) {
+      navigate("/");
+    }
+  }, [currentUser, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -46,14 +54,20 @@ const SignIn = () => {
       const data = await res.json();
 
       if (data.success === false) {
-        dispatch(signInFailure(data.message || "Sign-in failed"));
+        let errorMessage = data.message || "Sign-in failed";
+        if (errorMessage === "User not found") {
+          errorMessage = "No account found with this email. Please sign up.";
+        } else if (errorMessage === "Invalid credentials") {
+          errorMessage = "Incorrect email or password. Please try again.";
+        }
+        dispatch(signInFailure(errorMessage));
         return;
       }
 
       dispatch(signInSuccess(data));
-      navigate("/");
+      navigate("/"); // Navigate immediately, no success popup
     } catch (error) {
-      dispatch(signInFailure(error.message));
+      dispatch(signInFailure("Network error. Please try again."));
     }
   };
 
@@ -61,13 +75,16 @@ const SignIn = () => {
     setShowPassword((prevState) => !prevState);
   };
 
+  // Close popup handler
+  const handleClosePopup = () => {
+    dispatch(signInFailure(null)); // Clear error
+  };
+
   return (
     <div className="flex items-center justify-center h-screen bg-gray-100 mt-[-60px]">
       <div className="bg-white p-8 rounded-lg shadow-md w-96">
         <h2 className="text-3xl font-semibold text-center mb-2">Login now</h2>
         <p className="text-center text-gray-600 mb-4">Hi, Welcome back 👋</p>
-
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -142,6 +159,16 @@ const SignIn = () => {
             <span className="text-blue-500">Sign up</span>
           </p>
         </Link>
+
+        {/* Popup for error messages only */}
+        {error && (
+          <Popup
+            message={error}
+            type="error"
+            duration={5000} // 5 seconds for errors
+            onClose={handleClosePopup}
+          />
+        )}
       </div>
     </div>
   );

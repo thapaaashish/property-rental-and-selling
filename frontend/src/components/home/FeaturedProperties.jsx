@@ -126,13 +126,14 @@ const FeaturedProperties = ({ properties = [] }) => {
               }`}
             >
               {getVisibleProperties().map((property, idx) => (
-                <div
+                <Link
                   key={`${property.id}-${idx}`}
-                  className={`bg-white rounded-lg overflow-hidden shadow-md transition-all duration-300 ${
+                  to={`/property/${property.id}`}
+                  className={`block bg-white rounded-lg overflow-hidden shadow-md transition-all duration-300 no-underline text-neutral-800 ${
                     idx === Math.floor(getVisibleCount() / 2)
                       ? "border-2 border-teal-500"
                       : "border border-gray-200"
-                  }`}
+                  } hover:border-teal-600`}
                 >
                   <img
                     src={property.images[0]}
@@ -159,14 +160,11 @@ const FeaturedProperties = ({ properties = [] }) => {
                       <span>{property.bathrooms} Baths</span>
                       <span>{property.area} sqft</span>
                     </div>
-                    <Link
-                      to={`/property/${property.id}`}
-                      className="mt-4 inline-block text-teal-500 hover:text-teal-600 font-medium"
-                    >
+                    <span className="mt-4 inline-block text-teal-500 hover:text-teal-600 font-medium">
                       View Details
-                    </Link>
+                    </span>
                   </div>
-                </div>
+                </Link>
               ))}
             </motion.div>
           </div>
@@ -179,7 +177,6 @@ const FeaturedProperties = ({ properties = [] }) => {
               key={idx}
               onClick={() => {
                 if (!isTransitioning) {
-                  // Calculate the index needed to make this property the middle one
                   const visibleCount = getVisibleCount();
                   const middleOffset = Math.floor(visibleCount / 2);
                   let targetIndex =

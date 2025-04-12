@@ -105,7 +105,6 @@ const Home = () => {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         const data = await response.json();
-        console.log("Fetched data:", data);
         if (data && Array.isArray(data.listings)) {
           const mappedProperties = data.listings.map((listing) => ({
             id: listing._id,
@@ -129,15 +128,13 @@ const Home = () => {
               name: listing.userRef?.fullname || "Agent Name",
               photo:
                 listing.userRef?.avatar ||
-                "https://randomuser.me/api/portraits/men/1.jpg",
+                "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1742463191/blank-profile-picture-973460_1280_u3cxlw.webp",
               phone: listing.userRef?.phone || "N/A",
               email: listing.userRef?.email || "N/A",
             },
           }));
           setProperties(mappedProperties);
-          console.log("Mapped properties:", mappedProperties);
         } else {
-          console.error("Error: Listings data is not an array", data);
           setProperties([]);
         }
       } catch (error) {

@@ -4,10 +4,22 @@ import { errorHandler } from "../utils/error.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/user.model.js";
+import mongoose from "mongoose";
 import dotenv from "dotenv";
 
-
 dotenv.config();
+
+// Temporary User Schema with TTL
+const tempUserSchema = new mongoose.Schema({
+  fullname: String,
+  email: String,
+  password: String,
+  otp: String,
+  otpExpires: Number,
+  role: { type: String, default: "user" },
+  createdAt: { type: Date, expires: 300, default: Date.now }, // Expires in 5 minutes
+});
+const TempUser = mongoose.model("TempUser", tempUserSchema);
 
 // Set up nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -20,12 +32,12 @@ const transporter = nodemailer.createTransport({
 
 // Generate OTP
 const generateOTP = () => {
-  return crypto.randomInt(100000, 999999).toString(); // Ensure OTP is a string from the start
+  return crypto.randomInt(100000, 999999).toString(); // 6-digit OTP as string
 };
 
-// Send OTP to email
-const sendOTP = (email, otp) => {
-  console.log("Sending OTP to:", email); // Debug log
+// Send OTP to email (async)
+const sendOTP = async (email, otp) => {
+  console.log("Sending OTP to:", email);
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -33,13 +45,157 @@ const sendOTP = (email, otp) => {
     text: `Your OTP code is: ${otp}`,
   };
 
-  transporter.sendMail(mailOptions, (err, info) => {
-    if (err) {
-      console.log("Error sending OTP:", err);
-    } else {
-      console.log("OTP sent:", info.response);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("OTP sent:", info.response);
+    return info;
+  } catch (err) {
+    console.error("Error sending OTP:", err);
+    throw new Error("Failed to send OTP");
+  }
+};
+
+// Signup: Store data temporarily in MongoDB TempUser and send OTP
+export const signup = async (req, res, next) => {
+  const { fullname, email, password } = req.body;
+
+  try {
+    // Check if email already exists in permanent storage
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      console.log("Email already registered:", email);
+      return res.status(400).json({
+        success: false,
+        message: "Email already registered",
+      });
     }
-  });
+
+    // Check if email exists in temporary storage
+    const existingTempUser = await TempUser.findOne({ email });
+    if (existingTempUser) {
+      console.log("Email already in temporary storage:", email);
+      await TempUser.deleteOne({ email }); // Clean up stale temp data
+    }
+
+    // Hash password
+    const hashedPassword = bcryptjs.hashSync(password, 10);
+
+    // Generate OTP
+    const otp = generateOTP();
+    const otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+    // Store data temporarily in MongoDB TempUser
+    const tempUser = new TempUser({
+      fullname,
+      email,
+      password: hashedPassword,
+      otp,
+      otpExpires,
+      role: "user", // Added for consistency
+    });
+    await tempUser.save();
+    console.log("Stored temporary data in TempUser for:", email);
+
+    // Send OTP
+    await sendOTP(email, otp);
+
+    res.status(201).json({
+      success: true,
+      message: "OTP sent to your email. Please verify to complete signup.",
+    });
+  } catch (error) {
+    console.error("Signup error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Error processing signup",
+    });
+  }
+};
+
+// Verify OTP: Validate OTP and create user in MongoDB User collection
+export const verifyOTP = async (req, res, next) => {
+  const { email, otp } = req.body;
+
+  console.log("Incoming OTP request:", { email, otp });
+
+  try {
+    // Retrieve temporary data from TempUser
+    const tempUser = await TempUser.findOne({ email });
+    if (!tempUser) {
+      console.log("No temporary data found for email:", email);
+      return res.status(404).json({
+        success: false,
+        message: "OTP expired or email not found. Please sign up again.",
+      });
+    }
+
+    console.log("Retrieved temporary data:", {
+      email: tempUser.email,
+      storedOTP: tempUser.otp,
+      otpExpires: tempUser.otpExpires,
+      currentTime: Date.now(),
+    });
+
+    // Convert both OTPs to strings for comparison
+    const providedOTP = otp.toString();
+    const storedOTP = tempUser.otp.toString();
+
+    console.log("Comparing OTPs:", {
+      providedOTP,
+      storedOTP,
+      match: providedOTP === storedOTP,
+    });
+
+    // Check if OTP matches
+    if (providedOTP !== storedOTP) {
+      console.log("OTP mismatch");
+      await TempUser.deleteOne({ email });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    // Check if OTP has expired
+    if (tempUser.otpExpires < Date.now()) {
+      console.log("OTP expired:", {
+        expiryTime: tempUser.otpExpires,
+        currentTime: Date.now(),
+      });
+      await TempUser.deleteOne({ email });
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new OTP",
+      });
+    }
+
+    // OTP is valid, create user in MongoDB
+    const newUser = new User({
+      fullname: tempUser.fullname,
+      email: tempUser.email,
+      password: tempUser.password,
+      emailVerified: true,
+      role: tempUser.role, // Use role from tempUser
+    });
+    await newUser.save();
+    console.log("User created in MongoDB:", tempUser.email);
+
+    // Delete temporary data
+    await TempUser.deleteOne({ email });
+    console.log("Deleted temporary data for:", email);
+
+    return res.status(200).json({
+      success: true,
+      message: "Email successfully verified! Account created.",
+    });
+  } catch (error) {
+    console.error("Error during OTP verification:", error);
+    await TempUser.deleteOne({ email }).catch(() => {});
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred during OTP verification",
+    });
+  }
 };
 
 // Signin for both User and Admin
@@ -52,7 +208,7 @@ export const signin = async (req, res, next) => {
     const validPassword = bcryptjs.compareSync(password, user.password);
     if (!validPassword) return next(errorHandler(401, "Invalid credentials"));
 
-    const tokenPayload = { id: user._id };
+    const tokenPayload = { id: user._id, role: user.role || "user" }; // Ensure role
     const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
@@ -87,118 +243,7 @@ export const signin = async (req, res, next) => {
   }
 };
 
-// OTP Verification
-export const verifyOTP = async (req, res, next) => {
-  const { email, otp } = req.body;
-
-  console.log("Incoming OTP request:", { email, otp });
-
-  try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      console.log("User not found for email:", email);
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    console.log("Found user:", {
-      email: user.email,
-      storedOTP: user.otp,
-      otpExpires: user.otpExpires,
-      currentTime: new Date(),
-    });
-
-    // Check if OTP exists
-    if (!user.otp) {
-      console.log("No OTP found for user");
-      return res.status(400).json({
-        success: false,
-        message: "No OTP found. Please request a new OTP",
-      });
-    }
-
-    // Convert both OTPs to strings for comparison
-    const providedOTP = otp.toString();
-    const storedOTP = user.otp.toString();
-
-    console.log("Comparing OTPs:", {
-      providedOTP,
-      storedOTP,
-      match: providedOTP === storedOTP,
-    });
-
-    // Check if OTP matches
-    if (providedOTP !== storedOTP) {
-      console.log("OTP mismatch");
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP",
-      });
-    }
-
-    // Check if OTP has expired
-    if (user.otpExpires < Date.now()) {
-      console.log("OTP expired:", {
-        expiryTime: user.otpExpires,
-        currentTime: Date.now(),
-      });
-      return res.status(400).json({
-        success: false,
-        message: "OTP has expired. Please request a new OTP",
-      });
-    }
-
-    // OTP is valid, update user
-    user.emailVerified = true;
-    user.otp = undefined;
-    user.otpExpires = undefined;
-    await user.save();
-
-    console.log("OTP verification successful for user:", email);
-
-    return res.status(200).json({
-      success: true,
-      message: "Email successfully verified!",
-    });
-  } catch (error) {
-    console.error("Error during OTP verification:", error);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred during OTP verification",
-    });
-  }
-};
-
-export const signup = async (req, res, next) => {
-  const { fullname, email, password } = req.body;
-
-  try {
-    const hashedPassword = bcryptjs.hashSync(password, 10);
-    const newUser = new User({ fullname, email, password: hashedPassword });
-
-    // Generate and send OTP
-    const otp = generateOTP();
-    newUser.otp = otp;
-    newUser.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
-
-    await newUser.save();
-    sendOTP(email, otp);
-
-    res.status(201).json({
-      success: true,
-      message:
-        "User created successfully! Please verify your email with the OTP.",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Error creating user",
-    });
-  }
-};
-
+// Forgot Password
 export const forgotPassword = async (req, res, next) => {
   const { email } = req.body;
 
@@ -218,23 +263,7 @@ export const forgotPassword = async (req, res, next) => {
     await user.save();
 
     // Send OTP email
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Password Reset OTP",
-      text: `Your OTP for password reset is: ${otp}. This OTP will expire in 5 minutes.`,
-    };
-
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) {
-        console.log("Error sending reset OTP:", err);
-        return res.status(500).json({
-          success: false,
-          message: "Error sending OTP",
-        });
-      }
-      console.log("Reset OTP sent:", info.response);
-    });
+    await sendOTP(email, otp); // Updated to use async sendOTP
 
     res.status(200).json({
       success: true,
@@ -249,6 +278,7 @@ export const forgotPassword = async (req, res, next) => {
   }
 };
 
+// Reset Password
 export const resetPassword = async (req, res, next) => {
   const { email, otp, newPassword } = req.body;
 
@@ -288,70 +318,85 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
+// Google OAuth
 export const google = async (req, res, next) => {
   try {
     const { name, email, photo } = req.body;
 
     if (!name || !email || !photo) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields (name, email, photo)",
-      });
+      return next(
+        errorHandler(400, "Missing required fields (name, email, photo)")
+      );
     }
 
-    const user = await User.findOne({ email });
-    if (user) {
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-      const { password: pass, ...rest } = user._doc;
-      res
-        .cookie("access_token", token, { httpOnly: true })
-        .status(200)
-        .json(rest);
-    } else {
+    let user = await User.findOne({ email });
+    if (!user) {
       const generatedPassword =
         Math.random().toString(36).slice(-8) +
         Math.random().toString(36).slice(-8);
       const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
-      const newUser = new User({
+      user = new User({
         fullname: name,
-        email: email,
+        email,
         password: hashedPassword,
         avatar: photo,
+        role: "user",
+        emailVerified: true, // Google users are verified
       });
-
-      await newUser.save();
-      const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
-      const { password: pass, ...rest } = newUser._doc;
-      res
-        .cookie("access_token", token, { httpOnly: true })
-        .status(200)
-        .json(rest);
+      await user.save();
     }
+
+    const tokenPayload = { id: user._id, role: user.role };
+    const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+    const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    const { password: pass, ...userData } = user._doc;
+    res
+      .cookie("access_token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .cookie("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      })
+      .status(200)
+      .json({
+        success: true,
+        token: accessToken,
+        refreshToken,
+        ...userData,
+      });
   } catch (error) {
     console.error("Google OAuth Error:", error);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred during Google OAuth",
-    });
+    next(errorHandler(500, "Google sign-in failed"));
   }
 };
 
+// Sign Out
 export const signOut = async (req, res, next) => {
   try {
-    // Get user ID from the token if available
     const token = req.cookies.access_token;
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // Clear refreshToken in the database
         await User.findByIdAndUpdate(decoded.id, { refreshToken: null });
       } catch (err) {
-        // Token might be invalid, but we still want to clear cookies
         console.error("Error clearing refresh token:", err);
       }
     }
 
-    // Clear cookies regardless of token validity
     res
       .clearCookie("access_token")
       .clearCookie("refresh_token")
@@ -362,11 +407,11 @@ export const signOut = async (req, res, next) => {
   }
 };
 
+// Change Password
 export const changePassword = async (req, res, next) => {
   const { currentPassword, newPassword } = req.body;
   const token = req.cookies.access_token;
 
-  // Input validation
   if (!currentPassword || !newPassword) {
     return res.status(400).json({
       success: false,
@@ -389,11 +434,9 @@ export const changePassword = async (req, res, next) => {
   }
 
   try {
-    // Verify the token and extract the user ID
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id;
 
-    // Find the user by ID
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
@@ -402,7 +445,6 @@ export const changePassword = async (req, res, next) => {
       });
     }
 
-    // Verify the current password
     const isPasswordValid = bcryptjs.compareSync(
       currentPassword,
       user.password
@@ -414,17 +456,13 @@ export const changePassword = async (req, res, next) => {
       });
     }
 
-    // Hash the new password
     const hashedPassword = bcryptjs.hashSync(newPassword, 10);
-
-    // Update the user's password
     user.password = hashedPassword;
     await user.save();
 
-    // Clear the access_token cookie
     res.clearCookie("access_token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Ensure secure cookies in production
+      secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
     });
 
@@ -433,22 +471,19 @@ export const changePassword = async (req, res, next) => {
       message: "Password changed successfully. Please log in again.",
     });
   } catch (error) {
-    console.error("Change password error:", error.message); // Avoid logging sensitive data
-
+    console.error("Change password error:", error.message);
     if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
         success: false,
         message: "Unauthorized: Invalid token",
       });
     }
-
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
         message: "Unauthorized: Token has expired",
       });
     }
-
     res.status(500).json({
       success: false,
       message: "An error occurred while changing the password",
@@ -456,6 +491,7 @@ export const changePassword = async (req, res, next) => {
   }
 };
 
+// Refresh Access Token
 export const refreshAccessToken = async (req, res, next) => {
   try {
     const refreshToken = req.cookies.refresh_token;
@@ -464,27 +500,27 @@ export const refreshAccessToken = async (req, res, next) => {
       return next(errorHandler(401, "No refresh token provided"));
     }
 
-    // Verify the refresh token
     const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
 
-    // Find the user and check if the refresh token matches
     const user = await User.findById(decoded.id);
     if (!user || user.refreshToken !== refreshToken) {
       return next(errorHandler(403, "Invalid refresh token"));
     }
 
-    // Generate a new access token
-    const newAccessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
-    });
+    const newAccessToken = jwt.sign(
+      { id: user._id, role: user.role || "user" },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "15m",
+      }
+    );
 
-    // Set the new access token in a cookie
     res
       .cookie("access_token", newAccessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 15 * 60 * 1000, // 15 minutes
+        maxAge: 15 * 60 * 1000,
       })
       .status(200)
       .json({ message: "Access token refreshed" });

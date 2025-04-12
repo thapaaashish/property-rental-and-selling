@@ -282,11 +282,12 @@ const UserDashboard = () => {
             {activeTab === "listings" && (
               <MyListings
                 listings={listings}
+                setListings={setListings}
                 formatDate={formatDate}
                 handleEditListing={handleEditListing}
                 handleDeleteListing={handleDeleteListing}
                 handleViewListing={handleViewListing}
-                currentUser={currentUser} // Pass currentUser here
+                currentUser={currentUser}
               />
             )}
 

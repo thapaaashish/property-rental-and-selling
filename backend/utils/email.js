@@ -48,10 +48,16 @@ const templates = {
     </div>
   `,
 
-  bookingCancellation: (booking, reason = "at your request") => `
+  bookingCancellation: (booking, reason, status) => `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #dc2626;">Booking Cancelled #${booking._id}</h2>
-      <p>Your booking has been cancelled ${reason}:</p>
+      <h2 style="color: #dc2626;">${
+        status === "pending" ? "Booking Request Rejected" : "Booking Cancelled"
+      } #${booking._id}</h2>
+      <p>Your ${
+        status === "pending" ? "booking request" : "booking"
+      } has been ${
+    status === "pending" ? "rejected" : "cancelled"
+  } ${reason}:</p>
       
       <div style="background: #fef2f2; padding: 16px; border-radius: 8px; margin: 16px 0;">
         <h3 style="margin-top: 0;">${booking.listing?.title || "Property"}</h3>
@@ -186,18 +192,69 @@ export const notifyAgent = async (ownerEmail, bookingDetails) => {
 export const notifyBookingCancellation = async (
   email,
   bookingDetails,
-  reason
+  reason,
+  status
 ) => {
+  console.log("notifyBookingCancellation called:", {
+    email,
+    bookingId: bookingDetails._id,
+    reason,
+    status,
+  });
+
   try {
+    // Determine email subject and notification type based on status
+    const isPending = status === "pending";
+    const subject = isPending
+      ? `Booking Request Rejected #${bookingDetails._id}`
+      : `Booking Cancelled #${bookingDetails._id}`;
+    const notificationType = isPending
+      ? "booking_rejected"
+      : "booking_cancelled";
+    const notificationTitle = isPending
+      ? "Booking Request Rejected"
+      : "Booking Cancelled";
+    const notificationMessage = isPending
+      ? `Your booking request for ${bookingDetails.listing?.title} was rejected ${reason}`
+      : `Your booking for ${bookingDetails.listing?.title} was cancelled ${reason}`;
+
+    // Send email
+    console.log(
+      "Sending cancellation email to:",
+      email,
+      "with subject:",
+      subject
+    );
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: `Booking Cancelled #${bookingDetails._id}`,
-      html: templates.bookingCancellation(bookingDetails, reason),
+      subject,
+      html: templates.bookingCancellation(bookingDetails, reason, status),
     });
+    console.log("Cancellation email sent successfully to:", email);
+
+    // Save notification
+    console.log("Saving notification for booking:", bookingDetails._id);
+    await Notification.create({
+      userId: bookingDetails.userId || bookingDetails.user._id,
+      title: notificationTitle,
+      message: notificationMessage,
+      type: notificationType,
+      relatedEntity: bookingDetails._id,
+      relatedEntityModel: "Booking",
+      metadata: {
+        bookingType: bookingDetails.bookingType,
+        totalPrice: bookingDetails.totalPrice,
+      },
+    });
+    console.log("Notification saved for booking:", bookingDetails._id);
   } catch (error) {
-    console.error("Error sending cancellation email:", error);
-    throw error;
+    console.error(
+      "Error sending cancellation email for booking:",
+      bookingDetails._id,
+      error
+    );
+    throw error; // Re-throw to allow caller to handle
   }
 };
 

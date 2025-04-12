@@ -114,7 +114,7 @@ const BookingForm = ({ property }) => {
         throw new Error(error.message || "Booking failed");
       }
 
-      showPopup("Booking successful!", "success");
+      showPopup("Booking requested!", "success");
       setTimeout(() => navigate("/my-bookings"), 1500);
     } catch (err) {
       showPopup(err.message, "error");

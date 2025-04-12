@@ -247,19 +247,25 @@ export const getAgentBookingRequests = async (req, res) => {
 
 // Cancel Booking
 export const cancelBooking = async (req, res) => {
+  console.log("Cancel booking request received:", req.params.id, req.body);
+
   try {
     const bookingId = req.params.id;
     const { userId } = req.body;
 
+    console.log("Finding booking:", bookingId);
     const booking = await Booking.findById(bookingId).populate("listing");
     if (!booking) {
+      console.log("Booking not found");
       return res.status(404).json({ message: "Booking not found" });
     }
 
+    console.log("Checking permissions...");
     const isBooker = booking.user.toString() === userId;
     const isListingOwner = booking.listing.userRef.toString() === userId;
 
     if (!isBooker && !isListingOwner) {
+      console.log("Permission denied");
       return res.status(403).json({
         message:
           "You can only cancel your own bookings or bookings for your listings",
@@ -267,31 +273,86 @@ export const cancelBooking = async (req, res) => {
     }
 
     if (booking.status === "cancelled") {
+      console.log("Booking already cancelled");
       return res.status(400).json({ message: "Booking is already cancelled" });
     }
 
+    console.log("Updating booking status to cancelled");
+    const originalStatus = booking.status; // Store status before changing
     booking.status = "cancelled";
     await booking.save();
+    console.log(
+      "Booking updated successfully, original status:",
+      originalStatus
+    );
 
-    // Notify user and agent
-    const user = await User.findById(booking.user);
-    const owner = await User.findById(booking.listing.userRef);
-    if (user?.email) {
-      await notifyBookingCancellation(user.email, booking.toObject(), "by you");
+    // Revert listing status to active if cancelling a confirmed booking
+    if (originalStatus === "confirmed") {
+      console.log(
+        "Reverting listing status to active for listing:",
+        booking.listing._id
+      );
+      const listing = await Listing.findById(booking.listing._id);
+      if (listing) {
+        listing.status = "active";
+        await listing.save();
+        console.log("Listing status updated to active");
+      } else {
+        console.warn("Listing not found for booking:", bookingId);
+      }
     }
-    if (owner?.email && isBooker) {
-      await notifyAgent(owner.email, {
-        ...booking.toObject(),
-        user: user || { fullname: "Guest" },
-        cancellationReason: "Cancelled by guest",
+
+    // Make notifications non-blocking
+    console.log("Preparing notifications...");
+    try {
+      const user = await User.findById(booking.user);
+      console.log("User fetched for notification:", {
+        userId: booking.user,
+        email: user?.email,
       });
+
+      // Notify user of cancellation
+      if (user?.email) {
+        console.log("Attempting to send cancellation email to:", user.email);
+        const cancellationReason = isBooker ? "by you" : "by the listing owner";
+        await notifyBookingCancellation(
+          user.email,
+          {
+            ...booking.toObject(),
+            listing: booking.listing.toObject(), // Ensure listing details are included
+          },
+          cancellationReason,
+          originalStatus // Pass the original status (pending or confirmed)
+        );
+        console.log("Cancellation email sent successfully to:", user.email);
+      } else {
+        console.warn(
+          "User email missing - cannot send cancellation notification for booking:",
+          bookingId
+        );
+      }
+    } catch (notificationError) {
+      console.error(
+        "Notification setup error for booking:",
+        bookingId,
+        notificationError
+      );
     }
 
-    res.status(200).json({ message: "Booking cancelled", booking });
+    console.log("Sending success response");
+    return res.status(200).json({
+      success: true,
+      message: "Booking cancelled successfully",
+      booking: booking.toObject(),
+      listing: booking.listing.toObject(), // Include listing for frontend update
+    });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to cancel booking", error: err.message });
+    console.error("Booking cancellation error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to cancel booking",
+      error: err.message,
+    });
   }
 };
 

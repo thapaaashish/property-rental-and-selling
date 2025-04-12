@@ -1,18 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import OAuth from "../components/OAuth";
+import { useSelector } from "react-redux";
+import Popup from "../components/Popup";
 
 const Signup = () => {
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null); // For success popups
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false); // Flag to show OTP form
   const [otp, setOtp] = useState(""); // Store OTP input
   const navigate = useNavigate();
+  const { currentUser } = useSelector((state) => state.user);
 
-  // Ensure form fields are controlled
+  // Redirect if already logged in
+  useEffect(() => {
+    if (currentUser) {
+      navigate("/");
+    }
+  }, [currentUser, navigate]);
+
+  // Form data state
   const [formData, setFormData] = useState({
     fullname: "",
     email: "",
@@ -23,78 +34,112 @@ const Signup = () => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
+  // Submit signup form to store data temporarily and send OTP
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:3000/api/auth/signup", {
+      setError(null); // Clear previous errors
+      const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
-        credentials: 'include',
+        credentials: "include",
       });
       const data = await res.json();
-      console.log("Signup response:", data); // Debug log
+      console.log("Signup response:", data);
       if (data.success === false) {
         setLoading(false);
-        setError(data.message);
+        let errorMessage = data.message;
+        if (errorMessage === "Email already registered") {
+          errorMessage =
+            "This email is already registered. Please use a different email or log in.";
+        }
+        setError(errorMessage);
         return;
       }
       setLoading(false);
       setError(null);
-      setOtpSent(true); // Show OTP form after successful signup
+      setSuccessMessage(data.message || "OTP sent to your email!");
+      setOtpSent(true); // Show OTP form
     } catch (error) {
-      console.error("Signup error:", error); // Debug log
+      console.error("Signup error:", error);
       setLoading(false);
-      setError(error.message);
+      setError("Failed to send OTP. Please try again.");
     }
   };
 
+  // Submit OTP for verification
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-      console.log("Submitting OTP:", { email: formData.email, otp }); // Debug log
-      
-      const res = await fetch("http://localhost:3000/api/auth/verify-otp", {
+      setError(null); // Clear previous errors
+      console.log("Submitting OTP:", { email: formData.email, otp });
+
+      const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: formData.email,
-          otp: otp
+          otp: otp,
         }),
-        credentials: 'include',
+        credentials: "include",
       });
-  
+
       const data = await res.json();
-      console.log("OTP verification response:", data); // Debug log
-      
+      console.log("OTP verification response:", data);
+
       if (data.success === false) {
         setLoading(false);
         setError(data.message);
+        // Reset formData, otp, and otpSent on failed OTP verification
+        setFormData({
+          fullname: "",
+          email: "",
+          password: "",
+        });
+        setOtp("");
+        setOtpSent(false);
         return;
       }
-      
+
       setLoading(false);
       setError(null);
-      alert(data.message || "OTP verified successfully!");
-      navigate("/sign-in");
+      setSuccessMessage(data.message || "Account created successfully!");
+      // Delay navigation to allow popup to be seen
+      setTimeout(() => {
+        navigate("/sign-in");
+      }, 2000); // Navigate after 2 seconds
     } catch (error) {
-      console.error("OTP verification error:", error); // Debug log
+      console.error("OTP verification error:", error);
       setLoading(false);
-      setError("An error occurred during OTP verification.");
+      setError("Failed to verify OTP. Please try again.");
+      // Reset formData, otp, and otpSent on error
+      setFormData({
+        fullname: "",
+        email: "",
+        password: "",
+      });
+      setOtp("");
+      setOtpSent(false);
     }
   };
-  
 
   const [showPassword, setShowPassword] = useState(false);
 
+  // Close popup handler
+  const handleClosePopup = () => {
+    setError(null);
+    setSuccessMessage(null);
+  };
+
   return (
-    <div className="flex justify-center items-center min-h-screen  bg-gray-100 mt-[-60px]">
+    <div className="flex justify-center items-center min-h-screen bg-gray-100 mt-[-60px]">
       <div className="bg-white p-8 rounded-lg shadow-md w-96">
         <h2 className="text-3xl font-bold text-center">Sign Up</h2>
         <p className="text-center text-gray-600 mt-2">Hi, 👋</p>
@@ -102,31 +147,28 @@ const Signup = () => {
         {/* Signup form */}
         {!otpSent ? (
           <form onSubmit={handleSubmit} className="mt-4">
-            {/* Full Name */}
             <label className="block font-medium">Full Name</label>
             <input
               type="text"
               placeholder="Full Name"
               className="w-full border rounded-md p-2 mt-1 focus:outline-sky-500"
               id="fullname"
-              value={formData.fullname} // Ensure the value is always controlled
+              value={formData.fullname}
               onChange={handleChange}
               required
             />
 
-            {/* Email */}
             <label className="block font-medium mt-3">Email</label>
             <input
               type="email"
               placeholder="Email"
               className="w-full border rounded-md p-2 mt-1 focus:outline-sky-500"
               id="email"
-              value={formData.email} // Ensure the value is always controlled
+              value={formData.email}
               onChange={handleChange}
               required
             />
 
-            {/* Password */}
             <label className="block font-medium mt-3">Password</label>
             <div className="relative">
               <input
@@ -134,7 +176,7 @@ const Signup = () => {
                 placeholder="Password"
                 className="w-full border rounded-md p-2 mt-1 pr-10 focus:outline-sky-500"
                 id="password"
-                value={formData.password} // Ensure the value is always controlled
+                value={formData.password}
                 onChange={handleChange}
                 required
               />
@@ -147,24 +189,23 @@ const Signup = () => {
               </button>
             </div>
 
-            {/* Signup Button */}
             <button
               type="submit"
               className="w-full bg-teal-500 text-white py-2 rounded-md mt-4 hover:bg-teal-400"
               disabled={loading}
             >
-              {loading ? "Loading..." : "Sign up"}
+              {loading ? "Loading..." : "Send OTP"}
             </button>
 
-            {/* Divider */}
             <div className="flex items-center my-4">
               <hr className="flex-grow border-gray-300" />
-              <span className="mx-2 text-gray-500 text-sm">Or Sign Up with email</span>
+              <span className="mx-2 text-gray-500 text-sm">
+                Or Sign Up with email
+              </span>
               <hr className="flex-grow border-gray-300" />
             </div>
 
             <OAuth />
-            
           </form>
         ) : (
           // OTP Form
@@ -186,18 +227,45 @@ const Signup = () => {
             >
               {loading ? "Verifying..." : "Verify OTP"}
             </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="w-full text-blue-700 mt-2 hover:underline"
+              disabled={loading}
+            >
+              Resend OTP
+            </button>
           </form>
         )}
 
-        {/* Already have an account */}
         <p className="text-center mt-4 text-gray">
           Already have an Account?{" "}
-          <Link to="/sign-in" className="text-blue-700 font-semibold hover:underline">
+          <Link
+            to="/sign-in"
+            className="text-blue-700 font-semibold hover:underline"
+          >
             Log In
           </Link>
         </p>
 
-        {error && <p className="text-red-500 text-center mt-2">{error}</p>}
+        {/* Popup for success messages */}
+        {successMessage && (
+          <Popup
+            message={successMessage}
+            type="success"
+            duration={3000}
+            onClose={handleClosePopup}
+          />
+        )}
+        {/* Popup for error messages */}
+        {error && (
+          <Popup
+            message={error}
+            type="error"
+            duration={5000} // Longer duration for errors to ensure user reads
+            onClose={handleClosePopup}
+          />
+        )}
       </div>
     </div>
   );

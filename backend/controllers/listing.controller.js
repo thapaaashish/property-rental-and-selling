@@ -1,6 +1,7 @@
 import Listing from "../models/listing.model.js";
 import { errorHandler } from "../utils/error.js";
 import User from "../models/user.model.js";
+import Booking from "../models/booking.model.js";
 
 export const createListing = async (req, res, next) => {
   try {
@@ -189,23 +190,49 @@ export const getAllListings = async (req, res, next) => {
 // This function updates the status of a listing (e.g., active, pending, sold, rented, inactive)
 export const updateListingStatus = async (req, res, next) => {
   try {
-    const listing = await Listing.findById(req.params.id);
+    const listingId = req.params.id;
+    const { status } = req.body;
+
+    // Validate listingId
+    if (!listingId.match(/^[0-9a-fA-F]{24}$/)) {
+      return next(errorHandler(400, "Invalid listing ID"));
+    }
+
+    // Validate status
+    const validStatuses = ["active", "pending", "sold", "rented", "inactive"];
+    if (!status || !validStatuses.includes(status.toLowerCase())) {
+      return next(
+        errorHandler(
+          400,
+          `Invalid status. Must be one of: ${validStatuses.join(", ")}`
+        )
+      );
+    }
+
+    const listing = await Listing.findById(listingId);
     if (!listing) {
       return next(errorHandler(404, "Listing not found"));
     }
 
+    // Verify ownership
     if (req.user.id !== listing.userRef.toString()) {
       return next(errorHandler(403, "You can only update your own listings"));
     }
 
+    // Update status
     const updatedListing = await Listing.findByIdAndUpdate(
-      req.params.id,
-      { status: req.body.status },
-      { new: true }
+      listingId,
+      { status: status.toLowerCase() },
+      { new: true, runValidators: true }
     );
 
-    res.status(200).json(updatedListing);
+    res.status(200).json({
+      success: true,
+      message: "Status updated successfully",
+      data: updatedListing,
+    });
   } catch (error) {
+    console.error("Update status error:", error);
     next(error);
   }
 };

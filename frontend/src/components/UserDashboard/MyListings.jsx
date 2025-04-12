@@ -5,12 +5,13 @@ import ConfirmationModal from "../ConfirmationModal";
 import Popup from "../Popup";
 
 const MyListings = ({
-  listings,
-  formatDate,
-  handleEditListing,
-  handleDeleteListing,
-  handleViewListing,
-  currentUser,
+  listings = [],
+  setListings = () => {},
+  formatDate = (date) => new Date(date).toLocaleDateString(),
+  handleEditListing = () => {},
+  handleDeleteListing = () => Promise.resolve(),
+  handleViewListing = () => {},
+  currentUser = null,
 }) => {
   const navigate = useNavigate();
   const [statusUpdates, setStatusUpdates] = useState({});
@@ -29,39 +30,75 @@ const MyListings = ({
   ];
 
   const handleStatusChange = async (listingId, newStatus) => {
-    if (!currentUser || !currentUser.refreshToken) {
+    if (!currentUser) {
+      console.error("No user data:", currentUser);
       setPopupMessage("You must be logged in to update listing status");
       setPopupType("error");
       setShowPopup(true);
       return;
     }
 
+    const token = currentUser.refreshToken || currentUser.token;
+    if (!token) {
+      console.error("No token available:", currentUser);
+      setPopupMessage("Authentication token missing");
+      setPopupType("error");
+      setShowPopup(true);
+      return;
+    }
+
+    if (!listingId || !newStatus) {
+      console.error("Invalid listingId or status:", { listingId, newStatus });
+      setPopupMessage("Invalid listing or status");
+      setPopupType("error");
+      setShowPopup(true);
+      return;
+    }
+
+    setStatusUpdates((prev) => ({
+      ...prev,
+      [listingId]: newStatus,
+    }));
+
     try {
       const response = await fetch(`/api/listings/update-status/${listingId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${currentUser.refreshToken}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: newStatus }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        setStatusUpdates((prev) => ({
-          ...prev,
-          [listingId]: newStatus,
-        }));
-        setPopupMessage("Status updated successfully!");
+      if (response.ok && data.success) {
+        setListings((prev) =>
+          prev.map((listing) =>
+            listing._id === listingId
+              ? { ...listing, status: data.data.status }
+              : listing
+          )
+        );
+        setPopupMessage(data.message || "Status updated successfully!");
         setPopupType("success");
         setShowPopup(true);
       } else {
+        console.error("Status update failed:", data);
+        setStatusUpdates((prev) => {
+          const { [listingId]: _, ...rest } = prev;
+          return rest;
+        });
         setPopupMessage(data.message || "Failed to update status");
         setPopupType("error");
         setShowPopup(true);
       }
     } catch (error) {
+      console.error("Status update error:", error);
+      setStatusUpdates((prev) => {
+        const { [listingId]: _, ...rest } = prev;
+        return rest;
+      });
       setPopupMessage("Error updating status: Network issue");
       setPopupType("error");
       setShowPopup(true);
@@ -69,18 +106,42 @@ const MyListings = ({
   };
 
   const handleDeleteClick = (listingId) => {
+    if (!listingId) {
+      console.error("Invalid listingId for deletion");
+      return;
+    }
     setListingToDelete(listingId);
     setShowDeleteModal(true);
   };
 
   const confirmDelete = async () => {
+    if (!listingToDelete) {
+      console.error("No listing selected for deletion");
+      setShowDeleteModal(false);
+      return;
+    }
+
+    const token = currentUser.refreshToken || currentUser.token;
+    if (!token) {
+      console.error("No token for delete:", currentUser);
+      setPopupMessage("Authentication token missing");
+      setPopupType("error");
+      setShowPopup(true);
+      setShowDeleteModal(false);
+      return;
+    }
+
     try {
       await handleDeleteListing(listingToDelete);
+      setListings((prev) =>
+        prev.filter((listing) => listing._id !== listingToDelete)
+      );
       setPopupMessage("Listing deleted successfully!");
       setPopupType("success");
       setShowPopup(true);
     } catch (error) {
-      setPopupMessage("Failed to delete listing");
+      console.error("Delete error:", error);
+      setPopupMessage(error.message || "Failed to delete listing");
       setPopupType("error");
       setShowPopup(true);
     }
@@ -92,6 +153,15 @@ const MyListings = ({
     setShowDeleteModal(false);
     setListingToDelete(null);
   };
+
+  if (!Array.isArray(listings)) {
+    console.error("Listings prop is not an array:", listings);
+    return (
+      <div className="p-4 md:p-6 text-center text-red-500">
+        Error: Invalid listings data
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6">
@@ -170,9 +240,9 @@ const MyListings = ({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
+          <table className="min-w-full bg-white border border-gray-200">
             <thead>
-              <tr className="border-b border-gray-200">
+              <tr className="border-b border-gray-200 bg-gray-50">
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Property
                 </th>
@@ -200,20 +270,27 @@ const MyListings = ({
               {listings.map((listing) => {
                 const currentStatus =
                   statusUpdates[listing._id] || listing.status || "active";
-                const statusOption = statusOptions.find(
-                  (opt) => opt.value === currentStatus
-                );
+                const statusOption =
+                  statusOptions.find((opt) => opt.value === currentStatus) ||
+                  statusOptions[0];
 
                 return (
-                  <tr key={listing._id}>
+                  <tr
+                    key={listing._id || Math.random()}
+                    className="hover:bg-gray-50"
+                  >
                     <td className="py-4 px-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12 bg-gray-200 rounded-md overflow-hidden">
                           {listing.imageUrls?.length > 0 ? (
                             <img
                               src={listing.imageUrls[0]}
-                              alt={listing.title}
+                              alt={listing.title || "Property"}
                               className="h-full w-full object-cover"
+                              onError={(e) =>
+                                (e.target.src =
+                                  "https://via.placeholder.com/48?text=No+Image")
+                              }
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center bg-gray-200">
@@ -236,25 +313,27 @@ const MyListings = ({
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {listing.title}
+                            {listing.title || "Untitled"}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {listing.address.street}, {listing.address.city}
+                            {listing.address?.street || "No street"},{" "}
+                            {listing.address?.city || "No city"}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-500">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {listing.listingType} · {listing.rentOrSale}
+                        {listing.listingType || "N/A"} ·{" "}
+                        {listing.rentOrSale || "N/A"}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-900 font-medium">
-                      ${listing.price.toLocaleString()}
+                      ${Number(listing.price || 0).toLocaleString()}
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-500">
-                      {listing.bedrooms} BD · {listing.bathrooms} BA ·{" "}
-                      {listing.area} sq.ft
+                      {listing.bedrooms || 0} BD · {listing.bathrooms || 0} BA ·{" "}
+                      {listing.area || 0} sq.ft
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
@@ -269,6 +348,7 @@ const MyListings = ({
                             handleStatusChange(listing._id, e.target.value)
                           }
                           className="block w-32 pl-3 pr-8 py-1.5 text-sm cursor-pointer border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
+                          disabled={!currentUser}
                         >
                           {statusOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -279,25 +359,28 @@ const MyListings = ({
                       </div>
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-500">
-                      {formatDate(listing.createdAt)}
+                      {formatDate(listing.createdAt || new Date())}
                     </td>
                     <td className="py-4 px-4 text-sm font-medium">
                       <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => handleEditListing(listing._id)}
-                          className="text-blue-600 hover:text-blue-900 whitespace-nowrap cursor-pointer"
+                          className="text-blue-600 hover:text-blue-900 whitespace-nowrap cursor-pointer disabled:opacity-50"
+                          disabled={!listing._id}
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteClick(listing._id)}
-                          className="text-red-600 hover:text-red-900 whitespace-nowrap cursor-pointer"
+                          className="text-red-600 hover:text-red-900 whitespace-nowrap cursor-pointer disabled:opacity-50"
+                          disabled={!listing._id}
                         >
                           Delete
                         </button>
                         <button
                           onClick={() => handleViewListing(listing._id)}
-                          className="text-green-600 hover:text-green-900 whitespace-nowrap cursor-pointer"
+                          className="text-green-600 hover:text-green-900 whitespace-nowrap cursor-pointer disabled:opacity-50"
+                          disabled={!listing._id}
                         >
                           View
                         </button>
