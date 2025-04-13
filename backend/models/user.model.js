@@ -54,7 +54,31 @@ const UserSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ["user", "admin"],
-      default: "user", // Default to regular user
+      default: "user",
+    },
+    bio: {
+      type: String,
+      default: "This user hasn't added a bio yet.",
+      maxlength: 200,
+    },
+    banStatus: {
+      isBanned: {
+        type: Boolean,
+        default: false,
+      },
+      reason: {
+        type: String,
+        default: null,
+      },
+      bannedAt: {
+        type: Date,
+        default: null,
+      },
+      bannedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
     },
   },
   { timestamps: true }

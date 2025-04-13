@@ -205,6 +205,13 @@ export const signin = async (req, res, next) => {
     const user = await User.findOne({ email });
     if (!user) return next(errorHandler(404, "User not found"));
 
+    // Check if user is banned
+    if (user.isBanned) {
+      return res.status(403).json({
+        message: "Your account has been banned. Please contact support.",
+      });
+    }
+
     const validPassword = bcryptjs.compareSync(password, user.password);
     if (!validPassword) return next(errorHandler(401, "Invalid credentials"));
 

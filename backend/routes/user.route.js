@@ -6,6 +6,7 @@ import {
   uploadProfilePicture,
   getUserDetails,
   getAllUsers,
+  getUserDetailsForPublic,
 } from "../controllers/user.controller.js";
 import { verifyToken } from "../utils/verifyUser.js";
 
@@ -17,6 +18,7 @@ router.delete("/delete/:id", [verifyToken], deleteUser);
 router.post("/update/:id", verifyToken, updateProfile);
 router.post("/upload-profile-picture", verifyToken, uploadProfilePicture);
 router.get("/:id", verifyToken, getUserDetails);
+router.get("/user-details/:id", getUserDetailsForPublic);
 router.get("/all", getAllUsers);
 
 export default router;

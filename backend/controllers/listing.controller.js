@@ -51,10 +51,17 @@ export const updateListing = async (req, res, next) => {
       return next(errorHandler(403, "You can only update your own listings"));
     }
 
+    // Prevent status change if adminLockedStatus is true
+    if (listing.adminLockedStatus && req.body.status) {
+      return next(
+        errorHandler(403, "Status is locked by admin and cannot be changed")
+      );
+    }
+
     const updatedListing = await Listing.findByIdAndUpdate(
       req.params.id,
-      req.body,
-      { new: true }
+      { $set: req.body },
+      { new: true, runValidators: true }
     );
 
     res.status(200).json(updatedListing);
@@ -73,7 +80,7 @@ export const getListing = async (req, res, next) => {
 
     // Fetch basic agent information
     const agent = await User.findById(listing.userRef).select(
-      "fullname email phone avatar"
+      "fullname email phone avatar _id"
     );
 
     // Log the agent data to verify it's being fetched correctly
@@ -84,6 +91,7 @@ export const getListing = async (req, res, next) => {
       ...listing._doc, // Use _doc to get the raw document object
       agent: agent
         ? {
+            _id: agent._id,
             fullname: agent.fullname,
             email: agent.email,
             phone: agent.phone,
@@ -214,9 +222,17 @@ export const updateListingStatus = async (req, res, next) => {
       return next(errorHandler(404, "Listing not found"));
     }
 
-    // Verify ownership
-    if (req.user.id !== listing.userRef.toString()) {
+    // Check if user is admin or owner
+    const isAdmin = req.user.role === "admin"; // Assuming role is set in req.user
+    if (!isAdmin && req.user.id !== listing.userRef.toString()) {
       return next(errorHandler(403, "You can only update your own listings"));
+    }
+
+    // Prevent non-admin users from changing status if locked
+    if (!isAdmin && listing.adminLockedStatus) {
+      return next(
+        errorHandler(403, "Status is locked by admin and cannot be changed")
+      );
     }
 
     // Update status
@@ -263,5 +279,15 @@ export const getListingsForHomePage = async (req, res) => {
   } catch (error) {
     console.error("Error fetching listings:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getListingsForPublic = async (req, res, next) => {
+  try {
+    const userId = req.params.userId;
+    const listings = await Listing.find({ userRef: userId, status: "active" });
+    res.status(200).json(listings);
+  } catch (error) {
+    next(error);
   }
 };

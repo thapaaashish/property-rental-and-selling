@@ -10,6 +10,7 @@ import {
   getAllListings,
   updateListingStatus,
   getListingsForHomePage,
+  getListingsForPublic,
 } from "../controllers/listing.controller.js";
 
 const router = express.Router();
@@ -31,6 +32,7 @@ router.get("/listings", getListings);
 router.get("/listings-home", getListingsForHomePage);
 
 router.get("/user/:userId", getListingsByUser);
+router.get("/user-public/:userId", getListingsForPublic);
 
 router.get("/all", getAllListings);
 

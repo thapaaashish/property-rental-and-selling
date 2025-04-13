@@ -17,6 +17,7 @@ import Wishlists from "./pages/Wishlists";
 import ListingLandingPage from "./pages/ListingLandingPage";
 import UserDashboard from "./pages/UserDashboard";
 import MyBookings from "./pages/Booking/MyBookings";
+import PublicUserProfilePage from "./pages/PublicUserProfilePage";
 
 export const App = () => {
   return (
@@ -33,6 +34,7 @@ export const App = () => {
           <Route path="/property/:id" element={<PropertyDetails />} />
           <Route path="/listings" element={<Listings />} />
           <Route path="/help-center" element={<HelpCenter />} />
+          <Route path="/user/:userId" element={<PublicUserProfilePage />} />
         </Route>
 
         {/* User Private Routes with Header and Footer */}

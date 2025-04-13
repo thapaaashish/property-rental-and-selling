@@ -368,3 +368,49 @@ export const sendBookingRequestConfirmation = async (email, bookingDetails) => {
     throw error;
   }
 };
+
+export const sendBanNotification = async (email, isBanned, banReason = null) => {
+  try {
+    const subject = isBanned 
+      ? "Your Account Has Been Banned" 
+      : "Your Account Has Been Unbanned";
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: ${isBanned ? "#e53e3e" : "#38a169"}">${subject}</h2>
+        <p style="font-size: 16px; line-height: 1.6;">
+          ${isBanned ? "We regret to inform you" : "We're pleased to inform you"} that your account has been 
+          <strong>${isBanned ? "banned" : "unbanned"}</strong> by the administrator.
+        </p>
+        
+        ${isBanned ? `
+          <div style="background-color: #fff5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
+            <h3 style="color: #e53e3e; margin-top: 0;">Ban Details:</h3>
+            ${banReason ? `<p><strong>Reason:</strong> ${banReason}</p>` : ''}
+            <p>You will no longer be able to access your account or make new bookings.</p>
+          </div>
+          <p>If you believe this is a mistake, please contact our support team at 
+            <a href="mailto:support@example.com">support@example.com</a>.
+          </p>
+        ` : `
+          <p>You can now log in and access all features of your account again.</p>
+          <p>We appreciate your understanding and look forward to serving you.</p>
+        `}
+        
+        <p style="margin-top: 20px; font-size: 14px; color: #718096;">
+          This is an automated message. Please do not reply directly to this email.
+        </p>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"${process.env.EMAIL_FROM_NAME || "Admin Team"}" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject,
+      html,
+    });
+  } catch (error) {
+    console.error("Error sending ban notification email:", error);
+    throw error;
+  }
+};

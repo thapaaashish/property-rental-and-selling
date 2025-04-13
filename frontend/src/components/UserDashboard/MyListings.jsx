@@ -268,17 +268,16 @@ const MyListings = ({
             </thead>
             <tbody className="divide-y divide-gray-200">
               {listings.map((listing) => {
+                if (!listing._id) return null; // Skip invalid listings
                 const currentStatus =
                   statusUpdates[listing._id] || listing.status || "active";
                 const statusOption =
                   statusOptions.find((opt) => opt.value === currentStatus) ||
                   statusOptions[0];
+                const isLocked = listing.adminLockedStatus === true; // Check adminLockedStatus
 
                 return (
-                  <tr
-                    key={listing._id || Math.random()}
-                    className="hover:bg-gray-50"
-                  >
+                  <tr key={listing._id} className="hover:bg-gray-50">
                     <td className="py-4 px-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12 bg-gray-200 rounded-md overflow-hidden">
@@ -347,8 +346,13 @@ const MyListings = ({
                           onChange={(e) =>
                             handleStatusChange(listing._id, e.target.value)
                           }
-                          className="block w-32 pl-3 pr-8 py-1.5 text-sm cursor-pointer border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
-                          disabled={!currentUser}
+                          className={`block w-32 pl-3 pr-8 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md ${
+                            isLocked
+                              ? "bg-gray-200 cursor-not-allowed"
+                              : "cursor-pointer"
+                          }`}
+                          disabled={!currentUser || isLocked} // Disable if locked
+                          title={isLocked ? "Status locked by admin" : ""}
                         >
                           {statusOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -356,6 +360,11 @@ const MyListings = ({
                             </option>
                           ))}
                         </select>
+                        {isLocked && (
+                          <span className="text-xs text-red-500 italic">
+                            Locked
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-500">

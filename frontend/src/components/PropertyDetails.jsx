@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   MapPin,
   Bed,
@@ -17,6 +17,7 @@ import {
   Share2,
   Calendar,
   DollarSign,
+  User,
 } from "lucide-react";
 import AddToWishlist from "../components/AddToWishlist";
 import ShareButton from "../components/Share/ShareButton";
@@ -25,13 +26,14 @@ import BookingForm from "../components/user/Booking";
 
 const PropertyDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [property, setProperty] = useState(null);
   const [agent, setAgent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState("description");
-  
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -234,7 +236,7 @@ const PropertyDetails = () => {
                 </div>
                 <div className="text-left md:text-right">
                   <p className="text-2xl font-semibold text-gray-900">
-                    ${property.price.toLocaleString()}
+                    Rs {property.price.toLocaleString()}
                   </p>
                   {property.rentOrSale === "Rent" && (
                     <p className="text-gray-500 text-xs">per month</p>
@@ -426,10 +428,18 @@ const PropertyDetails = () => {
                     </span>
                   </div>
                 </div>
-                <div className="pt-3 border-t border-gray-200">
+                <div className="pt-3 border-t border-gray-200 space-y-3">
                   <button className=" cursor-pointer w-full bg-gray-900 text-white font-medium px-4 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm flex justify-center items-center">
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Contact Agent
+                  </button>
+                  <button
+                    className="w-full bg-blue-600 text-white font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm flex justify-center items-center"
+                    onClick={() => navigate(`/user/${agent?._id}`)}
+                    disabled={!agent?._id}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    View Profile
                   </button>
                 </div>
               </div>

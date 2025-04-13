@@ -127,6 +127,20 @@ export const getUserDetails = async (req, res, next) => {
   }
 };
 
+export const getUserDetailsForPublic = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).select(
+      "fullname avatar bio role address city province zipCode createdAt"
+    );
+    if (!user) {
+      return next(errorHandler(404, "User not found"));
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getAllUsers = async (req, res, next) => {
   if (!req.admin || req.admin.role !== "admin") {
     return next(errorHandler(403, "Admin access required"));

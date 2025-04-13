@@ -111,6 +111,7 @@ const listingSchema = new mongoose.Schema(
       enum: ["active", "pending", "sold", "rented", "inactive"],
       default: "active",
     },
+    adminLockedStatus: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
