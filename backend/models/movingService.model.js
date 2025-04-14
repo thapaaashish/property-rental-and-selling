@@ -1,47 +1,54 @@
+// src/models/movingService.model.js
 import mongoose from "mongoose";
 
-const MovingServiceSchema = new mongoose.Schema(
+const movingServiceSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     contact: {
       phone: {
         type: String,
         required: true,
-        match: /^\+?[1-9]\d{1,14}$/, // Basic phone number validation
+        trim: true,
       },
       email: {
         type: String,
         required: true,
-        match: /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/, // Matches your email regex
+        trim: true,
+        lowercase: true,
       },
     },
-    locations: {
-      type: [String],
-      required: true,
-    },
+    locations: [
+      {
+        type: String,
+        required: true,
+        trim: true,
+      },
+    ],
     description: {
       type: String,
       required: true,
       trim: true,
     },
-    servicesOffered: {
-      type: [String],
-      required: true,
-    },
+    servicesOffered: [
+      {
+        type: String,
+        required: true,
+        trim: true,
+      },
+    ],
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
+      ref: "User",
       required: true,
     },
   },
-  { timestamps: true } // Adds createdAt and updatedAt automatically
+  { timestamps: true }
 );
 
-const MovingService = mongoose.model("MovingService", MovingServiceSchema);
+const MovingService = mongoose.model("MovingService", movingServiceSchema);
 
 export default MovingService;

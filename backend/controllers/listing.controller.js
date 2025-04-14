@@ -291,3 +291,22 @@ export const getListingsForPublic = async (req, res, next) => {
     next(error);
   }
 };
+
+// New controller for city counts
+export const getCityCounts = async (req, res, next) => {
+  try {
+    const cities = ["Kathmandu", "Pokhara"];
+    const counts = await Promise.all(
+      cities.map(async (city) => {
+        const count = await Listing.countDocuments({
+          "address.city": city,
+          status: "active",
+        });
+        return { name: city, properties: count };
+      })
+    );
+    res.status(200).json(counts);
+  } catch (error) {
+    next(errorHandler(500, "Error fetching city counts"));
+  }
+};

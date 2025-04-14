@@ -127,6 +127,8 @@ export const getUserDetails = async (req, res, next) => {
   }
 };
 
+// Get User Details for Public
+// This endpoint is for public access, so it doesn't require authentication
 export const getUserDetailsForPublic = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id).select(
@@ -141,6 +143,8 @@ export const getUserDetailsForPublic = async (req, res, next) => {
   }
 };
 
+// Get All Users (Admin Only)
+// This endpoint is for admin access only
 export const getAllUsers = async (req, res, next) => {
   if (!req.admin || req.admin.role !== "admin") {
     return next(errorHandler(403, "Admin access required"));

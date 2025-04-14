@@ -11,6 +11,7 @@ import listingRouter from "./routes/listing.route.js";
 import wishlistRouter from "./routes/wishlist.route.js";
 import movingServicesRouter from "./routes/movingServices.route.js";
 import bookingRouter from "./routes/booking.route.js";
+import movingServiceRoutes from "./routes/movingServices.route.js";
 
 import { autoCancelExpiredBookings } from "./controllers/booking.controller.js";
 
@@ -29,7 +30,7 @@ const app = express();
 // Enable CORS Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173", // Allow frontend access
+    origin: process.env.FRONTEND_URL, // Allow frontend access
     methods: "GET,POST,PUT,DELETE",
     credentials: true,
     optionsSuccessStatus: 200,
@@ -49,6 +50,7 @@ app.use("/api/wishlist", wishlistRouter);
 app.use("/api/moving-services", movingServicesRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/email", emailRouter); // New route for sending emails from the property inquiry form
+app.use("/api/moving-services", movingServiceRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

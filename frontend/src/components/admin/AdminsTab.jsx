@@ -1,16 +1,16 @@
-// src/components/admin/AdminsTab.jsx
 import React, { useState } from "react";
 import { Users } from "lucide-react";
+import AdminCard from "./AdminCard"; // Import the new AdminCard component
 
 const AdminsTab = ({
   users,
   currentUser,
-  handleDeleteUser,
   actionLoading,
   navigate,
   setUsers,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState(null); // State for selected admin
   const [formData, setFormData] = useState({
     fullname: "",
     email: "",
@@ -56,7 +56,7 @@ const AdminsTab = ({
       }
 
       // Update users state with the new admin
-      setUsers((prev) => [...prev, data]); // Assuming backend returns the new admin object
+      setUsers((prev) => [...prev, data]);
       setShowAddForm(false);
       setFormData({ fullname: "", email: "", password: "" });
     } catch (err) {
@@ -64,6 +64,14 @@ const AdminsTab = ({
     } finally {
       setFormLoading(false);
     }
+  };
+
+  const handleViewAdmin = (admin) => {
+    setSelectedAdmin(admin);
+  };
+
+  const handleCloseAdminCard = () => {
+    setSelectedAdmin(null);
   };
 
   return (
@@ -166,6 +174,11 @@ const AdminsTab = ({
         </div>
       )}
 
+      {/* Admin Card Modal */}
+      {selectedAdmin && (
+        <AdminCard admin={selectedAdmin} onClose={handleCloseAdminCard} />
+      )}
+
       {/* Admins Table */}
       {adminUsers.length === 0 ? (
         <div className="text-center py-16">
@@ -234,18 +247,11 @@ const AdminsTab = ({
                   <td className="py-4 px-4 text-sm font-medium">
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => navigate(`/user/${user._id}`)}
+                        onClick={() => handleViewAdmin(user)}
                         className="text-teal-500 hover:text-teal-600"
                         disabled={actionLoading}
                       >
                         View
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user._id)}
-                        className="text-red-500 hover:text-red-600"
-                        disabled={actionLoading || user._id === currentUser._id}
-                      >
-                        Delete
                       </button>
                     </div>
                   </td>

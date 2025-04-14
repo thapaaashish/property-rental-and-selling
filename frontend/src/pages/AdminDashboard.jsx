@@ -14,7 +14,17 @@ import StatsOverview from "../components/admin/StatsOverview";
 import UsersTab from "../components/admin/UsersTab";
 import AdminsTab from "../components/admin/AdminsTab";
 import Popup from "../components/Popup";
-import { Home, Package, Users, Settings, Menu, X, Shield } from "lucide-react";
+import {
+  Home,
+  Package,
+  Users,
+  Settings,
+  Menu,
+  X,
+  Shield,
+  Car,
+} from "lucide-react";
+import MovingServicesTab from "../components/admin/MovingServicesTab";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -195,8 +205,9 @@ const AdminDashboard = () => {
           {[
             { id: "overview", icon: Package, label: "Overview" },
             { id: "properties", icon: Home, label: "Properties" },
+            { id: "moving-services", icon: Car, label: "Moving Services" },
             { id: "users", icon: Users, label: "Users" },
-            { id: "admins", icon: Shield, label: "Admins" }, // New Admins tab
+            { id: "admins", icon: Shield, label: "Admins" },
             { id: "settings", icon: Settings, label: "Settings" },
           ].map((tab) => (
             <button
@@ -320,11 +331,19 @@ const AdminDashboard = () => {
                 navigate={navigate}
               />
             )}
+            {activeTab === "moving-services" && (
+              <MovingServicesTab
+                users={users}
+                currentUser={currentUser}
+                handleDeleteUser={handleDeleteUser}
+                actionLoading={actionLoading}
+                navigate={navigate}
+              />
+            )}
             {activeTab === "admins" && (
               <AdminsTab
                 users={users}
                 currentUser={currentUser}
-                handleDeleteUser={handleDeleteUser}
                 actionLoading={actionLoading}
                 navigate={navigate}
                 setUsers={setUsers}

@@ -1,22 +1,20 @@
 import express from "express";
 import {
-  test,
-  getAllMovingServices,
-  getMovingServiceById,
   createMovingService,
-  updateMovingService,
-  deleteMovingService,
+  getAllMovingServices,
+  getPublicMovingServices,
 } from "../controllers/movingServices.controller.js";
+import { verifyToken, isAdmin } from "../utils/verifyUser.js";
 
 const router = express.Router();
 
-router.get("/test", test);
 // Public routes
-router.get("/", getAllMovingServices);
-router.get("/:id", getMovingServiceById);
-// // Admin-only routes
-// router.post("/create", verifyAdminToken, createMovingService);
-// router.put("/update/:id", verifyAdminToken, updateMovingService);
-// router.delete("/delete/:id", verifyAdminToken, deleteMovingService);
+
+// Admin routes for moving services
+router.post("/", verifyToken, isAdmin, createMovingService);
+router.get("/", verifyToken, isAdmin, getAllMovingServices);
+
+// Public route (no authentication)
+router.get("/public", getPublicMovingServices);
 
 export default router;

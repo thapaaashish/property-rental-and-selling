@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const MovingServicePopup = ({
+export const MovingServicePopup = ({
   name,
   contact,
   locations,
@@ -66,7 +66,7 @@ const MovingServicePopup = ({
   );
 };
 
-const MovingServicesCardSmall = ({ name, location, onClick }) => {
+export const MovingServicesCardSmall = ({ name, location, onClick }) => {
   return (
     <div
       onClick={onClick}
@@ -82,26 +82,32 @@ const MovingServicesCardSmall = ({ name, location, onClick }) => {
 };
 
 const MovingServicesSection = () => {
+  const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
+  const [error, setError] = useState(null);
 
-  const movingServices = [
-    {
-      name: "Swift Movers",
-      contact: { phone: "+1-555-123-4567", email: "contact@swiftmovers.com" },
-      locations: ["Kathmnadu", "Bhaktapur", "Pokhara"],
-      description:
-        "Reliable and affordable moving services for residential and commercial properties.",
-      servicesOffered: ["Packing", "Transport", "Unpacking", "Storage"],
-    },
-    {
-      name: "PackSavvy Solutions",
-      contact: { phone: "+1-555-987-6543", email: "info@packsavvy.com" },
-      locations: ["Miami", "Houston", "New York"],
-      description:
-        "Specializing in quick and secure moving with a focus on customer satisfaction.",
-      servicesOffered: ["Local Moving", "Long-Distance", "Furniture Assembly"],
-    },
-  ];
+  // Fetch public moving services on mount
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const res = await fetch("/api/moving-services/public", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setServices(data);
+        } else {
+          setError(data.message || "Failed to fetch services");
+        }
+      } catch (err) {
+        setError("Error fetching services");
+      }
+    };
+    fetchServices();
+  }, []);
 
   return (
     <section className="py-8 bg-gray-100">
@@ -112,16 +118,25 @@ const MovingServicesSection = () => {
         <p className="text-center text-gray-600 text-sm mb-6">
           Need help moving? Explore our trusted partners.
         </p>
-        <div className="flex flex-wrap justify-center gap-4">
-          {movingServices.map((service, index) => (
-            <MovingServicesCardSmall
-              key={index}
-              name={service.name}
-              location={service.locations[0]} // Show the first location upfront
-              onClick={() => setSelectedService(service)}
-            />
-          ))}
-        </div>
+        {error && (
+          <p className="text-center text-red-500 text-sm mb-6">{error}</p>
+        )}
+        {services.length === 0 && !error ? (
+          <p className="text-center text-gray-600 text-sm">
+            No moving services available at the moment.
+          </p>
+        ) : (
+          <div className="flex flex-wrap justify-center gap-4">
+            {services.map((service) => (
+              <MovingServicesCardSmall
+                key={service._id}
+                name={service.name}
+                location={service.locations[0]} // Show the first location upfront
+                onClick={() => setSelectedService(service)}
+              />
+            ))}
+          </div>
+        )}
       </div>
       {selectedService && (
         <MovingServicePopup

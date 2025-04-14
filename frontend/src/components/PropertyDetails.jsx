@@ -1,3 +1,4 @@
+// src/components/PropertyDetails.jsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -23,6 +24,10 @@ import AddToWishlist from "../components/AddToWishlist";
 import ShareButton from "../components/Share/ShareButton";
 import GoogleMapComponent from "./GoogleMap";
 import BookingForm from "../components/user/Booking";
+import {
+  MovingServicesCardSmall,
+  MovingServicePopup,
+} from "../components/MovingServicesCard";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -33,6 +38,8 @@ const PropertyDetails = () => {
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState("description");
+  const [movingServices, setMovingServices] = useState([]);
+  const [selectedService, setSelectedService] = useState(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -62,6 +69,36 @@ const PropertyDetails = () => {
 
     if (id) fetchPropertyAndAgent();
   }, [id]);
+
+  // Fetch moving services when property city is available
+  useEffect(() => {
+    const fetchMovingServices = async () => {
+      if (!property?.address?.city) return;
+      try {
+        const res = await fetch("/api/moving-services/public", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await res.json();
+        if (res.ok) {
+          // Filter services where locations include the property's city (case-insensitive)
+          const city = property.address.city.toLowerCase();
+          const filteredServices = data.filter((service) =>
+            service.locations.some((loc) => loc.toLowerCase() === city)
+          );
+          setMovingServices(filteredServices);
+        } else {
+          console.error("Failed to fetch moving services:", data.message);
+        }
+      } catch (err) {
+        console.error("Error fetching moving services:", err);
+      }
+    };
+
+    fetchMovingServices();
+  }, [property?.address?.city]);
 
   const nextImage = () => {
     if (property?.imageUrls?.length > 1) {
@@ -429,7 +466,7 @@ const PropertyDetails = () => {
                   </div>
                 </div>
                 <div className="pt-3 border-t border-gray-200 space-y-3">
-                  <button className=" cursor-pointer w-full bg-gray-900 text-white font-medium px-4 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm flex justify-center items-center">
+                  <button className="cursor-pointer w-full bg-gray-900 text-white font-medium px-4 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm flex justify-center items-center">
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Contact Agent
                   </button>
@@ -453,6 +490,39 @@ const PropertyDetails = () => {
             </div>
           </div>
         </div>
+
+        {/* Moving Services Section */}
+        {property.address?.city && (
+          <section className="mt-8 bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">
+              Moving Services in {property.address.city}
+            </h2>
+            {movingServices.length === 0 ? (
+              <p className="text-gray-600 text-sm">
+                No moving services available in {property.address.city}.
+              </p>
+            ) : (
+              <div className="flex flex-wrap justify-center gap-4">
+                {movingServices.map((service) => (
+                  <MovingServicesCardSmall
+                    key={service._id}
+                    name={service.name}
+                    location={service.locations[0]} // Show first location
+                    onClick={() => setSelectedService(service)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Moving Service Popup */}
+        {selectedService && (
+          <MovingServicePopup
+            {...selectedService}
+            onClose={() => setSelectedService(null)}
+          />
+        )}
       </div>
     </div>
   );

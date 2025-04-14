@@ -159,7 +159,7 @@ const PublicUserProfilePage = () => {
                 </div>
 
                 {/* Location */}
-                <div className="flex items-start">
+                {/* <div className="flex items-start">
                   <MapPin className="h-5 w-5 text-gray-400 mr-3 mt-1" />
                   <div>
                     <p className="text-sm font-medium text-gray-500">
@@ -167,7 +167,7 @@ const PublicUserProfilePage = () => {
                     </p>
                     <p className="mt-1 text-sm text-gray-900">{fullAddress}</p>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Joined Date */}
                 <div className="flex items-start">
