@@ -50,6 +50,25 @@ const bookingSchema = new mongoose.Schema(
       enum: ["pending", "confirmed", "cancelled"],
       default: "pending",
     },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "failed"],
+      default: "pending",
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["khalti", null],
+      default: null,
+    },
+    paymentDate: {
+      type: Date,
+    },
+    pidx: {
+      type: String,
+    },
+    transactionId: {
+      type: String,
+    },
     totalPrice: {
       type: Number,
       required: true,

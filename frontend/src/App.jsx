@@ -18,6 +18,8 @@ import ListingLandingPage from "./pages/ListingLandingPage";
 import UserDashboard from "./pages/UserDashboard";
 import MyBookings from "./pages/Booking/MyBookings";
 import PublicUserProfilePage from "./pages/PublicUserProfilePage";
+import { useNavigate } from "react-router-dom";
+import Success from "./components/payment/PaymentSuccess";
 
 export const App = () => {
   return (
@@ -35,6 +37,8 @@ export const App = () => {
           <Route path="/listings" element={<Listings />} />
           <Route path="/help-center" element={<HelpCenter />} />
           <Route path="/user/:userId" element={<PublicUserProfilePage />} />
+          <Route path="/payment-success" element={<Success />} />
+          <Route path="/payment-failure" element={<Failure />} />
         </Route>
 
         {/* User Private Routes with Header and Footer */}
@@ -72,3 +76,16 @@ export const App = () => {
 };
 
 export default App;
+
+const Failure = () => {
+  const navigate = useNavigate();
+  return (
+    <div>
+      <h1>Payment Failed!</h1>
+      <p>There was an issue with your payment. Please try again.</p>
+      <button onClick={() => navigate("/")} className="go-home-button">
+        Go to Homepage
+      </button>
+    </div>
+  );
+};

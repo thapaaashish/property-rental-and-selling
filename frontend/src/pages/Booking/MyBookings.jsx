@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   CheckCircle,
   XCircle,
@@ -15,6 +15,8 @@ import {
 import Popup from "../../components/Popup";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import axios from "axios";
+import PaymentButton from "../../components/payment/PaymentButton";
 
 const MyBookings = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -31,7 +33,9 @@ const MyBookings = () => {
     visible: false,
     bookingId: null,
   });
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Edit form states
   const [editStartDate, setEditStartDate] = useState(null);
@@ -39,44 +43,45 @@ const MyBookings = () => {
   const [editTotalPrice, setEditTotalPrice] = useState(0);
   const [editLoading, setEditLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      if (!currentUser?._id) {
-        setError("Please sign in to view your bookings");
-        setLoading(false);
-        return;
-      }
+  // Fetch bookings
+  const fetchBookings = useCallback(async () => {
+    if (!currentUser?._id) {
+      setError("Please sign in to view your bookings");
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const response = await fetch(
-          `/api/bookings/my-bookings/${currentUser._id}`
-        );
-        const data = await response.json();
-        if (response.ok) {
-          const now = new Date();
-          const updatedBookings = data.map((booking) => {
-            if (
-              booking.status === "pending" &&
-              booking.expiresAt &&
-              new Date(booking.expiresAt) < now
-            ) {
-              return { ...booking, status: "expired" };
-            }
-            return booking;
-          });
-          setBookings(updatedBookings);
-        } else {
-          throw new Error(data.message || "Failed to fetch bookings");
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+    try {
+      const response = await fetch(
+        `/api/bookings/my-bookings/${currentUser._id}`
+      );
+      const data = await response.json();
+      if (response.ok) {
+        const now = new Date();
+        const updatedBookings = data.map((booking) => {
+          if (
+            booking.status === "pending" &&
+            booking.expiresAt &&
+            new Date(booking.expiresAt) < now
+          ) {
+            return { ...booking, status: "expired" };
+          }
+          return booking;
+        });
+        setBookings(updatedBookings);
+      } else {
+        throw new Error(data.message || "Failed to fetch bookings");
       }
-    };
-
-    fetchBookings();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }, [currentUser]);
+
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
 
   // Categorize bookings
   const activeBookings = bookings.filter(
@@ -264,45 +269,79 @@ const MyBookings = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <p className="text-sm text-gray-500">Booking Type</p>
-              <p className="font-medium">{booking.bookingType}</p>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-sm text-gray-500">Booking Type</p>
+                <p className="font-medium">{booking.bookingType}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Total Price</p>
+                <p className="font-medium">
+                  Rs {booking.totalPrice.toLocaleString()}
+                </p>
+              </div>
+              {booking.bookingType === "Rent" && (
+                <>
+                  <div>
+                    <p className="text-sm text-gray-500">Start Date</p>
+                    <p className="font-medium">
+                      {booking.startDate
+                        ? new Date(booking.startDate).toLocaleDateString()
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">End Date</p>
+                    <p className="font-medium">
+                      {booking.endDate
+                        ? new Date(booking.endDate).toLocaleDateString()
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Duration</p>
+                    <p className="font-medium">{booking.durationDays} days</p>
+                  </div>
+                </>
+              )}
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Price</p>
-              <p className="font-medium">
-                ${booking.totalPrice.toLocaleString()}
-              </p>
-            </div>
-            {booking.bookingType === "Rent" && (
-              <>
-                <div>
-                  <p className="text-sm text-gray-500">Start Date</p>
-                  <p className="font-medium">
-                    {booking.startDate
-                      ? new Date(booking.startDate).toLocaleDateString()
-                      : "N/A"}
-                  </p>
+
+            {booking.status === "confirmed" && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="text-sm text-gray-500">
+                      Payment Status:
+                    </span>
+                    <span
+                      className={`ml-2 font-medium ${
+                        booking.paymentStatus === "paid"
+                          ? "text-green-600"
+                          : booking.paymentStatus === "failed"
+                          ? "text-red-600"
+                          : "text-yellow-600"
+                      }`}
+                    >
+                      {booking.paymentStatus || "pending"}
+                    </span>
+                    {booking.paymentStatus === "failed" && (
+                      <div className="text-red-600 text-sm mt-1">
+                        Payment failed. Please try again or contact support.
+                      </div>
+                    )}
+                  </div>
+                  <PaymentButton
+                    booking={booking}
+                    onPaymentSuccess={fetchBookings}
+                  />
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">End Date</p>
-                  <p className="font-medium">
-                    {booking.endDate
-                      ? new Date(booking.endDate).toLocaleDateString()
-                      : "N/A"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Duration</p>
-                  <p className="font-medium">{booking.durationDays} days</p>
-                </div>
-              </>
+              </div>
             )}
-          </div>
+          </>
         )}
 
-        <div className="flex justify-end space-x-4">
+        <div className="flex justify-end space-x-4 mt-4">
           {booking.status === "pending" &&
             (!booking.expiresAt ||
               new Date(booking.expiresAt) > new Date()) && (
@@ -370,6 +409,13 @@ const MyBookings = () => {
         </p>
       </div>
 
+      {verifyingPayment && (
+        <div className="flex justify-center items-center mb-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-gray-400 mr-2"></div>
+          <span className="text-gray-600">Verifying payment...</span>
+        </div>
+      )}
+
       {bookings.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
           <p className="text-gray-600 mb-2">You have no bookings yet</p>
@@ -382,7 +428,6 @@ const MyBookings = () => {
         </div>
       ) : (
         <div className="space-y-8">
-          {/* Active Bookings Section */}
           {activeBookings.length > 0 && (
             <div>
               <div className="flex items-center mb-4">
@@ -398,7 +443,6 @@ const MyBookings = () => {
             </div>
           )}
 
-          {/* Pending Expired Bookings Section */}
           {pendingExpiredBookings.length > 0 && (
             <div>
               <div className="flex items-center mb-4">
@@ -414,7 +458,6 @@ const MyBookings = () => {
             </div>
           )}
 
-          {/* Deleted Property Bookings Section */}
           {deletedPropertyBookings.length > 0 && (
             <div>
               <div className="flex items-center mb-4">
@@ -430,7 +473,6 @@ const MyBookings = () => {
             </div>
           )}
 
-          {/* Cancelled Bookings Section */}
           {cancelledBookings.length > 0 && (
             <div>
               <div className="flex items-center mb-4">
@@ -448,7 +490,6 @@ const MyBookings = () => {
         </div>
       )}
 
-      {/* Cancel Confirmation Popup */}
       {cancelPopup.visible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 backdrop-blur-xs">
           <div className="bg-white border-2 border-gray-300 rounded-lg p-6 max-w-md w-full mx-4">
@@ -476,7 +517,6 @@ const MyBookings = () => {
         </div>
       )}
 
-      {/* Edit Booking Popup */}
       {editPopup.visible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 backdrop-blur-xs">
           <div className="bg-white border-2 border-gray-900 rounded-lg p-6 max-w-md w-full mx-4 relative">

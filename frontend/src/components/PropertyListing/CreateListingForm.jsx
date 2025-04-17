@@ -2,10 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
-import { ArrowLeft, CheckCircle, Upload, X } from "lucide-react";
-import Popup from "../components/Popup"; // Adjust the import path as needed
+import { ArrowLeft, Upload, X } from "lucide-react";
+import Popup from "../Popup"; // Adjust the import path as needed
+import ReviewSection from "./ReviewSection"; // New component import
+import LocationStep from "./LocationStep";
+import ImagesStep from "./ImagesStep";
 
-// FormInput Component (unchanged)
+// FormInput Component
 const FormInput = ({
   label,
   name,
@@ -29,7 +32,7 @@ const FormInput = ({
           value={value}
           onChange={onChange}
           disabled={disabled}
-          className={`w-full p-3 border border-gray-200 rounded-lg text-gray-700 focus:border-gray-900 focus:outline-none disabled:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
+          className={`w-full p-3 border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all disabled:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
         >
           <option value="">Select an option</option>
           {options.map((option, index) => (
@@ -65,7 +68,7 @@ const FormInput = ({
           value={value}
           onChange={onChange}
           disabled={disabled}
-          className={`w-full p-3 border border-gray-200 rounded-lg text-gray-700 focus:border-gray-900 focus:outline-none disabled:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
+          className={`w-full p-3 border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all disabled:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
         />
       )}
       {error && <p className="text-sm text-red-500">{error}</p>}
@@ -73,7 +76,7 @@ const FormInput = ({
   );
 };
 
-// GoogleMapComponent (unchanged)
+// GoogleMapComponent
 const steps = [
   "Property Type",
   "Rent or Sale",
@@ -155,7 +158,7 @@ const GoogleMapComponent = ({ onLocationSelect }) => {
   );
 };
 
-// Main Component with Submission Fix
+// Main Component
 const CreateListingForm = () => {
   const [step, setStep] = useState(0);
   const [files, setFiles] = useState([]);
@@ -171,19 +174,27 @@ const CreateListingForm = () => {
     address: { street: "", city: "", state: "", zip: "", country: "" },
     location: { type: "Point", coordinates: [0, 0] },
     amenities: [],
+    nearbyAmenities: "",
     imageUrls: [],
     userRef: "",
   });
   const [imageUploadError, setImageUploadError] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [submitting, setSubmitting] = useState(false); // New state for submission
-  const [submitted, setSubmitted] = useState(false); // Tracks successful submission
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
   const [isValid, setIsValid] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showErrorPopup, setShowErrorPopup] = useState(false);
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
+
+  useEffect(() => {
+    if (formData.listingType === "Room") {
+      setFormData((prev) => ({ ...prev, rentOrSale: "Rent" }));
+      setErrors((prev) => ({ ...prev, rentOrSale: "" }));
+    }
+  }, [formData.listingType]);
 
   useEffect(() => {
     setIsValid(validateStep());
@@ -205,6 +216,15 @@ const CreateListingForm = () => {
       ...prev,
       address: { ...prev.address, [name]: "" },
     }));
+  };
+
+  const handleLocationChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setErrors((prev) => ({ ...prev, location: "" }));
   };
 
   const handleAmenitiesChange = (e) => {
@@ -287,11 +307,11 @@ const CreateListingForm = () => {
       !isValid ||
       !currentUser?._id ||
       submitting ||
-      submitted // Prevent submission if already submitted
+      submitted
     )
       return;
 
-    setSubmitting(true); // Disable submit button
+    setSubmitting(true);
     try {
       const response = await fetch("/api/listings/create", {
         method: "POST",
@@ -303,12 +323,12 @@ const CreateListingForm = () => {
       });
 
       if (response.ok) {
-        setSubmitted(true); // Mark as submitted
+        setSubmitted(true);
         setShowSuccessPopup(true);
         setTimeout(() => {
-          navigate("/"); // Navigate after popup duration
-        }, 3000); // Matches popup duration
-        setTimeout(() => setSubmitted(false), 3500); // Re-enable after 3 seconds
+          navigate("/");
+        }, 3000);
+        setTimeout(() => setSubmitted(false), 3500);
       } else {
         console.error("Submission failed:", await response.text());
         setShowErrorPopup(true);
@@ -317,7 +337,7 @@ const CreateListingForm = () => {
       console.error("Error submitting listing:", error);
       setShowErrorPopup(true);
     } finally {
-      setSubmitting(false); // Re-enable submit button
+      setSubmitting(false);
     }
   };
 
@@ -339,8 +359,6 @@ const CreateListingForm = () => {
         newErrors.address = { ...newErrors.address, city: "Required" };
       if (!formData.address.state)
         newErrors.address = { ...newErrors.address, state: "Required" };
-      if (!formData.address.zip)
-        newErrors.address = { ...newErrors.address, zip: "Required" };
       if (!formData.address.country)
         newErrors.address = { ...newErrors.address, country: "Required" };
       if (
@@ -409,19 +427,30 @@ const CreateListingForm = () => {
               options={["Room", "Apartment", "House"]}
               error={errors.listingType}
               required
+              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
             />
           )}
           {step === 1 && (
-            <FormInput
-              label="Rent or Sale"
-              name="rentOrSale"
-              type="radio"
-              onChange={handleChange}
-              value={formData.rentOrSale}
-              options={["Rent", "Sale"]}
-              error={errors.rentOrSale}
-              required
-            />
+            <div className="space-y-4">
+              <FormInput
+                label="Rent or Sale"
+                name="rentOrSale"
+                type="radio"
+                onChange={handleChange}
+                value={formData.rentOrSale}
+                options={
+                  formData.listingType === "Room" ? ["Rent"] : ["Rent", "Sale"]
+                }
+                error={errors.rentOrSale}
+                required
+                disabled={formData.listingType === "Room"}
+              />
+              {formData.listingType === "Room" && (
+                <p className="text-sm text-gray-500">
+                  Rooms can only be listed for rent.
+                </p>
+              )}
+            </div>
           )}
           {step === 2 && (
             <div className="space-y-4">
@@ -433,6 +462,7 @@ const CreateListingForm = () => {
                 onChange={handleChange}
                 error={errors.title}
                 required
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
               />
               <FormInput
                 label="Price (Rs)"
@@ -442,6 +472,7 @@ const CreateListingForm = () => {
                 onChange={handleChange}
                 error={errors.price}
                 required
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
               />
               <FormInput
                 label="Bedrooms"
@@ -452,6 +483,7 @@ const CreateListingForm = () => {
                 error={errors.bedrooms}
                 required={formData.listingType !== "Room"}
                 disabled={formData.listingType === "Room"}
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
               />
               <FormInput
                 label="Bathrooms"
@@ -461,6 +493,7 @@ const CreateListingForm = () => {
                 onChange={handleChange}
                 error={errors.bathrooms}
                 required
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
               />
               <FormInput
                 label="Area (sqft)"
@@ -470,6 +503,7 @@ const CreateListingForm = () => {
                 onChange={handleChange}
                 error={errors.area}
                 required
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
               />
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -480,7 +514,7 @@ const CreateListingForm = () => {
                   value={formData.description}
                   onChange={handleChange}
                   rows="4"
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-900 focus:outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
                 />
                 {errors.description && (
                   <p className="text-sm text-red-500 mt-1">
@@ -491,62 +525,12 @@ const CreateListingForm = () => {
             </div>
           )}
           {step === 3 && (
-            <div className="space-y-6">
-              <GoogleMapComponent
-                onLocationSelect={(lat, lng, address) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    location: { type: "Point", coordinates: [lng, lat] },
-                    address,
-                  }));
-                }}
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormInput
-                  label="Street"
-                  name="street"
-                  type="text"
-                  value={formData.address.street}
-                  onChange={handleAddressChange}
-                />
-                <FormInput
-                  label="City"
-                  name="city"
-                  type="text"
-                  value={formData.address.city}
-                  onChange={handleAddressChange}
-                  error={errors.address?.city}
-                  required
-                />
-                <FormInput
-                  label="State"
-                  name="state"
-                  type="text"
-                  value={formData.address.state}
-                  onChange={handleAddressChange}
-                  error={errors.address?.state}
-                  required
-                />
-                <FormInput
-                  label="ZIP Code"
-                  name="zip"
-                  type="text"
-                  value={formData.address.zip}
-                  onChange={handleAddressChange}
-                  error={errors.address?.zip}
-                  required
-                />
-                <FormInput
-                  label="Country"
-                  name="country"
-                  type="text"
-                  value={formData.address.country}
-                  onChange={handleAddressChange}
-                  error={errors.address?.country}
-                  required
-                />
-              </div>
-            </div>
+            <LocationStep
+              formData={formData}
+              errors={errors}
+              handleAddressChange={handleAddressChange}
+              handleChange={handleLocationChange} // Use the new handler
+            />
           )}
           {step === 4 && (
             <div>
@@ -576,7 +560,7 @@ const CreateListingForm = () => {
                       value={amenity}
                       checked={formData.amenities.includes(amenity)}
                       onChange={handleAmenitiesChange}
-                      className="h-4 w-4 text-gray-900 border-gray-200 rounded"
+                      className="h-4 w-4 text-gray-900 border-gray-200 rounded focus:ring-2 focus:ring-gray-300"
                     />
                     {amenity}
                   </label>
@@ -588,123 +572,17 @@ const CreateListingForm = () => {
             </div>
           )}
           {step === 5 && (
-            <div className="space-y-4">
-              <div
-                className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center"
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-              >
-                <label className="flex items-center justify-center gap-2 text-gray-600 cursor-pointer">
-                  <Upload size={20} />
-                  <span>
-                    Drop images or <span className="text-gray-900">browse</span>
-                  </span>
-                  <input
-                    type="file"
-                    onChange={handleImageChange}
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                  />
-                </label>
-                <p className="text-xs text-gray-400 mt-1">Max 5MB, JPG/PNG</p>
-              </div>
-              {(files.length > 0 || formData.imageUrls.length > 0) && (
-                <div className="flex flex-wrap gap-3">
-                  {files.map((file, i) => (
-                    <div
-                      key={i}
-                      className="relative w-20 h-20 rounded-lg border border-gray-200 overflow-hidden"
-                    >
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={() =>
-                          setFiles((prev) =>
-                            prev.filter((_, index) => index !== i)
-                          )
-                        }
-                        className="absolute top-1 right-1 bg-gray-900 text-white rounded-full p-1"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                  {formData.imageUrls.map((url, i) => (
-                    <div
-                      key={i}
-                      className="relative w-20 h-20 rounded-lg border border-gray-200 overflow-hidden"
-                    >
-                      <img
-                        src={url}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={() => handleRemoveImage(i)}
-                        className="absolute top-1 right-1 bg-gray-900 text-white rounded-full p-1"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={handleImageSubmit}
-                disabled={uploading || files.length === 0}
-                className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-400"
-              >
-                {uploading ? "Uploading..." : "Upload"}
-              </button>
-              {imageUploadError && (
-                <p className="text-sm text-red-500">{imageUploadError}</p>
-              )}
-            </div>
+            <ImagesStep
+              files={files}
+              setFiles={setFiles}
+              formData={formData}
+              handleRemoveImage={handleRemoveImage}
+              uploading={uploading}
+              imageUploadError={imageUploadError}
+              handleImageSubmit={handleImageSubmit}
+            />
           )}
-          {step === 6 && (
-            <div className="space-y-4 border border-gray-200 rounded-lg p-4">
-              <p>
-                <strong>Type:</strong> {formData.listingType}
-              </p>
-              <p>
-                <strong>Rent/Sale:</strong> {formData.rentOrSale}
-              </p>
-              <p>
-                <strong>Title:</strong> {formData.title}
-              </p>
-              <p>
-                <strong>Description:</strong> {formData.description}
-              </p>
-              <p>
-                <strong>Price:</strong> Rs {formData.price}
-              </p>
-              <p>
-                <strong>Bedrooms:</strong> {formData.bedrooms}
-              </p>
-              <p>
-                <strong>Bathrooms:</strong> {formData.bathrooms}
-              </p>
-              <p>
-                <strong>Area:</strong> {formData.area} sqft
-              </p>
-              <p>
-                <strong>Address:</strong>{" "}
-                {Object.values(formData.address).filter(Boolean).join(", ")}
-              </p>
-              <p>
-                <strong>Location:</strong> {formData.location.coordinates[1]},{" "}
-                {formData.location.coordinates[0]}
-              </p>
-              <p>
-                <strong>Amenities:</strong> {formData.amenities.join(", ")}
-              </p>
-            </div>
-          )}
+          {step === 6 && <ReviewSection formData={formData} />}
         </form>
       </div>
 
@@ -714,15 +592,15 @@ const CreateListingForm = () => {
           {step > 0 && (
             <button
               onClick={prevStep}
-              className="px-4 py-2 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100"
+              className="px-4 py-2 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
             >
               Previous
             </button>
           )}
           <button
             onClick={step < steps.length - 1 ? nextStep : handleSubmit}
-            disabled={!isValid || submitting || submitted} // Disable if submitted
-            className={`px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-700 disabled:bg-gray-400`}
+            disabled={!isValid || submitting || submitted}
+            className={`px-4 py-2 rounded-lg bg-gradient-to-r from-gray-800 to-gray-900 text-white hover:from-gray-900 hover:to-black transition-all disabled:bg-gray-400 disabled:cursor-not-allowed`}
           >
             {step < steps.length - 1
               ? "Next"

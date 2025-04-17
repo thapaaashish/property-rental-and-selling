@@ -20,7 +20,10 @@ const BookingForm = ({ property }) => {
   const userId = currentUser?._id;
 
   const MINIMUM_BOOKING_DAYS = 30;
+  const MINIMUM_START_DAYS = 7;
   const today = new Date();
+  const minimumStartDate = new Date(today);
+  minimumStartDate.setDate(today.getDate() + MINIMUM_START_DAYS);
 
   const [showForm, setShowForm] = useState(false);
   const [startDate, setStartDate] = useState(null);
@@ -38,7 +41,7 @@ const BookingForm = ({ property }) => {
   });
   const [hasExistingBooking, setHasExistingBooking] = useState(false);
 
-  const isOwner = userId === property.userRef; // userRef is still the ID from getListing
+  const isOwner = userId === property.userRef;
 
   useEffect(() => {
     const checkExistingBooking = async () => {
@@ -72,6 +75,21 @@ const BookingForm = ({ property }) => {
     return Math.round(Math.max(days, MINIMUM_BOOKING_DAYS) * pricePerDay);
   };
 
+  const getMinimumEndDate = () => {
+    if (!startDate) return null;
+    const minEndDate = new Date(startDate);
+    minEndDate.setDate(startDate.getDate() + MINIMUM_BOOKING_DAYS);
+    return minEndDate;
+  };
+
+  const isValidBookingDuration = () => {
+    if (!startDate || !endDate) return false;
+    const durationDays = Math.ceil(
+      (endDate - startDate) / (1000 * 60 * 60 * 24)
+    );
+    return durationDays >= MINIMUM_BOOKING_DAYS;
+  };
+
   const handleBooking = async () => {
     try {
       if (hasExistingBooking) {
@@ -86,11 +104,8 @@ const BookingForm = ({ property }) => {
 
       if (property.rentOrSale !== "Rent") return;
 
-      const durationDays = Math.ceil(
-        (endDate - startDate) / (1000 * 60 * 60 * 24)
-      );
-      if (durationDays < MINIMUM_BOOKING_DAYS) {
-        throw new Error(`Minimum booking is ${MINIMUM_BOOKING_DAYS} day(s).`);
+      if (!isValidBookingDuration()) {
+        throw new Error(`Minimum booking is ${MINIMUM_BOOKING_DAYS} days.`);
       }
 
       const bookingData = {
@@ -99,7 +114,7 @@ const BookingForm = ({ property }) => {
         bookingType: "Rent",
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        durationDays,
+        durationDays: Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)),
         totalPrice: calculateTotalPrice(startDate, endDate),
       };
 
@@ -175,29 +190,31 @@ const BookingForm = ({ property }) => {
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <h3 className="font-medium text-gray-900 flex items-center">
-          <Calendar className="mr-2 h-4 w-4" />
-          {property.rentOrSale === "Rent" ? "Book Now" : "Buy This Property"}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 max-w-md mx-auto">
+      <div className="p-6 border-b border-gray-100 bg-gray-50">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          <Calendar className="mr-2 h-5 w-5 text-gray-600" />
+          {property.rentOrSale === "Rent"
+            ? "Book This Property"
+            : "Buy This Property"}
         </h3>
       </div>
 
-      <div className="p-4">
+      <div className="p-6">
         {isOwner ? (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-yellow-400" />
-              <p className="ml-3 text-sm text-yellow-700">
-                You are the owner of this property and cannot book it.
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-md">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              <p className="ml-3 text-sm text-amber-800">
+                You cannot book your own property.
               </p>
             </div>
           </div>
         ) : hasExistingBooking ? (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-              <p className="ml-3 text-sm text-red-700">
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <p className="ml-3 text-sm text-red-800">
                 You have already booked this property!
               </p>
             </div>
@@ -205,7 +222,7 @@ const BookingForm = ({ property }) => {
         ) : !showForm ? (
           <button
             onClick={() => setShowForm(true)}
-            className="w-full py-2.5 rounded-md font-medium bg-gray-900 text-white hover:bg-gray-800 transition-colors text-sm"
+            className="w-full py-3 px-4 rounded-lg font-semibold bg-gradient-to-r from-gray-800 to-gray-900 text-white hover:from-gray-900 hover:to-black transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isOwner || hasExistingBooking}
           >
             {property.rentOrSale === "Rent"
@@ -213,44 +230,79 @@ const BookingForm = ({ property }) => {
               : "Contact Agent"}
           </button>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {property.rentOrSale === "Rent" ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <label
+                      htmlFor="start-date"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
                       Start Date
                     </label>
-                    <DatePicker
-                      selected={startDate}
-                      onChange={setStartDate}
-                      selectsStart
-                      startDate={startDate}
-                      endDate={endDate}
-                      minDate={today}
-                      className="w-full p-2 text-sm border border-gray-300 rounded"
-                    />
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <DatePicker
+                        id="start-date"
+                        selected={startDate}
+                        onChange={(date) => {
+                          setStartDate(date);
+                          if (endDate && endDate < getMinimumEndDate()) {
+                            setEndDate(null);
+                          }
+                        }}
+                        selectsStart
+                        startDate={startDate}
+                        endDate={endDate}
+                        minDate={minimumStartDate}
+                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
+                        placeholderText="Select start date (min 7 days from today)"
+                        aria-describedby="start-date-help"
+                      />
+                    </div>
+                    <p
+                      id="start-date-help"
+                      className="mt-1 text-xs text-gray-500"
+                    >
+                      Must be at least 7 days from today.
+                    </p>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <div className="relative">
+                    <label
+                      htmlFor="end-date"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
                       End Date
                     </label>
-                    <DatePicker
-                      selected={endDate}
-                      onChange={setEndDate}
-                      selectsEnd
-                      startDate={startDate}
-                      endDate={endDate}
-                      minDate={startDate || today}
-                      className="w-full p-2 text-sm border border-gray-300 rounded"
-                      disabled={!startDate}
-                    />
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <DatePicker
+                        id="end-date"
+                        selected={endDate}
+                        onChange={setEndDate}
+                        selectsEnd
+                        startDate={startDate}
+                        endDate={endDate}
+                        minDate={getMinimumEndDate()}
+                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
+                        disabled={!startDate}
+                        placeholderText="Select end date"
+                        aria-describedby="end-date-help"
+                      />
+                    </div>
+                    <p
+                      id="end-date-help"
+                      className="mt-1 text-xs text-gray-500"
+                    >
+                      Must be at least 30 days from start date.
+                    </p>
                   </div>
                 </div>
                 {startDate && endDate && (
-                  <div className="p-3 border border-gray-200 rounded-md bg-gray-50">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Duration:</span>
+                  <div className="p-4 border border-gray-100 rounded-lg bg-gray-50 transition-all duration-300">
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Duration</span>
                       <span>
                         {Math.ceil(
                           (endDate - startDate) / (1000 * 60 * 60 * 24)
@@ -258,8 +310,8 @@ const BookingForm = ({ property }) => {
                         days
                       </span>
                     </div>
-                    <div className="flex justify-between font-medium mt-1">
-                      <span>Total:</span>
+                    <div className="flex justify-between text-base font-semibold text-gray-900 mt-2">
+                      <span>Total</span>
                       <span>
                         Rs{" "}
                         {calculateTotalPrice(
@@ -268,30 +320,65 @@ const BookingForm = ({ property }) => {
                         ).toLocaleString()}
                       </span>
                     </div>
+                    {!isValidBookingDuration() && (
+                      <p className="mt-2 text-xs text-red-600 flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        Booking must be at least {MINIMUM_BOOKING_DAYS} days.
+                      </p>
+                    )}
                   </div>
                 )}
-                <div className="flex space-x-3">
+                <div className="flex space-x-4">
                   <button
                     onClick={() => setShowForm(false)}
-                    className="flex-1 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="flex-1 py-3 px-4 text-sm font-medium border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all"
                   >
-                    <X className="inline mr-1 h-4 w-4" />
+                    <X className="inline mr-2 h-4 w-4" />
                     Cancel
                   </button>
                   <button
                     onClick={handleBooking}
-                    disabled={isBooking || !startDate || !endDate}
-                    className={`flex-1 py-2 text-sm font-medium text-white rounded-md ${
-                      isBooking
-                        ? "bg-gray-400"
-                        : "bg-gray-900 hover:bg-gray-800"
+                    disabled={
+                      isBooking ||
+                      !startDate ||
+                      !endDate ||
+                      !isValidBookingDuration()
+                    }
+                    className={`flex-1 py-3 px-4 text-sm font-semibold text-white rounded-lg transition-all ${
+                      isBooking ||
+                      !startDate ||
+                      !endDate ||
+                      !isValidBookingDuration()
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black"
                     }`}
+                    aria-label="Confirm booking"
                   >
                     {isBooking ? (
-                      "Processing..."
+                      <span className="flex items-center justify-center">
+                        <svg
+                          className="animate-spin h-5 w-5 mr-2 text-white"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
+                          />
+                        </svg>
+                        Processing...
+                      </span>
                     ) : (
                       <>
-                        <Check className="inline mr-1 h-4 w-4" />
+                        <Check className="inline mr-2 h-4 w-4" />
                         Confirm Booking
                       </>
                     )}
@@ -299,97 +386,132 @@ const BookingForm = ({ property }) => {
                 </div>
               </>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {!showEmailForm ? (
                   <>
-                    <div className="p-3 border border-gray-200 rounded-md bg-gray-50">
-                      <div className="flex justify-between font-medium text-sm">
-                        <span>Sale Price:</span>
+                    <div className="p-4 border border-gray-100 rounded-lg bg-gray-50">
+                      <div className="flex justify-between text-base font-semibold text-gray-900">
+                        <span>Sale Price</span>
                         <span>Rs {property.price.toLocaleString()}</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Contact the agent directly for more details.
+                      <p className="text-sm text-gray-500 mt-2">
+                        Contact the agent for more details.
                       </p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <button
                         onClick={() => setShowEmailForm(true)}
                         disabled={!agentEmail}
-                        className={`py-2 text-sm font-medium rounded-md transition-colors ${
+                        className={`py-3 px-4 text-sm font-semibold rounded-lg transition-all ${
                           !agentEmail
-                            ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                            : "bg-gray-900 text-white hover:bg-gray-800"
+                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            : "bg-gradient-to-r from-gray-800 to-gray-900 text-white hover:from-gray-900 hover:to-black"
                         }`}
+                        aria-label="Send email to agent"
                       >
-                        <Mail className="inline mr-1 h-4 w-4" />
+                        <Mail className="inline mr-2 h-4 w-4" />
                         Send Mail
                       </button>
                       <a
                         href={`tel:${property.agent?.phone || "#"}`}
-                        className="py-2 text-sm font-medium bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors text-center"
+                        className="py-3 px-4 text-sm font-semibold bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-lg hover:from-gray-900 hover:to-black transition-all text-center"
+                        aria-label="Call agent"
                       >
-                        <Phone className="inline mr-1 h-4 w-4" />
+                        <Phone className="inline mr-2 h-4 w-4" />
                         Call
                       </a>
                       <button
                         onClick={() =>
                           showPopup("SMS feature coming soon!", "info")
                         }
-                        className="py-2 text-sm font-medium bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors"
+                        className="py-3 px-4 text-sm font-semibold bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-lg hover:from-gray-900 hover:to-black transition-all"
+                        aria-label="Send message to agent"
                       >
-                        <MessageSquare className="inline mr-1 h-4 w-4" />
+                        <MessageSquare className="inline mr-2 h-4 w-4" />
                         Send Message
                       </button>
                     </div>
                   </>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="email-subject"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Subject
                       </label>
                       <input
+                        id="email-subject"
                         type="text"
                         value={emailSubject}
                         onChange={(e) => setEmailSubject(e.target.value)}
-                        className="w-full p-2 text-sm border border-gray-300 rounded"
+                        className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
                         placeholder="Enter email subject"
+                        aria-required="true"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="email-message"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Message
                       </label>
                       <textarea
+                        id="email-message"
                         value={emailMessage}
                         onChange={(e) => setEmailMessage(e.target.value)}
-                        className="w-full p-2 text-sm border border-gray-300 rounded"
+                        className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
                         rows="4"
                         placeholder="Enter your message"
+                        aria-required="true"
                       />
                     </div>
-                    <div className="flex space-x-3">
+                    <div className="flex space-x-4">
                       <button
                         onClick={() => setShowEmailForm(false)}
-                        className="flex-1 py-2 text-sm font-medium border border-gray-300 rounded-md hover:bg-gray-50"
+                        className="flex-1 py-3 px-4 text-sm font-medium border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all"
+                        aria-label="Cancel email"
                       >
-                        <X className="inline mr-1 h-4 w-4" />
+                        <X className="inline mr-2 h-4 w-4" />
                         Cancel
                       </button>
                       <button
                         onClick={handleSendEmail}
                         disabled={emailSending || !agentEmail}
-                        className={`flex-1 py-2 text-sm font-medium text-white rounded-md ${
+                        className={`flex-1 py-3 px-4 text-sm font-semibold text-white rounded-lg transition-all ${
                           emailSending || !agentEmail
-                            ? "bg-gray-400"
-                            : "bg-gray-900 hover:bg-gray-800"
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black"
                         }`}
+                        aria-label="Send email"
                       >
                         {emailSending ? (
-                          "Sending..."
+                          <span className="flex items-center justify-center">
+                            <svg
+                              className="animate-spin h-5 w-5 mr-2 text-white"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
+                              />
+                            </svg>
+                            Sending...
+                          </span>
                         ) : (
                           <>
-                            <Mail className="inline mr-1 h-4 w-4" />
+                            <Mail className="inline mr-2 h-4 w-4" />
                             Send Email
                           </>
                         )}

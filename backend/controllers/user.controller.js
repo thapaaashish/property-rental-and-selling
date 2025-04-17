@@ -53,7 +53,8 @@ export const deleteUser = async (req, res, next) => {
 // Update User Profile
 export const updateProfile = async (req, res, next) => {
   const { id } = req.params;
-  const { fullname, email, phone, address, city, province, zipCode } = req.body;
+  const { fullname, email, phone, address, city, province, zipCode, bio } =
+    req.body;
 
   try {
     // Check if the user is updating their own profile
@@ -72,6 +73,7 @@ export const updateProfile = async (req, res, next) => {
     // Update user fields
     user.fullname = fullname || user.fullname;
     user.email = email || user.email;
+    user.bio = bio || user.bio;
     user.phone = phone || user.phone;
     user.address = address || user.address;
     user.city = city || user.city;

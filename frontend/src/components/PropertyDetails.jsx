@@ -387,37 +387,29 @@ const PropertyDetails = () => {
                     <div className="aspect-[16/9] overflow-hidden rounded-md bg-gray-100 mb-4 border border-gray-200">
                       <GoogleMapComponent lat={lat} lng={lng} />
                     </div>
-                    <div className="space-y-3">
-                      <h4 className="text-md font-medium text-gray-900">
-                        Nearby Amenities
-                      </h4>
-                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <li className="flex items-center p-2 rounded-md border border-gray-200">
-                          <div className="mr-2 h-1.5 w-1.5 rounded-full bg-gray-500" />
-                          <span className="text-gray-700 text-sm">
-                            Schools within 1 mile
-                          </span>
-                        </li>
-                        <li className="flex items-center p-2 rounded-md border border-gray-200">
-                          <div className="mr-2 h-1.5 w-1.5 rounded-full bg-gray-500" />
-                          <span className="text-gray-700 text-sm">
-                            Shopping centers within 2 miles
-                          </span>
-                        </li>
-                        <li className="flex items-center p-2 rounded-md border border-gray-200">
-                          <div className="mr-2 h-1.5 w-1.5 rounded-full bg-gray-500" />
-                          <span className="text-gray-700 text-sm">
-                            Public transportation within 0.5 miles
-                          </span>
-                        </li>
-                        <li className="flex items-center p-2 rounded-md border border-gray-200">
-                          <div className="mr-2 h-1.5 w-1.5 rounded-full bg-gray-500" />
-                          <span className="text-gray-700 text-sm">
-                            Parks and recreation within 1 mile
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
+                    {property.nearbyAmenities && (
+                      <div className="space-y-3">
+                        <h4 className="text-md font-medium text-gray-900">
+                          Nearby Amenities
+                        </h4>
+                        <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {property.nearbyAmenities
+                            .split("\n") // Split by new lines if stored as multiline text
+                            .filter((amenity) => amenity.trim() !== "") // Remove empty lines
+                            .map((amenity, index) => (
+                              <li
+                                key={index}
+                                className="flex items-center p-2 rounded-md border border-gray-200"
+                              >
+                                <div className="mr-2 h-1.5 w-1.5 rounded-full bg-gray-500" />
+                                <span className="text-gray-700 text-sm">
+                                  {amenity.trim()}
+                                </span>
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

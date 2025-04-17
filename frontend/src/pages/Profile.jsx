@@ -1,11 +1,20 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { CheckCircle, Camera, Edit2, Mail, Phone, MapPin } from "lucide-react";
+import {
+  CheckCircle,
+  Camera,
+  Edit2,
+  Mail,
+  Phone,
+  MapPin,
+  Upload,
+} from "lucide-react";
 import ChangePassword from "../components/user/ChangePassword";
 import { useNavigate } from "react-router-dom";
 import DeleteAccount from "../components/user/DeleteAccount";
 import { updateUser } from "../redux/user/userSlice";
 import heic2any from "heic2any";
+import Popup from "../components/Popup";
 
 const Profile = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -17,7 +26,11 @@ const Profile = () => {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [popup, setPopup] = useState({
+    show: false,
+    message: "",
+    type: "error",
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -29,8 +42,8 @@ const Profile = () => {
 
   const handleSaveProfile = async () => {
     try {
+      setIsLoading(true);
       const response = await fetch(`/api/user/update/${currentUser._id}`, {
-        // Use full backend URL
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -47,8 +60,19 @@ const Profile = () => {
       const data = await response.json();
       dispatch(updateUser(data));
       setIsEditing(false);
+      setPopup({
+        show: true,
+        message: "Profile updated successfully!",
+        type: "success",
+      });
     } catch (error) {
-      console.error("Error updating profile:", error.message);
+      setPopup({
+        show: true,
+        message: error.message,
+        type: "error",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,20 +80,15 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (file) {
       try {
+        setIsLoading(true);
         let imageFile = file;
 
-        // Check the file type
-        console.log("File type:", file.type);
-
-        // Convert .heic to .jpg if the file is in .heic format
         if (file.name.toLowerCase().endsWith(".heic")) {
           const conversionResult = await heic2any({
             blob: file,
-            toType: "image/jpeg", // Convert to JPEG
-            quality: 0.8, // Adjust quality (0 to 1)
+            toType: "image/jpeg",
+            quality: 0.8,
           });
-          console.log("Conversion result:", conversionResult);
-
           imageFile = new File(
             [conversionResult],
             file.name.replace(/\.heic$/i, ".jpg"),
@@ -79,22 +98,19 @@ const Profile = () => {
           );
         }
 
-        // Show the selected image in the profile frame immediately
         const localImageUrl = URL.createObjectURL(imageFile);
-        console.log("Local image URL:", localImageUrl);
         setUserProfile((prev) => ({
           ...prev,
-          avatar: localImageUrl, // Temporarily set the local image URL
+          avatar: localImageUrl,
         }));
 
-        // Upload the image to Cloudinary
         const formData = new FormData();
         formData.append("file", imageFile);
         formData.append(
           "upload_preset",
           import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
         );
-        formData.append("folder", "HomeFinder/profile_picture/users"); // Specify the folder in Cloudinary
+        formData.append("folder", "HomeFinder/profile_picture/users");
 
         const response = await fetch(
           `https://api.cloudinary.com/v1_1/${
@@ -108,15 +124,12 @@ const Profile = () => {
 
         if (!response.ok) {
           const errorResponse = await response.json();
-          console.error("Cloudinary API Error:", errorResponse);
           throw new Error("Failed to upload image to Cloudinary");
         }
 
-        // Get the secure URL from Cloudinary
         const result = await response.json();
         const imageUrl = result.secure_url;
 
-        // Save the image URL to the database
         const saveResponse = await fetch("/api/user/upload-profile-picture", {
           method: "POST",
           headers: {
@@ -132,19 +145,32 @@ const Profile = () => {
           );
         }
 
-        // Update the user profile in the state and Redux store
         const updatedUser = { ...userProfile, avatar: imageUrl };
         setUserProfile(updatedUser);
-        dispatch(updateUser(updatedUser)); // Update Redux store
+        dispatch(updateUser(updatedUser));
+        setPopup({
+          show: true,
+          message: "Profile picture updated successfully!",
+          type: "success",
+        });
       } catch (error) {
-        console.error("Error uploading profile picture:", error);
-        // Revert to the previous avatar if the upload fails
         setUserProfile((prev) => ({
           ...prev,
-          avatar: currentUser.avatar, // Revert to the original avatar
+          avatar: currentUser.avatar,
         }));
+        setPopup({
+          show: true,
+          message: error.message,
+          type: "error",
+        });
+      } finally {
+        setIsLoading(false);
       }
     }
+  };
+
+  const handleClosePopup = () => {
+    setPopup({ show: false, message: "", type: "error" });
   };
 
   return (
@@ -170,7 +196,7 @@ const Profile = () => {
               <div className="relative">
                 <img
                   src={
-                    currentUser.avatar ||
+                    userProfile.avatar ||
                     "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1741280259/default-avatar_oabgol.png"
                   }
                   alt="User Avatar"
@@ -190,7 +216,7 @@ const Profile = () => {
               </div>
               <div className="ml-4 mb-4">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {currentUser.fullname || "User"}
+                  {userProfile.fullname || "User"}
                 </h2>
                 <div className="flex items-center text-green-600">
                   <CheckCircle className="h-4 w-4 mr-1" />
@@ -276,12 +302,14 @@ const Profile = () => {
                       <input
                         type="text"
                         name="fullname"
-                        value={userProfile.fullname}
+                        value={userProfile.fullname || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     ) : (
-                      <p className="text-gray-900">{userProfile.fullname}</p>
+                      <p className="text-gray-900">
+                        {userProfile.fullname || "N/A"}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -294,6 +322,24 @@ const Profile = () => {
                         {currentUser.email || "N/A"}
                       </p>
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Bio
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="bio"
+                        value={userProfile.bio || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <p className="text-gray-900">
+                        {userProfile.bio || "N/A"}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -321,12 +367,14 @@ const Profile = () => {
                         <input
                           type="tel"
                           name="phone"
-                          value={userProfile.phone}
+                          value={userProfile.phone || ""}
                           onChange={handleInputChange}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         />
                       ) : (
-                        <p className="text-gray-900">{userProfile.phone}</p>
+                        <p className="text-gray-900">
+                          {userProfile.phone || "N/A"}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -340,12 +388,14 @@ const Profile = () => {
                         <input
                           type="text"
                           name="address"
-                          value={userProfile.address}
+                          value={userProfile.address || ""}
                           onChange={handleInputChange}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         />
                       ) : (
-                        <p className="text-gray-900">{userProfile.address}</p>
+                        <p className="text-gray-900">
+                          {userProfile.address || "N/A"}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -357,12 +407,14 @@ const Profile = () => {
                       <input
                         type="text"
                         name="city"
-                        value={userProfile.city}
+                        value={userProfile.city || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     ) : (
-                      <p className="text-gray-900">{userProfile.city}</p>
+                      <p className="text-gray-900">
+                        {userProfile.city || "N/A"}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -373,12 +425,14 @@ const Profile = () => {
                       <input
                         type="text"
                         name="province"
-                        value={userProfile.province}
+                        value={userProfile.province || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     ) : (
-                      <p className="text-gray-900">{userProfile.province}</p>
+                      <p className="text-gray-900">
+                        {userProfile.province || "N/A"}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -389,58 +443,91 @@ const Profile = () => {
                       <input
                         type="text"
                         name="zipCode"
-                        value={userProfile.zipCode}
+                        value={userProfile.zipCode || ""}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     ) : (
-                      <p className="text-gray-900">{userProfile.zipCode}</p>
+                      <p className="text-gray-900">
+                        {userProfile.zipCode || "N/A"}
+                      </p>
                     )}
                   </div>
                 </div>
               )}
 
               {activeTab === "security" && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Account Security
-                  </h3>
-                  <div className="space-y-4">
+                <div className="space-y-8">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Identity Verification (KYC)
+                    </h3>
+                    <p className="text-gray-600 mb-4 text-sm">
+                      Verify your identity to unlock all features and ensure
+                      secure transactions.
+                    </p>
                     <div className="border border-gray-200 rounded-md p-4">
-                      <div className="flex justify-between items-center">
+                      <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-medium text-gray-900">
-                            Change Password
+                            Government ID
                           </h4>
                           <p className="text-sm text-gray-500">
-                            Update your password regularly for better security
+                            Upload a valid passport, driver’s license, or ID
+                            card
                           </p>
                         </div>
-                        <button
-                          onClick={() => setShowChangePassword(true)}
-                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                        <a
+                          href="/kyc-verification"
+                          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                         >
-                          Update
-                        </button>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload
+                        </a>
                       </div>
                     </div>
-                    <div className="border border-gray-200 rounded-md p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="font-medium text-gray-900">
-                            Delete Account
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            Permanently delete your account and all associated
-                            data
-                          </p>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      Account Security
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="border border-gray-200 rounded-md p-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              Change Password
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              Update your password regularly for better security
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setShowChangePassword(true)}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                          >
+                            Update
+                          </button>
                         </div>
-                        <button
-                          onClick={() => setShowDeleteAccount(true)}
-                          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-                        >
-                          Delete
-                        </button>
+                      </div>
+                      <div className="border border-gray-200 rounded-md p-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              Delete Account
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              Permanently delete your account and all associated
+                              data
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setShowDeleteAccount(true)}
+                            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -464,11 +551,14 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Error Message */}
-      {error && (
-        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-md">
-          {error}
-        </div>
+      {/* Popup Notification */}
+      {popup.show && (
+        <Popup
+          message={popup.message}
+          type={popup.type}
+          duration={3000}
+          onClose={handleClosePopup}
+        />
       )}
     </div>
   );

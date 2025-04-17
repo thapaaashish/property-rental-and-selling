@@ -71,6 +71,11 @@ const listingSchema = new mongoose.Schema(
         trim: true,
       },
     },
+    nearbyAmenities: {
+      type: String,
+      default: " ",
+      trim: true,
+    },
     location: {
       type: {
         type: String,

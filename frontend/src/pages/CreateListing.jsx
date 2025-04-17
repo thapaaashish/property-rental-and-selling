@@ -1,6 +1,6 @@
-import React from 'react';
-import AddListingForm from '../components/CreateListingForm';
-import { useSelector } from 'react-redux';
+import React from "react";
+import AddListingForm from "../components/PropertyListing/CreateListingForm";
+import { useSelector } from "react-redux";
 
 const CreateListing = () => {
   const currentUser = useSelector((state) => state.user.currentUser);

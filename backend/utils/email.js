@@ -369,33 +369,45 @@ export const sendBookingRequestConfirmation = async (email, bookingDetails) => {
   }
 };
 
-export const sendBanNotification = async (email, isBanned, banReason = null) => {
+export const sendBanNotification = async (
+  email,
+  isBanned,
+  banReason = null
+) => {
   try {
-    const subject = isBanned 
-      ? "Your Account Has Been Banned" 
+    const subject = isBanned
+      ? "Your Account Has Been Banned"
       : "Your Account Has Been Unbanned";
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: ${isBanned ? "#e53e3e" : "#38a169"}">${subject}</h2>
         <p style="font-size: 16px; line-height: 1.6;">
-          ${isBanned ? "We regret to inform you" : "We're pleased to inform you"} that your account has been 
-          <strong>${isBanned ? "banned" : "unbanned"}</strong> by the administrator.
+          ${
+            isBanned ? "We regret to inform you" : "We're pleased to inform you"
+          } that your account has been 
+          <strong>${
+            isBanned ? "banned" : "unbanned"
+          }</strong> by the administrator.
         </p>
         
-        ${isBanned ? `
+        ${
+          isBanned
+            ? `
           <div style="background-color: #fff5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
             <h3 style="color: #e53e3e; margin-top: 0;">Ban Details:</h3>
-            ${banReason ? `<p><strong>Reason:</strong> ${banReason}</p>` : ''}
+            ${banReason ? `<p><strong>Reason:</strong> ${banReason}</p>` : ""}
             <p>You will no longer be able to access your account or make new bookings.</p>
           </div>
           <p>If you believe this is a mistake, please contact our support team at 
             <a href="mailto:support@example.com">support@example.com</a>.
           </p>
-        ` : `
+        `
+            : `
           <p>You can now log in and access all features of your account again.</p>
           <p>We appreciate your understanding and look forward to serving you.</p>
-        `}
+        `
+        }
         
         <p style="margin-top: 20px; font-size: 14px; color: #718096;">
           This is an automated message. Please do not reply directly to this email.
@@ -404,7 +416,9 @@ export const sendBanNotification = async (email, isBanned, banReason = null) => 
     `;
 
     await transporter.sendMail({
-      from: `"${process.env.EMAIL_FROM_NAME || "Admin Team"}" <${process.env.EMAIL_USER}>`,
+      from: `"${process.env.EMAIL_FROM_NAME || "Admin Team"}" <${
+        process.env.EMAIL_USER
+      }>`,
       to: email,
       subject,
       html,
@@ -412,5 +426,44 @@ export const sendBanNotification = async (email, isBanned, banReason = null) => 
   } catch (error) {
     console.error("Error sending ban notification email:", error);
     throw error;
+  }
+};
+
+// New payment confirmation email
+export const sendPaymentConfirmation = async (email, booking) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: `Payment Confirmation for ${booking.listing.title}`,
+      html: `
+        <h2>Payment Confirmation</h2>
+        <p>Dear ${booking.user.fullname || "Customer"},</p>
+        <p>Your payment for the booking of <strong>${
+          booking.listing.title
+        }</strong> has been successfully processed.</p>
+        <p><strong>Booking Details:</strong></p>
+        <ul>
+          <li>Booking ID: ${booking._id}</li>
+          <li>Property: ${booking.listing.title}</li>
+          <li>Total Amount: Rs ${booking.totalPrice.toLocaleString()}</li>
+          <li>Status: Confirmed</li>
+        </ul>
+        <p>Thank you for choosing our platform!</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending payment confirmation email:", error);
+    throw new Error("Failed to send payment confirmation email");
   }
 };

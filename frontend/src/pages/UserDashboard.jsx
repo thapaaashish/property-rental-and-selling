@@ -312,7 +312,7 @@ const UserDashboard = () => {
             )}
 
             {activeTab === "profile" && (
-              <div className="p-4 md:p-6">
+              <div>
                 <Profile />
               </div>
             )}

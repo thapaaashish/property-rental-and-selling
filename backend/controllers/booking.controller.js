@@ -411,8 +411,11 @@ export const confirmBooking = async (req, res) => {
     const bookingId = req.params.id;
     const { userId } = req.body;
 
-    // Find the booking and populate listing details
-    const booking = await Booking.findById(bookingId).populate("listing");
+    // Find the booking and populate listing and user details
+    const booking = await Booking.findById(bookingId)
+      .populate("listing")
+      .populate("user");
+
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
@@ -424,41 +427,69 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
-    // Check if already confirmed
+    // Check booking status
     if (booking.status === "confirmed") {
-      return res.status(400).json({ message: "Booking is already confirmed" });
+      return res.status(400).json({
+        message: "Booking is already confirmed",
+        booking,
+      });
     }
 
-    // Update booking status
+    if (booking.status === "cancelled") {
+      return res.status(400).json({
+        message: "Cannot confirm a cancelled booking",
+      });
+    }
+
+    // Update booking status and reset payment status
     booking.status = "confirmed";
+    booking.paymentStatus = "pending"; // Reset payment status on confirmation
     await booking.save();
 
-    // Update listing status based on booking type
+    // Update listing availability
     const listing = await Listing.findById(booking.listing._id);
     if (!listing) {
       return res.status(404).json({ message: "Listing not found" });
     }
 
-    // Set listing status to "rented" for Rent or "sold" for Sale
+    // Set listing status based on booking type
     listing.status = booking.bookingType === "Rent" ? "rented" : "sold";
+    listing.available = false;
     await listing.save();
 
-    // Fetch user details for email notification
-    const user = await User.findById(booking.user);
-    if (user?.email) {
-      await sendBookingConfirmation(user.email, {
-        ...booking.toObject(),
-        listing: listing.toObject(), // Include updated listing
-        userId: booking.user,
-      });
-    } else {
-      console.warn("User email missing - cannot send confirmation");
+    // Send notifications
+    if (booking.user?.email) {
+      try {
+        await sendBookingConfirmation(booking.user.email, {
+          ...booking.toObject(),
+          listing: listing.toObject(),
+          userId: booking.user._id,
+        });
+
+        // Also notify agent/owner
+        const owner = await User.findById(booking.listing.userRef);
+        if (owner?.email) {
+          await notifyAgent(owner.email, {
+            ...booking.toObject(),
+            listing: listing.toObject(),
+          });
+        }
+      } catch (emailError) {
+        console.error("Email sending failed:", emailError);
+        // Don't fail the whole operation if email fails
+      }
     }
 
-    res.status(200).json({ message: "Booking confirmed", booking });
+    res.status(200).json({
+      message: "Booking confirmed successfully",
+      booking,
+      listingStatus: listing.status,
+    });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Failed to confirm booking", error: err.message });
+    console.error("Error in confirmBooking:", err);
+    res.status(500).json({
+      message: "Failed to confirm booking",
+      error: err.message,
+    });
   }
 };
