@@ -1,4 +1,3 @@
-// src/components/PropertyDetails.jsx
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -28,6 +27,7 @@ import {
   MovingServicesCardSmall,
   MovingServicePopup,
 } from "../components/MovingServicesCard";
+import PropertyReviews from "./PropertyReviews";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -70,7 +70,6 @@ const PropertyDetails = () => {
     if (id) fetchPropertyAndAgent();
   }, [id]);
 
-  // Fetch moving services when property city is available
   useEffect(() => {
     const fetchMovingServices = async () => {
       if (!property?.address?.city) return;
@@ -83,7 +82,6 @@ const PropertyDetails = () => {
         });
         const data = await res.json();
         if (res.ok) {
-          // Filter services where locations include the property's city (case-insensitive)
           const city = property.address.city.toLowerCase();
           const filteredServices = data.filter((service) =>
             service.locations.some((loc) => loc.toLowerCase() === city)
@@ -171,7 +169,6 @@ const PropertyDetails = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Breadcrumb Navigation */}
         <nav className="mb-6 flex items-center text-sm text-gray-500">
           <a href="/" className="hover:text-gray-900 flex items-center">
             <Home className="h-4 w-4 mr-1" />
@@ -186,11 +183,8 @@ const PropertyDetails = () => {
             {property.title}
           </span>
         </nav>
-
         <div className="grid gap-8 lg:grid-cols-3 lg:gap-8">
-          {/* Main Content Column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Image Gallery */}
             <div className="relative rounded-lg overflow-hidden bg-white border border-gray-200">
               <div className="aspect-[16/10] overflow-hidden">
                 <img
@@ -201,7 +195,6 @@ const PropertyDetails = () => {
                   className="h-full w-full object-cover"
                 />
               </div>
-
               {property.imageUrls?.length > 1 && (
                 <>
                   <button
@@ -220,7 +213,6 @@ const PropertyDetails = () => {
                   </button>
                 </>
               )}
-
               {property.imageUrls?.length > 1 && (
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
                   {property.imageUrls.map((_, index) => (
@@ -237,12 +229,10 @@ const PropertyDetails = () => {
                   ))}
                 </div>
               )}
-
               <div className="absolute right-4 top-4 flex space-x-2">
                 <ShareButton property={property} />
                 <AddToWishlist propertyId={property._id} />
               </div>
-
               <div className="absolute left-4 top-4">
                 <span
                   className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-md ${
@@ -255,8 +245,6 @@ const PropertyDetails = () => {
                 </span>
               </div>
             </div>
-
-            {/* Property Header */}
             <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div>
@@ -280,8 +268,6 @@ const PropertyDetails = () => {
                   )}
                 </div>
               </div>
-
-              {/* Quick Stats */}
               <div className="grid grid-cols-3 gap-2 mt-4">
                 <div className="flex flex-col items-center p-3 rounded-md border border-gray-200">
                   <Bed className="h-5 w-5 text-gray-700" />
@@ -306,8 +292,6 @@ const PropertyDetails = () => {
                 </div>
               </div>
             </div>
-
-            {/* Navigation Tabs */}
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="flex border-b border-gray-200">
                 <button
@@ -344,8 +328,6 @@ const PropertyDetails = () => {
                   Location
                 </button>
               </div>
-
-              {/* Tab Content */}
               <div className="p-6">
                 {activeTab === "description" && (
                   <div>
@@ -357,7 +339,6 @@ const PropertyDetails = () => {
                     </p>
                   </div>
                 )}
-
                 {activeTab === "features" && (
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-3">
@@ -378,7 +359,6 @@ const PropertyDetails = () => {
                     </ul>
                   </div>
                 )}
-
                 {activeTab === "location" && (
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-3">
@@ -394,8 +374,8 @@ const PropertyDetails = () => {
                         </h4>
                         <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {property.nearbyAmenities
-                            .split("\n") // Split by new lines if stored as multiline text
-                            .filter((amenity) => amenity.trim() !== "") // Remove empty lines
+                            .split("\n")
+                            .filter((amenity) => amenity.trim() !== "")
                             .map((amenity, index) => (
                               <li
                                 key={index}
@@ -415,10 +395,7 @@ const PropertyDetails = () => {
               </div>
             </div>
           </div>
-
-          {/* Sidebar Column */}
           <div className="space-y-6">
-            {/* Agent Card */}
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
                 <h3 className="font-medium text-gray-900">Listed By</h3>
@@ -473,8 +450,6 @@ const PropertyDetails = () => {
                 </div>
               </div>
             </div>
-
-            {/* Booking Form */}
             <div className="">
               <div className="">
                 <BookingForm property={property} />
@@ -482,8 +457,7 @@ const PropertyDetails = () => {
             </div>
           </div>
         </div>
-
-        {/* Moving Services Section */}
+        <PropertyReviews propertyId={property._id} className="mt-8" />
         {property.address?.city && (
           <section className="mt-8 bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-xl font-bold text-gray-800 mb-4">
@@ -499,7 +473,7 @@ const PropertyDetails = () => {
                   <MovingServicesCardSmall
                     key={service._id}
                     name={service.name}
-                    location={service.locations[0]} // Show first location
+                    location={service.locations[0]}
                     onClick={() => setSelectedService(service)}
                   />
                 ))}
@@ -507,8 +481,6 @@ const PropertyDetails = () => {
             )}
           </section>
         )}
-
-        {/* Moving Service Popup */}
         {selectedService && (
           <MovingServicePopup
             {...selectedService}

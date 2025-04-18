@@ -14,6 +14,7 @@ import bookingRouter from "./routes/booking.route.js";
 import movingServiceRoutes from "./routes/movingServices.route.js";
 import paymentRouter from "./routes/payment.route.js";
 import crypto from "crypto";
+import reviewRoutes from "./routes/review.route.js";
 
 import { autoCancelExpiredBookings } from "./controllers/booking.controller.js";
 
@@ -54,6 +55,7 @@ app.use("/api/bookings", bookingRouter);
 app.use("/api/email", emailRouter); // New route for sending emails from the property inquiry form
 app.use("/api/moving-services", movingServiceRoutes);
 app.use("/api/payment", paymentRouter); // route for payment processing
+app.use("/api/reviews", reviewRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
