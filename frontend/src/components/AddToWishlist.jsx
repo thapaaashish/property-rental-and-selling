@@ -5,7 +5,7 @@ import {
   removeFromWishlist,
 } from "../redux/wishlist/wishlistSlice";
 import { Heart, HeartOff } from "lucide-react";
-import Popup from "../components/Popup";
+import Popup from "./common/Popup";
 
 const AddToWishlist = ({ propertyId }) => {
   const dispatch = useDispatch();

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import Popup from "../Popup";
+import Popup from "../common/Popup";
 
 const BookingForm = ({ property }) => {
   const navigate = useNavigate();

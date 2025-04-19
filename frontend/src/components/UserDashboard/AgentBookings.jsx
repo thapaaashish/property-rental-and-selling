@@ -15,7 +15,7 @@ import {
   User,
   Loader2,
 } from "lucide-react";
-import Popup from "../Popup";
+import Popup from "../common/Popup";
 
 const AgentBookings = () => {
   const { currentUser } = useSelector((state) => state.user);

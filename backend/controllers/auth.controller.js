@@ -201,52 +201,94 @@ export const verifyOTP = async (req, res, next) => {
 // Signin for both User and Admin
 export const signin = async (req, res, next) => {
   const { email, password } = req.body;
-  try {
-    const user = await User.findOne({ email });
-    if (!user) return next(errorHandler(404, "User not found"));
 
-    // Check if user is banned
-    if (user.isBanned) {
+  try {
+    // Find user by email and explicitly check banStatus
+    const user = await User.findOne({ email }).select("+password +banStatus");
+    if (!user) {
+      return next(errorHandler(404, "User not found"));
+    }
+
+    // Check if user is banned - more robust check
+    if (user.banStatus.isBanned === true) {
+      const banDetails = user.banStatus;
+      const banMessage = `Your account has been banned${
+        banDetails.reason ? ` for: ${banDetails.reason}` : ""
+      }.`;
+
       return res.status(403).json({
-        message: "Your account has been banned. Please contact support.",
+        success: false,
+        error: "Account Banned",
+        message: banMessage,
+        details: {
+          reason: banDetails.reason || "Not specified",
+          bannedAt: banDetails.bannedAt
+            ? new Date(banDetails.bannedAt).toLocaleString()
+            : "Unknown",
+          bannedBy: banDetails.bannedBy || "Administrator",
+        },
+        contactSupport:
+          "If you believe this is a mistake, please contact support.",
       });
     }
 
+    // Verify password
     const validPassword = bcryptjs.compareSync(password, user.password);
-    if (!validPassword) return next(errorHandler(401, "Invalid credentials"));
+    if (!validPassword) {
+      return next(errorHandler(401, "Invalid credentials"));
+    }
 
-    const tokenPayload = { id: user._id, role: user.role || "user" }; // Ensure role
+    // Generate tokens
+    const tokenPayload = {
+      id: user._id,
+      role: user.role || "user",
+      email: user.email,
+    };
+
     const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
       expiresIn: "7d",
     });
+
     const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "30d",
     });
 
+    // Update refresh token in database
     user.refreshToken = refreshToken;
     await user.save();
 
+    // Prepare user data to return (excluding sensitive fields)
+    const userData = user.toObject();
+    delete userData.password;
+    delete userData.refreshToken;
+    delete userData.otp;
+    delete userData.resetPasswordOTP;
+
+    // Set cookies and send response
     res
       .cookie("access_token", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .cookie("refresh_token", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 30 * 24 * 60 * 60 * 1000,
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       })
       .status(200)
       .json({
-        ...user.toObject(),
-        password: undefined,
+        success: true,
+        message: "Signin successful",
+        user: userData,
         token: accessToken,
       });
+    console.log("Signin successful for user:", user.banStatus.isBanned);
   } catch (error) {
-    next(error);
+    console.error("Signin error:", error);
+    next(errorHandler(500, "Signin failed. Please try again."));
   }
 };
 

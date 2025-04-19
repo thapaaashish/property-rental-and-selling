@@ -6,14 +6,14 @@ import {
   signOutUserSuccess,
   signOutUserFailure,
 } from "../redux/user/userSlice";
-import LoadingSpinner from "../components/admin/LoadingSpinner";
-import OverviewTab from "../components/admin/OverviewTab";
-import PropertiesTab from "../components/admin/PropertiesTab";
-import SettingsTab from "../components/admin/SettingsTab";
-import StatsOverview from "../components/admin/StatsOverview";
-import UsersTab from "../components/admin/UsersTab";
-import AdminsTab from "../components/admin/AdminsTab";
-import Popup from "../components/Popup";
+import LoadingSpinner from "../components/AdminDashboard/LoadingSpinner";
+import OverviewTab from "../components/AdminDashboard/OverviewTab";
+import PropertiesTab from "../components/AdminDashboard/PropertiesTab";
+import SettingsTab from "../components/AdminDashboard/SettingsTab";
+import StatsOverview from "../components/AdminDashboard/StatsOverview";
+import UsersTab from "../components/AdminDashboard/UsersTab";
+import AdminsTab from "../components/AdminDashboard/AdminsTab";
+import Popup from "../components/common/Popup";
 import {
   Home,
   Package,
@@ -24,7 +24,8 @@ import {
   Shield,
   Car,
 } from "lucide-react";
-import MovingServicesTab from "../components/admin/MovingServicesTab";
+import MovingServicesTab from "../components/AdminDashboard/MovingServicesTab";
+import KycVerification from "../components/AdminDashboard/KycVerification";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -178,7 +179,7 @@ const AdminDashboard = () => {
         )}
       </button>
 
-      {/* Enhanced Sidebar */}
+      {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 ${
           sidebarCollapsed ? "w-20" : "w-64"
@@ -207,6 +208,7 @@ const AdminDashboard = () => {
             { id: "properties", icon: Home, label: "Properties" },
             { id: "moving-services", icon: Car, label: "Moving Services" },
             { id: "users", icon: Users, label: "Users" },
+            { id: "kyc", icon: Users, label: "KYC Verification" },
             { id: "admins", icon: Shield, label: "Admins" },
             { id: "settings", icon: Settings, label: "Settings" },
           ].map((tab) => (
@@ -324,6 +326,15 @@ const AdminDashboard = () => {
             )}
             {activeTab === "users" && (
               <UsersTab
+                users={users}
+                currentUser={currentUser}
+                handleDeleteUser={handleDeleteUser}
+                actionLoading={actionLoading}
+                navigate={navigate}
+              />
+            )}
+            {activeTab === "kyc" && (
+              <KycVerification
                 users={users}
                 currentUser={currentUser}
                 handleDeleteUser={handleDeleteUser}

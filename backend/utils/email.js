@@ -1,5 +1,12 @@
 import nodemailer from "nodemailer";
 import Notification from "../models/notification.model.js";
+import User from "../models/user.model.js";
+import Booking from "../models/booking.model.js";
+import Listing from "../models/listing.model.js";
+
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // Configure email transporter
 const transporter = nodemailer.createTransport({
@@ -154,6 +161,109 @@ const templates = {
       <p>We’ll notify you once the owner confirms your booking.</p>
     </div>
   `,
+  userBanned: (user, admin, reason) => `
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <h2 style="color: #e53e3e;">Account Banned</h2>
+    <p>Dear ${user.fullname || "User"},</p>
+    
+    <div style="background-color: #fff5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
+      <h3 style="color: #e53e3e; margin-top: 0;">Ban Details</h3>
+      <p><strong>Reason:</strong> ${
+        reason || "Violation of terms of service"
+      }</p>
+      <p><strong>Banned By:</strong> ${admin.fullname || "Administrator"}</p>
+      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+    </div>
+    
+    <p>Your account has been restricted and you will no longer be able to:</p>
+    <ul>
+      <li>Log in to your account</li>
+      <li>Create new bookings</li>
+      <li>Access premium features</li>
+    </ul>
+    
+    <p>If you believe this is a mistake, please contact our support team.</p>
+  </div>
+`,
+
+  userUnbanned: (user, admin) => `
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <h2 style="color: #38a169;">Account Unbanned</h2>
+    <p>Dear ${user.fullname || "User"},</p>
+    
+    <p>We're pleased to inform you that your account has been unbanned by ${
+      admin.fullname || "an administrator"
+    }.</p>
+    
+    <p>You can now:</p>
+    <ul>
+      <li>Log in to your account</li>
+      <li>Make new bookings</li>
+      <li>Access all features</li>
+    </ul>
+    
+    <p>Welcome back to our platform!</p>
+  </div>
+`,
+
+  propertyLocked: (property, admin, reason) => `
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <h2 style="color: #e53e3e;">Property Locked</h2>
+    <p>Dear ${property.userRef.fullname || "Property Owner"},</p>
+    
+    <div style="background-color: #fff5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
+      <h3 style="color: #e53e3e; margin-top: 0;">Lock Details</h3>
+      <p><strong>Property:</strong> ${property.title}</p>
+      <p><strong>Reason:</strong> ${reason || "Administrative action"}</p>
+      <p><strong>Locked By:</strong> ${admin.fullname || "Administrator"}</p>
+      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+    </div>
+    
+    <p>Your property listing has been temporarily locked and is no longer visible to users.</p>
+    
+    <p>If you have questions about this action, please contact our support team.</p>
+  </div>
+`,
+
+  propertyUnlocked: (property, admin) => `
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <h2 style="color: #38a169;">Property Unlocked</h2>
+    <p>Dear ${property.userRef.fullname || "Property Owner"},</p>
+    
+    <p>We're pleased to inform you that your property "${
+      property.title
+    }" has been unlocked by ${admin.fullname || "an administrator"}.</p>
+    
+    <p>Your listing is now:</p>
+    <ul>
+      <li>Visible to all users</li>
+      <li>Available for bookings</li>
+      <li>Fully functional</li>
+    </ul>
+    
+    <p>Thank you for your cooperation.</p>
+  </div>
+`,
+
+  adminActionNotification: (action, target, admin, reason) => `
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <h2>Admin Action Performed</h2>
+    <p>Dear ${admin.fullname || "Administrator"},</p>
+    
+    <div style="background-color: #f0f9ff; padding: 15px; border-radius: 4px; margin: 15px 0;">
+      <h3 style="margin-top: 0;">Action Details</h3>
+      <p><strong>Action:</strong> ${action}</p>
+      <p><strong>Target:</strong> ${
+        target.name || target.title || target.email
+      }</p>
+      ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ""}
+      <p><strong>Performed By:</strong> You</p>
+      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+    </div>
+    
+    <p>This is a confirmation of the action you just performed.</p>
+  </div>
+`,
 };
 
 // Email functions
@@ -369,62 +479,124 @@ export const sendBookingRequestConfirmation = async (email, bookingDetails) => {
   }
 };
 
-export const sendBanNotification = async (
-  email,
+// Add these new email functions
+export const sendUserBanNotification = async (
+  user,
+  admin,
   isBanned,
-  banReason = null
+  reason = null
 ) => {
   try {
-    const subject = isBanned
-      ? "Your Account Has Been Banned"
-      : "Your Account Has Been Unbanned";
-
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: ${isBanned ? "#e53e3e" : "#38a169"}">${subject}</h2>
-        <p style="font-size: 16px; line-height: 1.6;">
-          ${
-            isBanned ? "We regret to inform you" : "We're pleased to inform you"
-          } that your account has been 
-          <strong>${
-            isBanned ? "banned" : "unbanned"
-          }</strong> by the administrator.
-        </p>
-        
-        ${
-          isBanned
-            ? `
-          <div style="background-color: #fff5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
-            <h3 style="color: #e53e3e; margin-top: 0;">Ban Details:</h3>
-            ${banReason ? `<p><strong>Reason:</strong> ${banReason}</p>` : ""}
-            <p>You will no longer be able to access your account or make new bookings.</p>
-          </div>
-          <p>If you believe this is a mistake, please contact our support team at 
-            <a href="mailto:support@example.com">support@example.com</a>.
-          </p>
-        `
-            : `
-          <p>You can now log in and access all features of your account again.</p>
-          <p>We appreciate your understanding and look forward to serving you.</p>
-        `
-        }
-        
-        <p style="margin-top: 20px; font-size: 14px; color: #718096;">
-          This is an automated message. Please do not reply directly to this email.
-        </p>
-      </div>
-    `;
-
+    // Email to user
     await transporter.sendMail({
       from: `"${process.env.EMAIL_FROM_NAME || "Admin Team"}" <${
         process.env.EMAIL_USER
       }>`,
-      to: email,
-      subject,
-      html,
+      to: user.email,
+      subject: isBanned
+        ? "Your Account Has Been Banned"
+        : "Your Account Has Been Unbanned",
+      html: isBanned
+        ? templates.userBanned(user, admin, reason)
+        : templates.userUnbanned(user, admin),
+    });
+
+    // Email to admin (confirmation)
+    await transporter.sendMail({
+      from: `"${process.env.EMAIL_FROM_NAME || "System Notification"}" <${
+        process.env.EMAIL_USER
+      }>`,
+      to: admin.email,
+      subject: `Admin Action: User ${isBanned ? "Banned" : "Unbanned"}`,
+      html: templates.adminActionNotification(
+        `User ${isBanned ? "ban" : "unban"}`,
+        user,
+        admin,
+        reason
+      ),
+    });
+
+    // Create notification for user
+    await Notification.create({
+      userId: user._id,
+      title: isBanned ? "Account Banned" : "Account Unbanned",
+      message: isBanned
+        ? `Your account has been banned${reason ? `: ${reason}` : ""}`
+        : "Your account has been unbanned and all restrictions removed",
+      type: isBanned ? "account_banned" : "account_unbanned",
+      metadata: {
+        adminId: admin._id,
+        adminName: admin.fullname,
+        reason: isBanned ? reason : null,
+      },
     });
   } catch (error) {
-    console.error("Error sending ban notification email:", error);
+    console.error("Error sending ban notification:", error);
+    throw error;
+  }
+};
+
+export const sendPropertyLockNotification = async (
+  property,
+  admin,
+  isLocked,
+  reason = null
+) => {
+  try {
+    // Get property owner details
+    const owner = await User.findById(property.userRef);
+    if (!owner) throw new Error("Property owner not found");
+
+    // Email to property owner/agent
+    await transporter.sendMail({
+      from: `"${process.env.EMAIL_FROM_NAME || "Admin Team"}" <${
+        process.env.EMAIL_USER
+      }>`,
+      to: owner.email,
+      subject: isLocked
+        ? `Your Property "${property.title}" Has Been Locked`
+        : `Your Property "${property.title}" Has Been Unlocked`,
+      html: isLocked
+        ? templates.propertyLocked(property, admin, reason)
+        : templates.propertyUnlocked(property, admin),
+    });
+
+    // Email to admin (confirmation)
+    await transporter.sendMail({
+      from: `"${process.env.EMAIL_FROM_NAME || "System Notification"}" <${
+        process.env.EMAIL_USER
+      }>`,
+      to: admin.email,
+      subject: `Admin Action: Property ${isLocked ? "Locked" : "Unlocked"}`,
+      html: templates.adminActionNotification(
+        `Property ${isLocked ? "lock" : "unlock"}`,
+        property,
+        admin,
+        reason
+      ),
+    });
+
+    // Create notification for property owner
+    await Notification.create({
+      userId: owner._id,
+      title: isLocked ? "Property Locked" : "Property Unlocked",
+      message: isLocked
+        ? `Your property "${property.title}" has been locked${
+            reason ? `: ${reason}` : ""
+          }`
+        : `Your property "${property.title}" has been unlocked and is now visible to users`,
+      type: isLocked ? "property_locked" : "property_unlocked",
+      relatedEntity: property._id,
+      relatedEntityModel: "Listing",
+      metadata: {
+        adminId: admin._id,
+        adminName: admin.fullname,
+        reason: isLocked ? reason : null,
+        propertyTitle: property.title,
+      },
+    });
+  } catch (error) {
+    console.error("Error sending property lock notification:", error);
     throw error;
   }
 };

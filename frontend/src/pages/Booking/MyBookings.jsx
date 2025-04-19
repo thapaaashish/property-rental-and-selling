@@ -12,7 +12,7 @@ import {
   Hourglass,
   AlertTriangle,
 } from "lucide-react";
-import Popup from "../../components/Popup";
+import Popup from "../../components/common/Popup";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from "axios";

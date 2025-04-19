@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { Loader2, CreditCard, CheckCircle } from "lucide-react";
-import Popup from "../Popup";
+import Popup from "../common/Popup";
 import { useSelector } from "react-redux";
 
 const PaymentButton = ({ booking, onPaymentSuccess }) => {
@@ -18,7 +18,7 @@ const PaymentButton = ({ booking, onPaymentSuccess }) => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/payment/initiate",
+        "/api/payment/initiate",
         {
           bookingId: booking._id,
         },

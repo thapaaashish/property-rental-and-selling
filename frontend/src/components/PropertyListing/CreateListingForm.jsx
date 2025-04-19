@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { ArrowLeft, Upload, X } from "lucide-react";
-import Popup from "../Popup"; // Adjust the import path as needed
+import Popup from "../common/Popup"; // Adjust the import path as needed
 import ReviewSection from "./ReviewSection"; // New component import
 import LocationStep from "./LocationStep";
 import ImagesStep from "./ImagesStep";

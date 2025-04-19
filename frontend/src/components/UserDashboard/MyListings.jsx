@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import ConfirmationModal from "../ConfirmationModal";
-import Popup from "../Popup";
+import Popup from "../common/Popup";
 
 const MyListings = ({
   listings = [],

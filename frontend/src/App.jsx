@@ -20,6 +20,9 @@ import MyBookings from "./pages/Booking/MyBookings";
 import PublicUserProfilePage from "./pages/PublicUserProfilePage";
 import { useNavigate } from "react-router-dom";
 import Success from "./components/payment/PaymentSuccess";
+import MovingServices from "./pages/MovingServices";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 export const App = () => {
   return (
@@ -37,9 +40,12 @@ export const App = () => {
           <Route path="/listings" element={<Listings />} />
           <Route path="/help-center" element={<HelpCenter />} />
           <Route path="/user/:userId" element={<PublicUserProfilePage />} />
-          <Route path="/payment-success" element={<Success />} />
+          <Route path="/moving-services" element={<MovingServices />} />
           <Route path="/payment-failure" element={<Failure />} />
         </Route>
+        <Route path="/payment-success" element={<Success />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
         {/* User Private Routes with Header and Footer */}
         <Route element={<UserPrivateRoute />}>

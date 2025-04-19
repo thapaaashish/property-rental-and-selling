@@ -1,10 +1,21 @@
 import React from "react";
-import { Users, Lock, Unlock, Mail, Phone, MapPin, Shield } from "lucide-react";
+import {
+  Users,
+  Lock,
+  Unlock,
+  Mail,
+  Phone,
+  MapPin,
+  FileText,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 
 const UserCard = ({
   user,
   onClose,
   onBanToggle,
+  onKycVerify,
   actionLoading,
   isCurrentUser,
 }) => {
@@ -27,8 +38,8 @@ const UserCard = ({
 
   const isBanned = user.banStatus?.isBanned || false;
   const isProfileComplete = user.profileCompleted;
+  const kycStatus = user.kyc?.status || "not_verified";
 
-  // Combine address fields
   const fullAddress =
     [
       user.address !== "None" ? user.address : "",
@@ -193,6 +204,47 @@ const UserCard = ({
             </div>
           </div>
 
+          {/* KYC Details */}
+          <div>
+            <p className="text-sm font-medium text-gray-500">
+              KYC Verification
+            </p>
+            <div className="mt-1 space-y-2">
+              <span
+                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                  kycStatus === "verified"
+                    ? "bg-green-100 text-green-800"
+                    : kycStatus === "pending"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : kycStatus === "rejected"
+                    ? "bg-red-100 text-red-800"
+                    : "bg-gray-100 text-gray-800"
+                }`}
+              >
+                {kycStatus.replace("_", " ").toUpperCase()}
+              </span>
+              {user.kyc?.documentUrl && (
+                <p className="text-sm text-gray-900">
+                  <a
+                    href={user.kyc.documentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:text-blue-700 flex items-center"
+                  >
+                    <FileText className="h-4 w-4 mr-1" />
+                    View KYC Document
+                  </a>
+                </p>
+              )}
+              {kycStatus === "rejected" && (
+                <p className="text-sm text-gray-900">
+                  <span className="font-medium">Rejection Reason:</span>{" "}
+                  {user.kyc.rejectedReason || "Not specified"}
+                </p>
+              )}
+            </div>
+          </div>
+
           {/* Ban Details (if banned) */}
           {isBanned && (
             <div>
@@ -219,7 +271,37 @@ const UserCard = ({
         </div>
 
         {/* Actions */}
-        <div className="mt-6 flex space-x-3">
+        <div className="mt-6 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+          {kycStatus === "pending" && (
+            <>
+              <button
+                onClick={() => onKycVerify(user._id, "verified")}
+                className={`flex-1 flex items-center justify-center px-4 py-2 rounded-lg text-white font-medium transition-colors duration-150 bg-green-600 hover:bg-green-700 ${
+                  actionLoading || isCurrentUser
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+                disabled={actionLoading || isCurrentUser}
+                aria-label="Approve KYC"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Approve KYC
+              </button>
+              <button
+                onClick={() => onKycVerify(user._id, "rejected")}
+                className={`flex-1 flex items-center justify-center px-4 py-2 rounded-lg text-white font-medium transition-colors duration-150 bg-red-600 hover:bg-red-700 ${
+                  actionLoading || isCurrentUser
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+                disabled={actionLoading || isCurrentUser}
+                aria-label="Reject KYC"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Reject KYC
+              </button>
+            </>
+          )}
           <button
             onClick={() => onBanToggle(user._id, !isBanned)}
             className={`flex-1 flex items-center justify-center px-4 py-2 rounded-lg text-white font-medium transition-colors duration-150 ${

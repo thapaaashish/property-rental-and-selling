@@ -9,7 +9,7 @@ dotenv.config({
 
 console.log("MONGO variable from .env:", process.env.MONGO);
 
-const runUpdate = async () => {
+const runKycMigration = async () => {
   try {
     const mongoUri = process.env.MONGO;
 
@@ -21,27 +21,36 @@ const runUpdate = async () => {
     await mongoose.connect(mongoUri);
     console.log("🔌 Connected to MongoDB");
 
+    // Find users missing the kyc field or with an invalid kyc structure
     const usersToUpdate = await User.find({
       $or: [
-        { bio: { $exists: false } }, // Missing
-        { bio: { $type: "object" } }, // Not a string
-        { $expr: { $gt: [{ $strLenCP: "$bio" }, 200] } }, // Too long
+        { kyc: { $exists: false } }, // Missing kyc field
+        {
+          "kyc.status": {
+            $nin: ["not_verified", "pending", "verified", "rejected"],
+          },
+        }, // Invalid status
       ],
     });
 
     console.log(`📊 Found ${usersToUpdate.length} users to update`);
 
-    const defaultBio = "This user hasn't added a bio yet.";
+    const defaultKyc = {
+      documentUrl: null,
+      documentType: null,
+      status: "not_verified",
+      submittedAt: null,
+      verifiedAt: null,
+      rejectedReason: null,
+    };
+
     let updatedCount = 0;
 
     for (const user of usersToUpdate) {
-      const bio =
-        typeof user.bio === "string" ? user.bio.slice(0, 200) : defaultBio;
-
       await User.updateOne(
         { _id: user._id },
         {
-          $set: { bio },
+          $set: { kyc: defaultKyc },
         }
       );
 
@@ -49,7 +58,7 @@ const runUpdate = async () => {
       console.log(`🔄 Updated user ${user._id}`);
     }
 
-    console.log(`✅ Successfully updated ${updatedCount} users`);
+    console.log(`✅ Successfully updated ${updatedCount} users with kyc field`);
   } catch (err) {
     console.error("❌ Error updating documents:", err);
   } finally {
@@ -58,4 +67,4 @@ const runUpdate = async () => {
   }
 };
 
-runUpdate();
+runKycMigration();

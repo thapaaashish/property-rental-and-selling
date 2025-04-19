@@ -52,7 +52,7 @@ export const initiatePayment = async (req, res, next) => {
 
     const payload = {
       return_url: `${process.env.FRONTEND_URL}/payment-success`,
-      website_url: process.env.FRONTEND_URL || "http://localhost:5173",
+      website_url: process.env.FRONTEND_URL,
       amount: booking.totalPrice * 100, // Convert to paisa
       purchase_order_id: `booking_${booking._id}_user_${userId}`,
       purchase_order_name: `Property: ${booking.listing?.title || "Unknown"}`,

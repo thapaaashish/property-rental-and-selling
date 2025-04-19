@@ -6,7 +6,7 @@ import {
   deleteUserSuccess,
 } from "../../redux/user/userSlice";
 import { useNavigate } from "react-router-dom";
-import Popup from "../Popup"; // Adjust path as needed
+import Popup from "../common/Popup"; // Adjust path as needed
 
 const DeleteAccount = ({ onClose }) => {
   const { currentUser, loading } = useSelector((state) => state.user);

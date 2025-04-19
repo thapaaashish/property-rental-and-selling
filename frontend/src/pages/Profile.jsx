@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   CheckCircle,
@@ -8,13 +8,14 @@ import {
   Phone,
   MapPin,
   Upload,
+  FileText,
 } from "lucide-react";
 import ChangePassword from "../components/user/ChangePassword";
 import { useNavigate } from "react-router-dom";
 import DeleteAccount from "../components/user/DeleteAccount";
 import { updateUser } from "../redux/user/userSlice";
 import heic2any from "heic2any";
-import Popup from "../components/Popup";
+import Popup from "../components/common/Popup";
 
 const Profile = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -31,6 +32,33 @@ const Profile = () => {
     message: "",
     type: "error",
   });
+  const [kycStatus, setKycStatus] = useState(
+    currentUser?.kyc?.status || "not_verified"
+  );
+  const [kycRejectedReason, setKycRejectedReason] = useState(null);
+
+  // Fetch KYC status
+  useEffect(() => {
+    const fetchKycStatus = async () => {
+      try {
+        const response = await fetch(`/api/kyc/status/${currentUser._id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+        const data = await response.json();
+        if (data.success) {
+          setKycStatus(data.kycStatus);
+          setKycRejectedReason(data.rejectedReason);
+        }
+      } catch (error) {
+        console.error("Error fetching KYC status:", error);
+      }
+    };
+    fetchKycStatus();
+  }, [currentUser._id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -166,6 +194,120 @@ const Profile = () => {
       } finally {
         setIsLoading(false);
       }
+    }
+  };
+
+  const handleKycUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type and size
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "application/pdf",
+      "image/heic",
+    ];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (!allowedTypes.includes(file.type)) {
+      setPopup({
+        show: true,
+        message: "Please upload a JPEG, PNG, PDF, or HEIC file",
+        type: "error",
+      });
+      return;
+    }
+    if (file.size > maxSize) {
+      setPopup({
+        show: true,
+        message: "File size must be less than 5MB",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      let uploadFile = file;
+
+      // Convert HEIC to JPEG
+      if (
+        file.type === "image/heic" ||
+        file.name.toLowerCase().endsWith(".heic")
+      ) {
+        const conversionResult = await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+          quality: 0.8,
+        });
+        uploadFile = new File(
+          [conversionResult],
+          file.name.replace(/\.heic$/i, ".jpg"),
+          { type: "image/jpeg" }
+        );
+      }
+
+      // Upload to Cloudinary
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+      formData.append(
+        "upload_preset",
+        import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+      );
+      formData.append("folder", "HomeFinder/kyc_documents");
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${
+          import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+        }/${uploadFile.type === "application/pdf" ? "raw" : "image"}/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorResponse = await response.json();
+        throw new Error("Failed to upload KYC document");
+      }
+
+      const result = await response.json();
+      const documentUrl = result.secure_url;
+
+      // Send document URL to backend for KYC processing
+      const saveResponse = await fetch(`/api/kyc/upload/${currentUser._id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          documentUrl,
+          documentType: uploadFile.type === "application/pdf" ? "pdf" : "image",
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json();
+        throw new Error(errorData.message || "Failed to submit KYC document");
+      }
+
+      const data = await saveResponse.json();
+      setKycStatus("pending");
+      dispatch(updateUser(data.user));
+      setPopup({
+        show: true,
+        message: "KYC document uploaded successfully! Awaiting verification.",
+        type: "success",
+      });
+    } catch (error) {
+      setPopup({
+        show: true,
+        message: error.message,
+        type: "error",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -468,22 +610,61 @@ const Profile = () => {
                     </p>
                     <div className="border border-gray-200 rounded-md p-4">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium text-gray-900">
-                            Government ID
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            Upload a valid passport, driver’s license, or ID
-                            card
-                          </p>
+                        <div className="flex items-center">
+                          <FileText className="h-6 w-6 text-teal-500 mr-3" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              Government ID
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              Upload a valid passport, driver’s license, or ID
+                              card
+                            </p>
+                            <p
+                              className={`text-sm mt-1 ${
+                                kycStatus === "verified"
+                                  ? "text-green-600"
+                                  : kycStatus === "pending"
+                                  ? "text-yellow-600"
+                                  : kycStatus === "rejected"
+                                  ? "text-red-600"
+                                  : "text-gray-500"
+                              }`}
+                            >
+                              Status:{" "}
+                              {kycStatus.replace("_", " ").toUpperCase()}
+                              {kycStatus === "rejected" && (
+                                <span className="block text-sm text-red-500 mt-1">
+                                  Reason:{" "}
+                                  {kycRejectedReason || "No reason provided"}
+                                </span>
+                              )}
+                            </p>
+                          </div>
                         </div>
-                        <a
-                          href="/kyc-verification"
-                          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload
-                        </a>
+                        {kycStatus === "verified" ? (
+                          <span className="px-4 py-2 bg-green-100 text-green-700 rounded-md">
+                            Verified
+                          </span>
+                        ) : (
+                          <label
+                            className={`flex items-center px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-400 transition-colors ${
+                              isLoading || kycStatus === "pending"
+                                ? "opacity-50 cursor-not-allowed"
+                                : "cursor-pointer"
+                            }`}
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            {kycStatus === "pending" ? "Pending" : "Upload"}
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/jpeg,image/png,application/pdf,image/heic"
+                              onChange={handleKycUpload}
+                              disabled={isLoading || kycStatus === "pending"}
+                            />
+                          </label>
+                        )}
                       </div>
                     </div>
                   </div>

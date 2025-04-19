@@ -8,7 +8,7 @@ import {
   signInSuccess,
 } from "../redux/user/userSlice";
 import OAuth from "../components/OAuth";
-import Popup from "../components/Popup";
+import Popup from "../components/common/Popup";
 
 const SignIn = () => {
   const dispatch = useDispatch();

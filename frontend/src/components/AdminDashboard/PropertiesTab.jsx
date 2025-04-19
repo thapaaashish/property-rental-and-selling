@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Home, Lock, Unlock } from "lucide-react";
+import { Home, Lock, Unlock, Eye, Trash2 } from "lucide-react";
 import axios from "axios";
-import Popup from "../Popup";
+import Popup from "../common/Popup";
+import DeleteConfirmation from "../common/DeleteConfirmation";
 
 const PropertiesTab = ({
   properties: initialProperties = [],
@@ -225,44 +226,36 @@ const PropertiesTab = ({
                       {formatDate(property.createdAt)}
                     </td>
                     <td className="py-4 px-4 text-sm font-medium">
-                      <div className="flex space-x-2">
+                      <div className="flex items-center gap-3">
                         <button
-                          onClick={() =>
-                            navigate(`/edit-listing/${property._id}`)
-                          }
-                          className="text-teal-500 hover:text-teal-600"
+                          onClick={() => navigate(`/property/${property._id}`)}
+                          className="p-2 text-teal-600 hover:text-teal-800 hover:bg-teal-50 rounded-full"
                           disabled={actionLoading}
+                          title="View property"
                         >
-                          Edit
+                          <Eye className="h-4 w-4" />
                         </button>
-                        <button
-                          onClick={() => handleDeleteProperty(property._id)}
-                          className="text-red-500 hover:text-red-600"
+                        <DeleteConfirmation
+                          itemName="property"
+                          onDelete={() => handleDeleteProperty(property._id)}
                           disabled={actionLoading}
-                        >
-                          Delete
-                        </button>
+                        />
                         <button
                           onClick={() =>
                             handleLockToggle(property._id, !isLocked)
                           }
-                          className={`flex items-center text-sm font-medium px-2 py-1 rounded-md transition duration-150 ${
+                          className={`p-2 rounded-full ${
                             isLocked
-                              ? "bg-green-500 text-white hover:bg-green-600"
-                              : "bg-red-500 text-white hover:bg-red-600"
-                          } disabled:opacity-50`}
+                              ? "text-green-600 hover:text-green-800 hover:bg-green-50"
+                              : "text-red-600 hover:text-red-800 hover:bg-red-50"
+                          }`}
                           disabled={actionLoading}
+                          title={isLocked ? "Unlock property" : "Lock property"}
                         >
                           {isLocked ? (
-                            <>
-                              <Unlock className="h-4 w-4 mr-1" />
-                              Unlock
-                            </>
+                            <Unlock className="h-4 w-4" />
                           ) : (
-                            <>
-                              <Lock className="h-4 w-4 mr-1" />
-                              Lock
-                            </>
+                            <Lock className="h-4 w-4" />
                           )}
                         </button>
                       </div>

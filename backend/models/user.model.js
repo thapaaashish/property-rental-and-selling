@@ -80,6 +80,34 @@ const UserSchema = new mongoose.Schema(
         default: null,
       },
     },
+    kyc: {
+      documentUrl: {
+        type: String,
+        default: null,
+      },
+      documentType: {
+        type: String,
+        enum: ["image", "pdf", null],
+        default: null,
+      },
+      status: {
+        type: String,
+        enum: ["not_verified", "pending", "verified", "rejected"],
+        default: "not_verified",
+      },
+      submittedAt: {
+        type: Date,
+        default: null,
+      },
+      verifiedAt: {
+        type: Date,
+        default: null,
+      },
+      rejectedReason: {
+        type: String,
+        default: null,
+      },
+    },
   },
   { timestamps: true }
 );

@@ -3,6 +3,10 @@ import User from "../models/user.model.js";
 import Listing from "../models/listing.model.js";
 import Booking from "../models/booking.model.js";
 import bcryptjs from "bcryptjs";
+import {
+  sendUserBanNotification,
+  sendPropertyLockNotification,
+} from "../utils/email.js";
 
 // Get all users (Admin only)
 export const getAllUsers = async (req, res, next) => {
@@ -124,63 +128,7 @@ export const createAdmin = async (req, res, next) => {
   }
 };
 
-export const updateLockStatus = async (req, res, next) => {
-  if (req.user.role !== "admin") {
-    return next(errorHandler(403, "Admin access required"));
-  }
-
-  const { adminLockedStatus } = req.body;
-
-  if (typeof adminLockedStatus !== "boolean") {
-    return next(
-      errorHandler(400, "Invalid lock status. Must be true or false")
-    );
-  }
-
-  try {
-    const listing = await Listing.findById(req.params.id);
-    if (!listing) {
-      return next(errorHandler(404, "Listing not found"));
-    }
-
-    if (adminLockedStatus === true) {
-      // Check for active bookings
-      const activeBookings = await Booking.countDocuments({
-        listingId: listing._id,
-        status: { $in: ["pending", "confirmed"] },
-      });
-      if (activeBookings > 0) {
-        return next(
-          errorHandler(400, "Cannot lock listing: it has active bookings")
-        );
-      }
-
-      // Check if listing is rented
-      if (listing.status === "rented") {
-        return next(
-          errorHandler(400, "Cannot lock listing: it is currently rented")
-        );
-      }
-    }
-
-    // Update lock status and set status to inactive when locking
-    listing.adminLockedStatus = adminLockedStatus;
-    if (adminLockedStatus === true) {
-      listing.status = "inactive"; // Enforce schema-compliant status
-    }
-    await listing.save();
-
-    res.status(200).json({
-      message: `Listing ${
-        adminLockedStatus ? "locked" : "unlocked"
-      } successfully`,
-      listing,
-    });
-  } catch (error) {
-    console.error("Error in updateLockStatus:", error);
-    next(errorHandler(500, "Error updating lock status"));
-  }
-};
+// In your admin controller file
 
 export const updateUserBanStatus = async (req, res, next) => {
   if (req.user.role !== "admin") {
@@ -218,7 +166,6 @@ export const updateUserBanStatus = async (req, res, next) => {
         );
       }
 
-      // Update ban status with reason and admin info
       user.banStatus = {
         isBanned: true,
         reason: reason || "Violation of terms of service",
@@ -226,7 +173,6 @@ export const updateUserBanStatus = async (req, res, next) => {
         bannedBy: req.user.id,
       };
     } else {
-      // When unbanning, clear all ban info
       user.banStatus = {
         isBanned: false,
         reason: null,
@@ -237,15 +183,13 @@ export const updateUserBanStatus = async (req, res, next) => {
 
     await user.save();
 
-    // Send email notification
+    // Send notifications
     try {
-      await sendBanNotification(
-        user.email,
-        isBanned,
-        isBanned ? user.banStatus.reason : null
-      );
+      const adminUser = await User.findById(req.user.id);
+      await sendUserBanNotification(user, adminUser, isBanned, reason);
     } catch (emailError) {
       console.error("Failed to send ban notification:", emailError);
+      // Don't fail the request just because email failed
     }
 
     res.status(200).json({
@@ -260,5 +204,77 @@ export const updateUserBanStatus = async (req, res, next) => {
   } catch (error) {
     console.error("Error in updateUserBanStatus:", error);
     next(errorHandler(500, "Error updating ban status"));
+  }
+};
+
+export const updateLockStatus = async (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return next(errorHandler(403, "Admin access required"));
+  }
+
+  const { adminLockedStatus, reason } = req.body;
+
+  if (typeof adminLockedStatus !== "boolean") {
+    return next(
+      errorHandler(400, "Invalid lock status. Must be true or false")
+    );
+  }
+
+  try {
+    const listing = await Listing.findById(req.params.id).populate(
+      "userRef",
+      "fullname email"
+    );
+    if (!listing) {
+      return next(errorHandler(404, "Listing not found"));
+    }
+
+    if (adminLockedStatus === true) {
+      const activeBookings = await Booking.countDocuments({
+        listingId: listing._id,
+        status: { $in: ["pending", "confirmed"] },
+      });
+      if (activeBookings > 0) {
+        return next(
+          errorHandler(400, "Cannot lock listing: it has active bookings")
+        );
+      }
+
+      if (listing.status === "rented") {
+        return next(
+          errorHandler(400, "Cannot lock listing: it is currently rented")
+        );
+      }
+    }
+
+    listing.adminLockedStatus = adminLockedStatus;
+    if (adminLockedStatus === true) {
+      listing.status = "inactive";
+    }
+    await listing.save();
+
+    // Send notifications
+    try {
+      const adminUser = await User.findById(req.user._id);
+      await sendPropertyLockNotification(
+        listing,
+        adminUser,
+        adminLockedStatus,
+        reason
+      );
+    } catch (emailError) {
+      console.error("Failed to send lock notification:", emailError);
+      // Don't fail the request just because email failed
+    }
+
+    res.status(200).json({
+      message: `Listing ${
+        adminLockedStatus ? "locked" : "unlocked"
+      } successfully`,
+      listing,
+    });
+  } catch (error) {
+    console.error("Error in updateLockStatus:", error);
+    next(errorHandler(500, "Error updating lock status"));
   }
 };

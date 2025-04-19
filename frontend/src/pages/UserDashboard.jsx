@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import EditListingForm from "./EditListingForm";
 import Wishlists from "./Wishlists";
 import Profile from "./Profile";
-import Popup from "../components/Popup";
+import Popup from "../components/common/Popup";
 import AgentBookings from "../components/UserDashboard/AgentBookings";
 import {
   Home,
@@ -171,7 +171,7 @@ const UserDashboard = () => {
         )}
       </button>
 
-      {/* Enhanced Sidebar */}
+      {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 ${
           sidebarCollapsed ? "w-20" : "w-64"
@@ -179,7 +179,7 @@ const UserDashboard = () => {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 z-40`}
       >
-        {/* Sidebar Header with Better Spacing */}
+        {/* Sidebar Header  */}
         <div className={`p-4 ${sidebarCollapsed ? "px-3" : "px-6"} border-b`}>
           <h2 className="flex items-center">
             {!sidebarCollapsed ? (

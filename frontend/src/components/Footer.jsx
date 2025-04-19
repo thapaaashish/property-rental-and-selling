@@ -5,7 +5,6 @@ import {
   Instagram,
   Linkedin,
   Twitter,
-  Youtube,
   Mail,
   Phone,
   MapPin,
@@ -112,7 +111,6 @@ export default function Footer() {
                 { to: "/", label: "Home" },
                 { to: "/listings", label: "Properties" },
                 { to: "/about-us", label: "About Us" },
-                { to: "/blog", label: "Blog" },
                 { to: "/help-center", label: "Help Center" },
               ].map((link, index) => (
                 <motion.li
@@ -141,9 +139,9 @@ export default function Footer() {
             <ul className="space-y-3">
               {[
                 { to: "/listings", label: "Buy Property" },
-                { to: "/create-listing", label: "Sell Property" },
+                { to: "/create-listing", label: "List Property" },
                 { to: "/listings", label: "Rent Property" },
-                { to: "/mortgage", label: "Mortgage Services" },
+                { to: "/moving-services", label: "Moving Services" },
               ].map((service, index) => (
                 <motion.li
                   key={index}
@@ -225,8 +223,6 @@ export default function Footer() {
             {[
               { to: "/privacy-policy", label: "Privacy Policy" },
               { to: "/terms-of-service", label: "Terms of Service" },
-              { to: "/cookies", label: "Cookies" },
-              { to: "/sitemap", label: "Sitemap" },
             ].map((link, index) => (
               <motion.div
                 key={index}
