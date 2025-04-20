@@ -21,7 +21,6 @@ const GoogleMapComponent = ({ lat, lng }) => {
     lng: lng || defaultCenter.lng,
   };
 
-
   return (
     <div className="map-wrapper" style={{ width: "100%", height: "100%" }}>
       <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
@@ -41,7 +40,6 @@ const GoogleMapComponent = ({ lat, lng }) => {
 };
 
 export const MapWithAllProperties = ({ markers = [] }) => {
-
   // Use the first marker as the center or fallback to defaultCenter
   const center = markers.length > 0 ? markers[0] : defaultCenter;
 

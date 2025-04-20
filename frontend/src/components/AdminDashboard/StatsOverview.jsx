@@ -1,4 +1,3 @@
-// src/components/admin/StatsOverview.jsx
 import React from "react";
 import { Home, Users, Building, Calendar } from "lucide-react";
 

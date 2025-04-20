@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Home, Lock, Unlock, Eye, Trash2 } from "lucide-react";
 import axios from "axios";
 import Popup from "../common/Popup";
 import DeleteConfirmation from "../common/DeleteConfirmation";
+import { MapWithAllProperties } from "../GoogleMap";
 
 const PropertiesTab = ({
   properties: initialProperties = [],
@@ -42,6 +43,17 @@ const PropertiesTab = ({
     }
   }, []);
 
+  // Memoized map markers
+  const mapMarkers = useMemo(() => {
+    return properties
+      .filter((prop) => prop.location?.coordinates?.length === 2)
+      .map((property) => ({
+        lat: property.location.coordinates[1],
+        lng: property.location.coordinates[0],
+        title: property.title,
+      }));
+  }, [properties]);
+
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -63,7 +75,7 @@ const PropertiesTab = ({
         `/api/admin/listings/${propertyId}/lock`,
         {
           adminLockedStatus: lock,
-          ...(lock ? { status: "inactive" } : {}), // Set status to inactive when locking
+          ...(lock ? { status: "inactive" } : {}),
         },
         {
           headers: {
@@ -100,6 +112,14 @@ const PropertiesTab = ({
     }
   };
 
+  // Empty state for map
+  const MapEmptyState = () => (
+    <div className="flex flex-col items-center justify-center py-6">
+      <Home className="h-8 w-8 text-gray-300 mb-2" />
+      <p className="text-gray-500 text-xs">No property locations available</p>
+    </div>
+  );
+
   return (
     <div className="p-6">
       {showPopup && (
@@ -130,141 +150,174 @@ const PropertiesTab = ({
           </button>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Property
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Price
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Posted Date
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {properties.map((property) => {
-                const isLocked = property.adminLockedStatus === true;
+        <div className="space-y-6">
+          {/* Property Map */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-800">
+                Property Locations
+              </h2>
+              <button
+                onClick={() => navigate("/properties")}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+              >
+                View All
+              </button>
+            </div>
+            {mapMarkers.length === 0 ? (
+              <MapEmptyState />
+            ) : (
+              <div className="h-64">
+                <MapWithAllProperties markers={mapMarkers} />
+              </div>
+            )}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white rounded-xl shadow-sm border border-gray-100">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Property
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Owner
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Price
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Posted Date
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {properties.map((property) => {
+                  const isLocked = property.adminLockedStatus === true;
 
-                return (
-                  <tr key={property._id}>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-12 w-12 bg-gray-200 rounded-md overflow-hidden">
-                          {property.imageUrls?.length > 0 ? (
-                            <img
-                              src={property.imageUrls[0]}
-                              alt={property.title}
-                              className="h-full w-full object-cover"
-                              onError={(e) => {
-                                e.target.src =
-                                  "https://via.placeholder.com/48?text=No+Image";
-                              }}
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center bg-gray-200">
-                              <Home className="h-6 w-6 text-gray-400" />
+                  return (
+                    <tr key={property._id}>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-12 w-12 bg-gray-200 rounded-md overflow-hidden">
+                            {property.imageUrls?.length > 0 ? (
+                              <img
+                                src={property.imageUrls[0]}
+                                alt={property.title}
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  e.target.src =
+                                    "https://via.placeholder.com/48?text=No+Image";
+                                }}
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-gray-200">
+                                <Home className="h-6 w-6 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
+                              {property.title}
                             </div>
-                          )}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {property.title}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {property.bedrooms} BD · {property.bathrooms} BA ·{" "}
-                            {property.area} sqft
+                            <div className="text-sm text-gray-500">
+                              {property.bedrooms} BD · {property.bathrooms} BA ·{" "}
+                              {property.area} sqft
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          property.rentOrSale === "Sale"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {property.rentOrSale}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-sm text-gray-500">
-                      ${property.price}
-                      {property.rentOrSale === "Rent" && "/mo"}
-                    </td>
-                    <td className="py-4 px-4 text-sm">
-                      <div className="flex items-center gap-2">
+                      </td>
+                      <td className="py-4 px-4 text-sm text-gray-500 truncate max-w-[150px]">
+                        {property.userRef?.fullname || "N/A"}
+                      </td>
+                      <td className="py-4 px-4">
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            statusStyles[property.status] ||
-                            "bg-gray-100 text-gray-800"
+                            property.rentOrSale === "Sale"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-green-100 text-green-800"
                           }`}
                         >
-                          {property.status}
+                          {property.rentOrSale}
                         </span>
-                        {isLocked && (
-                          <span className="text-xs text-red-500 italic">
-                            Locked
+                      </td>
+                      <td className="py-4 px-4 text-sm text-gray-500">
+                        ${property.price}
+                        {property.rentOrSale === "Rent" && "/mo"}
+                      </td>
+                      <td className="py-4 px-4 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              statusStyles[property.status] ||
+                              "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {property.status}
                           </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-sm text-gray-500">
-                      {formatDate(property.createdAt)}
-                    </td>
-                    <td className="py-4 px-4 text-sm font-medium">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => navigate(`/property/${property._id}`)}
-                          className="p-2 text-teal-600 hover:text-teal-800 hover:bg-teal-50 rounded-full"
-                          disabled={actionLoading}
-                          title="View property"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <DeleteConfirmation
-                          itemName="property"
-                          onDelete={() => handleDeleteProperty(property._id)}
-                          disabled={actionLoading}
-                        />
-                        <button
-                          onClick={() =>
-                            handleLockToggle(property._id, !isLocked)
-                          }
-                          className={`p-2 rounded-full ${
-                            isLocked
-                              ? "text-green-600 hover:text-green-800 hover:bg-green-50"
-                              : "text-red-600 hover:text-red-800 hover:bg-red-50"
-                          }`}
-                          disabled={actionLoading}
-                          title={isLocked ? "Unlock property" : "Lock property"}
-                        >
-                          {isLocked ? (
-                            <Unlock className="h-4 w-4" />
-                          ) : (
-                            <Lock className="h-4 w-4" />
+                          {isLocked && (
+                            <span className="text-xs text-red-500 italic">
+                              Locked
+                            </span>
                           )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-sm text-gray-500">
+                        {formatDate(property.createdAt)}
+                      </td>
+                      <td className="py-4 px-4 text-sm font-medium">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() =>
+                              navigate(`/property/${property._id}`)
+                            }
+                            className="p-2 text-teal-600 hover:text-teal-800 hover:bg-teal-50 rounded-full"
+                            disabled={actionLoading}
+                            title="View property"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <DeleteConfirmation
+                            itemName="property"
+                            onDelete={() => handleDeleteProperty(property._id)}
+                            disabled={actionLoading}
+                          />
+                          <button
+                            onClick={() =>
+                              handleLockToggle(property._id, !isLocked)
+                            }
+                            className={`p-2 rounded-full ${
+                              isLocked
+                                ? "text-green-600 hover:text-green-800 hover:bg-green-50"
+                                : "text-red-600 hover:text-red-800 hover:bg-red-50"
+                            }`}
+                            disabled={actionLoading}
+                            title={
+                              isLocked ? "Unlock property" : "Lock property"
+                            }
+                          >
+                            {isLocked ? (
+                              <Unlock className="h-4 w-4" />
+                            ) : (
+                              <Lock className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

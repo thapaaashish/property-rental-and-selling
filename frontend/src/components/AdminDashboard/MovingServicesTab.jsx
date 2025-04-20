@@ -1,8 +1,9 @@
-// src/components/admin/MovingServicesTab.jsx
-import React, { useState, useEffect } from "react";
-import { Plus, Package, Search } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Plus, Package, Search, Trash2, Edit, X } from "lucide-react";
+import Popup from "../common/Popup";
+import debounce from "lodash.debounce";
 
-const MovingServicesTab = () => {
+const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [formData, setFormData] = useState({
@@ -17,46 +18,80 @@ const MovingServicesTab = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [sortConfig, setSortConfig] = useState({
+    key: "name",
+    direction: "asc",
+  });
 
-  // Fetch all moving services on mount
+  // Fetch services on mount
   useEffect(() => {
     const fetchServices = async () => {
+      setLoading(true);
       try {
         const res = await fetch("/api/moving-services", {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
         });
         const data = await res.json();
         if (res.ok) {
           setServices(data);
-          setFilteredServices(data); // Initialize filtered list
+          setFilteredServices(data);
         } else {
-          setError(data.message || "Failed to fetch services");
+          setApiError(data.message || "Failed to fetch services");
         }
       } catch (err) {
-        setError("Error fetching services");
+        setApiError("Error fetching services");
+      } finally {
+        setLoading(false);
       }
     };
     fetchServices();
-  }, []);
+  }, [setApiError]);
 
-  // Filter services by city
-  useEffect(() => {
-    if (!searchCity.trim()) {
-      setFilteredServices(services);
-    } else {
-      const lowerSearch = searchCity.toLowerCase();
-      setFilteredServices(
-        services.filter((service) =>
-          service.locations.some((loc) =>
-            loc.toLowerCase().includes(lowerSearch)
+  // Debounced search
+  const debouncedFilter = useCallback(
+    debounce((query) => {
+      if (!query.trim()) {
+        setFilteredServices(services);
+      } else {
+        const lowerSearch = query.toLowerCase();
+        setFilteredServices(
+          services.filter((service) =>
+            service.locations.some((loc) =>
+              loc.toLowerCase().includes(lowerSearch)
+            )
           )
-        )
-      );
-    }
-  }, [searchCity, services]);
+        );
+      }
+    }, 300),
+    [services]
+  );
+
+  useEffect(() => {
+    debouncedFilter(searchCity);
+  }, [searchCity, debouncedFilter]);
+
+  // Sorting
+  useEffect(() => {
+    const sortedServices = [...filteredServices].sort((a, b) => {
+      let aValue =
+        sortConfig.key === "locations"
+          ? a.locations.join(", ")
+          : a[sortConfig.key];
+      let bValue =
+        sortConfig.key === "locations"
+          ? b.locations.join(", ")
+          : b[sortConfig.key];
+      aValue = aValue?.toLowerCase() || "";
+      bValue = bValue?.toLowerCase() || "";
+      if (sortConfig.direction === "asc") {
+        return aValue > bValue ? 1 : -1;
+      }
+      return aValue < bValue ? 1 : -1;
+    });
+    setFilteredServices(sortedServices);
+  }, [sortConfig]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -72,7 +107,6 @@ const MovingServicesTab = () => {
     setError(null);
     setLoading(true);
 
-    // Validate form
     if (
       !formData.name ||
       !formData.phone ||
@@ -89,9 +123,7 @@ const MovingServicesTab = () => {
     try {
       const res = await fetch("/api/moving-services", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
           contact: { phone: formData.phone, email: formData.email },
@@ -134,6 +166,34 @@ const MovingServicesTab = () => {
     }
   };
 
+  const handleDeleteService = async (serviceId) => {
+    if (!window.confirm("Are you sure you want to delete this service?"))
+      return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/moving-services/${serviceId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setServices((prev) =>
+          prev.filter((service) => service._id !== serviceId)
+        );
+        setFilteredServices((prev) =>
+          prev.filter((service) => service._id !== serviceId)
+        );
+        setShowDeletePopup(true);
+      } else {
+        setApiError(data.message || "Failed to delete service");
+      }
+    } catch (err) {
+      setApiError("Error deleting service");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleAddForm = () => {
     setIsAdding((prev) => !prev);
     setError(null);
@@ -147,20 +207,154 @@ const MovingServicesTab = () => {
     });
   };
 
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
   return (
-    <div className="p-4 mx-auto">
-      <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-        <Package className="h-6 w-6 mr-2 text-gray-600" />
+    <div className="p-6 max-w-6xl mx-auto">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+        <Package className="h-6 w-6 mr-2 text-teal-600" />
         Moving Services
       </h2>
 
-      <div className="space-y-6">
-        {/* Add Service Form Section */}
-        {isAdding && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Add New Moving Service
-            </h3>
+      {/* Search and Add Button */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="relative w-full max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            value={searchCity}
+            onChange={handleSearchChange}
+            placeholder="Search by city (e.g., Kathmandu)"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+          />
+        </div>
+        <button
+          onClick={toggleAddForm}
+          className="flex items-center bg-teal-600 text-white px-4 py-2 rounded-xl hover:bg-teal-700 disabled:bg-teal-300 transition-colors text-sm font-medium"
+          disabled={loading}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Service
+        </button>
+      </div>
+
+      {/* Services Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-teal-600"></div>
+          </div>
+        ) : filteredServices.length === 0 ? (
+          <div className="text-center py-8">
+            <Package className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-500 text-sm">
+              {searchCity
+                ? "No services found for this city."
+                : "No moving services added yet."}
+            </p>
+            {!searchCity && (
+              <button
+                onClick={toggleAddForm}
+                className="mt-4 text-teal-600 hover:text-teal-700 text-sm font-medium"
+              >
+                Add your first service
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-teal-50 text-gray-700 uppercase tracking-wider">
+                <tr>
+                  <th
+                    className="px-6 py-3 text-left cursor-pointer"
+                    onClick={() => handleSort("name")}
+                  >
+                    Name{" "}
+                    {sortConfig.key === "name" &&
+                      (sortConfig.direction === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th className="px-6 py-3 text-left">Contact</th>
+                  <th
+                    className="px-6 py-3 text-left cursor-pointer"
+                    onClick={() => handleSort("locations")}
+                  >
+                    Locations{" "}
+                    {sortConfig.key === "locations" &&
+                      (sortConfig.direction === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th className="px-6 py-3 text-left">Description</th>
+                  <th className="px-6 py-3 text-left">Services Offered</th>
+                  <th className="px-6 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredServices.map((service) => (
+                  <tr
+                    key={service._id}
+                    className="hover:bg-teal-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 text-gray-800 font-medium">
+                      {service.name}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-gray-600">
+                        {service.contact.phone}
+                        <br />
+                        <a
+                          href={`mailto:${service.contact.email}`}
+                          className="text-teal-600 hover:underline"
+                        >
+                          {service.contact.email}
+                        </a>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {service.locations.join(", ")}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 truncate max-w-xs">
+                      {service.description}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {service.servicesOffered.join(", ")}
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <button
+                        onClick={() => handleDeleteService(service._id)}
+                        className="text-red-600 hover:text-red-700"
+                        disabled={actionLoading}
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Add Service Modal */}
+      {isAdding && (
+        <div className="fixed inset-0 backdrop-blur-xs  bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Add New Moving Service
+              </h3>
+              <button
+                onClick={toggleAddForm}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
             <form onSubmit={handleAddService} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -172,7 +366,11 @@ const MovingServicesTab = () => {
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="E.g., Swift Movers"
-                  className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`mt-1 w-full p-2 border ${
+                    error && !formData.name
+                      ? "border-red-500"
+                      : "border-gray-200"
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm`}
                   required
                 />
               </div>
@@ -187,7 +385,11 @@ const MovingServicesTab = () => {
                     value={formData.phone}
                     onChange={handleInputChange}
                     placeholder="E.g., +1-555-123-4567"
-                    className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`mt-1 w-full p-2 border ${
+                      error && !formData.phone
+                        ? "border-red-500"
+                        : "border-gray-200"
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm`}
                     required
                   />
                 </div>
@@ -201,7 +403,11 @@ const MovingServicesTab = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="E.g., contact@example.com"
-                    className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`mt-1 w-full p-2 border ${
+                      error && !formData.email
+                        ? "border-red-500"
+                        : "border-gray-200"
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm`}
                     required
                   />
                 </div>
@@ -209,6 +415,12 @@ const MovingServicesTab = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Locations (comma-separated)
+                  <span
+                    className="ml-1 text-gray-500 text-xs"
+                    title="Enter cities separated by commas"
+                  >
+                    ℹ️
+                  </span>
                 </label>
                 <input
                   type="text"
@@ -216,7 +428,11 @@ const MovingServicesTab = () => {
                   value={formData.locations}
                   onChange={handleInputChange}
                   placeholder="E.g., Kathmandu, Bhaktapur, Pokhara"
-                  className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`mt-1 w-full p-2 border ${
+                    error && !formData.locations
+                      ? "border-red-500"
+                      : "border-gray-200"
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm`}
                   required
                 />
               </div>
@@ -229,7 +445,11 @@ const MovingServicesTab = () => {
                   value={formData.description}
                   onChange={handleInputChange}
                   placeholder="E.g., Reliable and affordable moving services..."
-                  className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`mt-1 w-full p-2 border ${
+                    error && !formData.description
+                      ? "border-red-500"
+                      : "border-gray-200"
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm`}
                   rows="4"
                   required
                 />
@@ -237,6 +457,12 @@ const MovingServicesTab = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Services Offered (comma-separated)
+                  <span
+                    className="ml-1 text-gray-500 text-xs"
+                    title="Enter services separated by commas"
+                  >
+                    ℹ️
+                  </span>
                 </label>
                 <input
                   type="text"
@@ -244,7 +470,11 @@ const MovingServicesTab = () => {
                   value={formData.servicesOffered}
                   onChange={handleInputChange}
                   placeholder="E.g., Packing, Transport, Unpacking"
-                  className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`mt-1 w-full p-2 border ${
+                    error && !formData.servicesOffered
+                      ? "border-red-500"
+                      : "border-gray-200"
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm`}
                   required
                 />
               </div>
@@ -252,7 +482,7 @@ const MovingServicesTab = () => {
               <div className="flex space-x-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 disabled:bg-blue-300 transition-colors"
+                  className="flex-1 bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 disabled:bg-teal-300 transition-colors text-sm font-medium"
                   disabled={loading}
                 >
                   {loading ? "Adding..." : "Add Service"}
@@ -260,111 +490,25 @@ const MovingServicesTab = () => {
                 <button
                   type="button"
                   onClick={toggleAddForm}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
                 >
                   Cancel
                 </button>
               </div>
             </form>
           </div>
-        )}
-
-        {/* View Services Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">
-              All Moving Services
-            </h3>
-            {!isAdding && (
-              <button
-                onClick={toggleAddForm}
-                className="flex items-center text-sm font-medium text-white bg-blue-500 py-1.5 px-3 rounded-lg hover:bg-blue-600 disabled:bg-blue-300 transition-colors"
-                disabled={loading}
-                aria-label="Add new service"
-              >
-                <Plus className="h-4 w-4 mr-1.5" />
-                Add Service
-              </button>
-            )}
-          </div>
-
-          {/* Search Bar */}
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchCity}
-                onChange={handleSearchChange}
-                placeholder="Search by city (e.g., Kathmandu)"
-                className="w-full pl-10 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {filteredServices.length === 0 ? (
-            <p className="text-gray-500 text-sm">
-              {searchCity
-                ? "No services found for this city."
-                : "No moving services added yet."}
-            </p>
-          ) : (
-            <div className="max-h-[500px] overflow-y-auto">
-              <div className="grid grid-cols-1 gap-4">
-                {filteredServices.map((service) => (
-                  <div
-                    key={service._id}
-                    className="border border-gray-200 rounded-lg p-4 bg-gray-50 grid grid-cols-1 md:grid-cols-5 gap-4"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Name</p>
-                      <p className="text-sm text-gray-600">{service.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">
-                        Contact
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {service.contact.phone} |{" "}
-                        <a
-                          href={`mailto:${service.contact.email}`}
-                          className="text-blue-500 hover:underline"
-                        >
-                          {service.contact.email}
-                        </a>
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">
-                        Locations
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {service.locations.join(", ")}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">
-                        Description
-                      </p>
-                      <p className="text-sm text-gray-600 truncate">
-                        {service.description}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">
-                        Services Offered
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {service.servicesOffered.join(", ")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
-      </div>
+      )}
+
+      {/* Success Popup */}
+      {showDeletePopup && (
+        <Popup
+          message="Service deleted successfully!"
+          type="success"
+          duration={3000}
+          onClose={() => setShowDeletePopup(false)}
+        />
+      )}
     </div>
   );
 };

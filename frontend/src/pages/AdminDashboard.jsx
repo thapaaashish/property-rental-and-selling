@@ -23,9 +23,12 @@ import {
   X,
   Shield,
   Car,
+  Calendar,
+  LogOut,
 } from "lucide-react";
 import MovingServicesTab from "../components/AdminDashboard/MovingServicesTab";
 import KycVerification from "../components/AdminDashboard/KycVerification";
+import BookingsTab from "../components/AdminDashboard/BookingsTab";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -34,6 +37,7 @@ const AdminDashboard = () => {
   const [properties, setProperties] = useState([]);
   const [users, setUsers] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [pendingVerifications, setPendingVerifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [apiError, setApiError] = useState(null);
@@ -42,6 +46,7 @@ const AdminDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showDeletePropertyPopup, setShowDeletePropertyPopup] = useState(false);
   const [showDeleteUserPopup, setShowDeleteUserPopup] = useState(false);
+  const [showDeleteBookingPopup, setShowDeleteBookingPopup] = useState(false);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== "admin") {
@@ -57,33 +62,50 @@ const AdminDashboard = () => {
           method: "GET",
           credentials: "include",
         });
-        const listingsData = await listingsRes.json();
-        if (listingsData.success === false) {
-          throw new Error(listingsData.message || "Failed to fetch listings");
-        }
-        setProperties(listingsData);
-
         const usersRes = await fetch("/api/admin/users", {
           method: "GET",
           credentials: "include",
         });
-        const usersData = await usersRes.json();
-        if (usersData.success === false) {
-          throw new Error(usersData.message || "Failed to fetch users");
-        }
-        setUsers(usersData);
-
-        const bookingsRes = await fetch("/api/admin/bookings", {
+        const bookingsRes = await fetch(
+          "/api/admin/bookings?populate=listing,user",
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
+        const verificationsRes = await fetch("/api/kyc/pending", {
           method: "GET",
           credentials: "include",
         });
+
+        const listingsData = await listingsRes.json();
+        const usersData = await usersRes.json();
         const bookingsData = await bookingsRes.json();
-        if (bookingsData.success === false) {
+        const verificationsData = await verificationsRes.json();
+
+        if (listingsData.success === false)
+          throw new Error(listingsData.message || "Failed to fetch listings");
+        if (usersData.success === false)
+          throw new Error(usersData.message || "Failed to fetch users");
+        if (bookingsData.success === false)
           throw new Error(bookingsData.message || "Failed to fetch bookings");
-        }
-        setBookings(bookingsData);
+        if (verificationsData.success === false)
+          throw new Error(
+            verificationsData.message || "Failed to fetch verifications"
+          );
+
+        setProperties(Array.isArray(listingsData) ? listingsData : []);
+        setUsers(Array.isArray(usersData) ? usersData : []);
+        setBookings(Array.isArray(bookingsData) ? bookingsData : []);
+        setPendingVerifications(
+          Array.isArray(verificationsData.users) ? verificationsData.users : []
+        );
       } catch (err) {
         setApiError(err.message);
+        setProperties([]);
+        setUsers([]);
+        setBookings([]);
+        setPendingVerifications([]);
       } finally {
         setIsLoading(false);
       }
@@ -91,6 +113,26 @@ const AdminDashboard = () => {
 
     fetchAdminData();
   }, [currentUser, navigate]);
+
+  const handleDeleteBooking = async (bookingId) => {
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (data.success === false) {
+        throw new Error(data.message || "Failed to cancel booking");
+      }
+      setBookings(bookings.filter((booking) => booking._id !== bookingId));
+      setShowDeleteBookingPopup(true);
+    } catch (err) {
+      setApiError(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleDeleteProperty = async (propertyId) => {
     if (!window.confirm("Are you sure you want to delete this property?"))
@@ -206,6 +248,7 @@ const AdminDashboard = () => {
           {[
             { id: "overview", icon: Package, label: "Overview" },
             { id: "properties", icon: Home, label: "Properties" },
+            { id: "bookings", icon: Calendar, label: "Bookings" },
             { id: "moving-services", icon: Car, label: "Moving Services" },
             { id: "users", icon: Users, label: "Users" },
             { id: "kyc", icon: Users, label: "KYC Verification" },
@@ -237,38 +280,44 @@ const AdminDashboard = () => {
           ))}
         </nav>
 
+        {/* Sidebar Footer */}
         <div
-          className={`p-4 border-t ${
-            sidebarCollapsed ? "px-3" : "px-6"
-          } space-y-2`}
+          className={`mt-auto border-t px-4 py-3 ${
+            sidebarCollapsed ? "px-3 py-4" : "px-6 py-4"
+          }`}
         >
-          <button
-            onClick={handleSignout}
-            disabled={loading}
-            className={`flex items-center w-full text-gray-600 hover:text-teal-700 cursor-pointer ${
-              sidebarCollapsed ? "justify-center" : ""
-            } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-            title={sidebarCollapsed ? "Sign Out" : ""}
-          >
-            <Home className="h-5 w-5" />
-            {!sidebarCollapsed && (
-              <span className="ml-3 text-sm">
-                {loading ? "Signing out..." : "Sign Out"}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => navigate("/")}
-            className={`flex items-center w-full text-gray-600 hover:text-teal-700 cursor-pointer ${
-              sidebarCollapsed ? "justify-center" : ""
-            }`}
-            title={sidebarCollapsed ? "Go to Website" : ""}
-          >
-            <Home className="h-5 w-5" />
-            {!sidebarCollapsed && (
-              <span className="ml-3 text-sm">Go to Website</span>
-            )}
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={handleSignout}
+              disabled={loading}
+              className={`flex items-center w-full cursor-pointer text-sm font-medium rounded-md transition-colors duration-200 ${
+                sidebarCollapsed ? "justify-center" : "justify-start"
+              } ${
+                loading
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-600 hover:bg-teal-50 hover:text-teal-700"
+              } p-2`}
+              title={sidebarCollapsed ? "Log Out" : ""}
+            >
+              <LogOut className="h-5 w-5" />
+              {!sidebarCollapsed && (
+                <span className="ml-3">
+                  {loading ? "Logging out..." : "Log Out"}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => navigate("/")}
+              className={`flex items-center w-full cursor-pointer text-sm font-medium rounded-md transition-colors duration-200 ${
+                sidebarCollapsed ? "justify-center" : "justify-start"
+              } text-gray-600 hover:bg-teal-50 hover:text-teal-700 p-2`}
+              title={sidebarCollapsed ? "Go to Website" : ""}
+            >
+              <Home className="h-5 w-5" />
+              {!sidebarCollapsed && <span className="ml-3">Go to Website</span>}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -312,6 +361,8 @@ const AdminDashboard = () => {
               <OverviewTab
                 properties={properties}
                 bookings={bookings}
+                users={users}
+                pendingVerifications={pendingVerifications}
                 navigate={navigate}
                 setActiveTab={setActiveTab}
               />
@@ -324,6 +375,14 @@ const AdminDashboard = () => {
                 navigate={navigate}
               />
             )}
+            {activeTab === "bookings" && (
+              <BookingsTab
+                bookings={bookings}
+                navigate={navigate}
+                actionLoading={actionLoading}
+                handleDeleteBooking={handleDeleteBooking}
+              />
+            )}
             {activeTab === "users" && (
               <UsersTab
                 users={users}
@@ -334,13 +393,7 @@ const AdminDashboard = () => {
               />
             )}
             {activeTab === "kyc" && (
-              <KycVerification
-                users={users}
-                currentUser={currentUser}
-                handleDeleteUser={handleDeleteUser}
-                actionLoading={actionLoading}
-                navigate={navigate}
-              />
+              <KycVerification navigate={navigate} currentUser={currentUser} />
             )}
             {activeTab === "moving-services" && (
               <MovingServicesTab
@@ -387,6 +440,14 @@ const AdminDashboard = () => {
           type="success"
           duration={3000}
           onClose={() => setShowDeleteUserPopup(false)}
+        />
+      )}
+      {showDeleteBookingPopup && (
+        <Popup
+          message="Booking cancelled successfully!"
+          type="success"
+          duration={3000}
+          onClose={() => setShowDeleteBookingPopup(false)}
         />
       )}
     </div>
