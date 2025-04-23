@@ -23,6 +23,7 @@ import Success from "./components/payment/PaymentSuccess";
 import MovingServices from "./pages/MovingServices";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Messages from "./components/UserDashboard/Messages";
 
 export const App = () => {
   return (
@@ -63,6 +64,7 @@ export const App = () => {
         <Route element={<UserPrivateRoute />}>
           <Route element={<Layout footer={false} />}>
             <Route path="/wishlists" element={<Wishlists />} />
+            <Route path="/messages" element={<Messages />} />
           </Route>
         </Route>
 

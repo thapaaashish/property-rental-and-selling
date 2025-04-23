@@ -17,6 +17,7 @@ import axios from "axios";
 import Popup from "../common/Popup";
 import UserCard from "./UserCard";
 import DeleteConfirmation from "../common/DeleteConfirmation";
+import ReasonInputModal from "./ReasonInputModal";
 
 const UsersTab = ({
   users: initialUsers = [],
@@ -34,9 +35,11 @@ const UsersTab = ({
   const [kycFilter, setKycFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({}); // Track loading per user
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [showBanReasonModal, setShowBanReasonModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const usersPerPage = 10;
 
   useEffect(() => {
@@ -65,7 +68,7 @@ const UsersTab = ({
       : { date: "N/A", time: "N/A" };
 
   const fetchUsers = async (pageNum = 1) => {
-    setLoading(true);
+    setLoadingStates((prev) => ({ ...prev, fetch: true }));
     try {
       const response = await axios.get(
         `/api/admin/users?page=${pageNum}&limit=${usersPerPage}`,
@@ -84,59 +87,99 @@ const UsersTab = ({
       setShowPopup(true);
       console.error("Error fetching users:", error.response?.data || error);
     } finally {
-      setLoading(false);
+      setLoadingStates((prev) => ({ ...prev, fetch: false }));
     }
   };
 
   const handleBanToggle = async (userId, ban) => {
-    try {
-      let reason = null;
-      if (ban) {
-        reason = prompt("Please enter the reason for banning this user:");
-        if (reason === null) return;
-        if (reason.trim() === "") {
-          setPopupMessage("Ban reason cannot be empty");
-          setPopupType("error");
-          setShowPopup(true);
-          return;
-        }
-      }
-
-      const response = await axios.patch(
-        `/api/admin/users/${userId}/ban`,
-        { isBanned: ban, reason },
-        {
-          headers: {
-            Authorization: `Bearer ${currentUser.refreshToken}`,
-          },
-        }
-      );
-
-      if (response.status === 200) {
+    if (ban) {
+      setSelectedUserId(userId);
+      setShowBanReasonModal(true);
+    } else {
+      setLoadingStates((prev) => ({ ...prev, [userId]: true }));
+      try {
+        const response = await axios.patch(
+          `/api/admin/users/${userId}/ban`,
+          { isBanned: false },
+          {
+            headers: {
+              Authorization: `Bearer ${currentUser.refreshToken}`,
+            },
+          }
+        );
         setUsers((prev) =>
           prev.map((user) =>
             user._id === userId
               ? {
                   ...user,
                   banStatus: response.data.user.banStatus,
-                  isBanned: response.data.user.banStatus?.isBanned || false,
+                  isBanned: false,
                 }
               : user
           )
         );
-        setPopupMessage(
-          response.data.message || `User ${ban ? "banned" : "unbanned"}`
-        );
+        setPopupMessage(response.data.message || "User unbanned");
         setPopupType("success");
         setShowPopup(true);
+      } catch (error) {
+        setPopupMessage(
+          error.response?.data?.message || "Failed to update ban status"
+        );
+        setPopupType("error");
+        setShowPopup(true);
+        console.error(
+          "Error in handleBanToggle:",
+          error.response?.data || error
+        );
+      } finally {
+        // Ensure loading state is visible for at least 500ms
+        setTimeout(() => {
+          setLoadingStates((prev) => ({ ...prev, [userId]: false }));
+        }, 500);
       }
+    }
+  };
+
+  const handleBanSubmit = async (reason) => {
+    setLoadingStates((prev) => ({ ...prev, [selectedUserId]: true }));
+    try {
+      const response = await axios.patch(
+        `/api/admin/users/${selectedUserId}/ban`,
+        { isBanned: true, reason },
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
+        }
+      );
+      setUsers((prev) =>
+        prev.map((user) =>
+          user._id === selectedUserId
+            ? {
+                ...user,
+                banStatus: response.data.user.banStatus,
+                isBanned: true,
+              }
+            : user
+        )
+      );
+      setPopupMessage(response.data.message || "User banned");
+      setPopupType("success");
+      setShowPopup(true);
     } catch (error) {
       setPopupMessage(
         error.response?.data?.message || "Failed to update ban status"
       );
       setPopupType("error");
       setShowPopup(true);
-      console.error("Error in handleBanToggle:", error.response?.data || error);
+      console.error("Error in handleBanSubmit:", error.response?.data || error);
+    } finally {
+      // Ensure loading state is visible for at least 500ms
+      setTimeout(() => {
+        setLoadingStates((prev) => ({ ...prev, [selectedUserId]: false }));
+        setShowBanReasonModal(false);
+        setSelectedUserId(null);
+      }, 500);
     }
   };
 
@@ -174,10 +217,20 @@ const UsersTab = ({
           onClose={() => setShowPopup(false)}
         />
       )}
-
+      <ReasonInputModal
+        isOpen={showBanReasonModal}
+        onClose={() => {
+          setShowBanReasonModal(false);
+          setSelectedUserId(null);
+        }}
+        onSubmit={handleBanSubmit}
+        title="Ban User"
+        actionLabel="Ban User"
+        entityName="banning this user"
+        loading={loadingStates[selectedUserId] || false}
+      />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h2 className="text-xl font-bold text-gray-800">User Management</h2>
-
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <div className="relative flex-grow sm:w-64">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -191,7 +244,6 @@ const UsersTab = ({
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex border border-gray-300 rounded-md overflow-hidden">
               <button
@@ -242,8 +294,7 @@ const UsersTab = ({
           </div>
         </div>
       </div>
-
-      {loading ? (
+      {loadingStates.fetch ? (
         <div className="text-center py-16">
           <Loader2 className="h-8 w-8 text-blue-500 animate-spin mx-auto" />
           <p className="mt-2 text-gray-600">Loading users...</p>
@@ -297,6 +348,7 @@ const UsersTab = ({
                   const banStatus = user.banStatus;
                   const isProfileComplete = user.profileCompleted;
                   const kycStatus = user.kyc?.status || "not_verified";
+                  const isLoading = loadingStates[user._id] || false;
 
                   return (
                     <tr key={user._id} className="hover:bg-gray-50">
@@ -447,6 +499,7 @@ const UsersTab = ({
                                   onClick={() => setBanDetails(banStatus)}
                                   className="ml-2 text-xs text-blue-500 hover:text-blue-700 flex items-center"
                                   title="View ban details"
+                                  disabled={isLoading}
                                 >
                                   <Info className="h-3 w-3 mr-1" />
                                   Details
@@ -465,7 +518,7 @@ const UsersTab = ({
                               )
                             }
                             className="p-2 text-teal-600 hover:text-teal-800 hover:bg-teal-50 rounded-full"
-                            disabled={actionLoading}
+                            disabled={actionLoading || isLoading}
                             aria-label={`View user ${
                               user.fullname || user._id
                             }`}
@@ -477,7 +530,9 @@ const UsersTab = ({
                             itemName="user"
                             onDelete={() => handleDeleteUser(user._id)}
                             disabled={
-                              actionLoading || user._id === currentUser._id
+                              actionLoading ||
+                              isLoading ||
+                              user._id === currentUser._id
                             }
                           />
                           <button
@@ -488,11 +543,15 @@ const UsersTab = ({
                                 : "text-red-600 hover:text-red-800 hover:bg-red-50"
                             }`}
                             disabled={
-                              actionLoading || user._id === currentUser._id
+                              actionLoading ||
+                              isLoading ||
+                              user._id === currentUser._id
                             }
                             title={isBanned ? "Unban user" : "Ban user"}
                           >
-                            {isBanned ? (
+                            {isLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : isBanned ? (
                               <Unlock className="h-4 w-4" />
                             ) : (
                               <Lock className="h-4 w-4" />
@@ -506,7 +565,6 @@ const UsersTab = ({
               </tbody>
             </table>
           </div>
-
           <div className="mt-4 flex justify-between items-center">
             <div className="text-sm text-gray-600">
               Page {page} of {totalPages}
@@ -514,9 +572,9 @@ const UsersTab = ({
             <div className="flex space-x-2">
               <button
                 onClick={() => fetchUsers(page - 1)}
-                disabled={page === 1 || loading}
+                disabled={page === 1 || loadingStates.fetch}
                 className={`px-3 py-2 rounded-md ${
-                  page === 1 || loading
+                  page === 1 || loadingStates.fetch
                     ? "bg-gray-200 cursor-not-allowed"
                     : "bg-blue-500 text-white hover:bg-blue-600"
                 }`}
@@ -525,9 +583,9 @@ const UsersTab = ({
               </button>
               <button
                 onClick={() => fetchUsers(page + 1)}
-                disabled={page === totalPages || loading}
+                disabled={page === totalPages || loadingStates.fetch}
                 className={`px-3 py-2 rounded-md ${
-                  page === totalPages || loading
+                  page === totalPages || loadingStates.fetch
                     ? "bg-gray-200 cursor-not-allowed"
                     : "bg-blue-500 text-white hover:bg-blue-600"
                 }`}
@@ -538,7 +596,6 @@ const UsersTab = ({
           </div>
         </>
       )}
-
       {banDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
@@ -556,7 +613,8 @@ const UsersTab = ({
               <div>
                 <p className="text-sm font-medium text-gray-500">Date</p>
                 <p className="mt-1 text-sm text-gray-900">
-                  {formatDate(banDetails.bannedAt)}
+                  {formatDate(banDetails.bannedAt).date}{" "}
+                  {formatDate(banDetails.bannedAt).time}
                 </p>
               </div>
               <div>
@@ -571,19 +629,21 @@ const UsersTab = ({
             <button
               onClick={() => setBanDetails(null)}
               className="mt-6 w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+              disabled={Object.values(loadingStates).some((state) => state)}
             >
               Close
             </button>
           </div>
         </div>
       )}
-
       {selectedUser && (
         <UserCard
           user={selectedUser}
           onClose={() => setSelectedUser(null)}
           onBanToggle={handleBanToggle}
-          actionLoading={actionLoading}
+          actionLoading={
+            actionLoading || Object.values(loadingStates).some((state) => state)
+          }
           isCurrentUser={selectedUser._id === currentUser._id}
         />
       )}

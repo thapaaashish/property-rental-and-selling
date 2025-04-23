@@ -103,6 +103,8 @@ const Listings = () => {
     .map((property) => ({
       lat: property.location.coordinates[1],
       lng: property.location.coordinates[0],
+      title: property.title,
+      listingId: property.id,
     }));
 
   return (

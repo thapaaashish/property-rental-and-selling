@@ -1,219 +1,485 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import {
   Home,
   Heart,
   MessageSquare,
-  User,
-  Package,
-  Clock,
-  Menu,
-  X,
+  PieChart as PieChartIcon,
+  BarChart2,
 } from "lucide-react";
+import {
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
+import { MapWithAllProperties } from "../GoogleMap";
+import PropTypes from "prop-types";
+
+// Constants
+const CHART_COLORS = [
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+  "#8884d8",
+  "#82ca9d",
+];
+const MAX_TABLE_ROWS = 5;
 
 const DashboardOverview = ({
-  listings,
-  savedProperties,
-  messages,
+  listings = [],
+  savedProperties = [],
+  messages = [],
   formatDate,
   navigate,
+  setActiveTab,
 }) => {
+  const [chartType, setChartType] = useState("pie");
+  const [activeChartData, setActiveChartData] = useState("rentOrSale");
+
+  // Memoized chart data
+  const { rentOrSaleData, listingTypeData } = useMemo(() => {
+    const rentOrSaleCount = listings.reduce((acc, property) => {
+      const type = property.rentOrSale || "Other";
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+    const listingTypeCount = listings.reduce((acc, property) => {
+      const type = property.listingType || "Other";
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+    const rentOrSaleData = Object.keys(rentOrSaleCount).map((key) => ({
+      name: key.charAt(0).toUpperCase() + key.slice(1),
+      value: rentOrSaleCount[key],
+    }));
+    const listingTypeData = Object.keys(listingTypeCount).map((key) => ({
+      name: key.charAt(0).toUpperCase() + key.slice(1),
+      value: listingTypeCount[key],
+    }));
+    return { rentOrSaleData, listingTypeData };
+  }, [listings]);
+
+  // Memoized map markers
+  const mapMarkers = useMemo(() => {
+    return listings
+      .filter((prop) => prop.location?.coordinates?.length === 2)
+      .map((property) => ({
+        lat: property.location.coordinates[1],
+        lng: property.location.coordinates[0],
+        title: property.title,
+        listingId: property._id,
+      }));
+  }, [listings]);
+
+  // Empty state
+  if (
+    listings.length === 0 &&
+    savedProperties.length === 0 &&
+    messages.length === 0
+  ) {
+    return (
+      <div className="flex items-center justify-center h-full bg-gray-50 p-4">
+        <div className="bg-white rounded-xl shadow-sm p-6 max-w-md w-full text-center border border-gray-100">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-blue-50 mb-4">
+            <Home className="h-6 w-6 text-blue-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">No Data Yet</h2>
+          <p className="text-gray-600 text-sm mb-6">
+            Start by creating a property or browsing listings.
+          </p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => navigate("/create-listing-landing")}
+              className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              <Home className="h-4 w-4" />
+              Create Listing
+            </button>
+            <button
+              onClick={() => navigate("/listings")}
+              className="flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            >
+              <Heart className="h-4 w-4" />
+              Browse Properties
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state for tables
+  const EmptyState = ({ icon: Icon, message }) => (
+    <div className="flex flex-col items-center justify-center py-6">
+      <Icon className="h-8 w-8 text-gray-300 mb-2" />
+      <p className="text-gray-500 text-xs">{message}</p>
+    </div>
+  );
+
+  const currentChartData =
+    activeChartData === "rentOrSale" ? rentOrSaleData : listingTypeData;
+
   return (
-    <div className="p-4 md:p-6">
+    <div className="bg-gray-50 p-4">
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <button
+          className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:bg-teal-50 transition-colors"
+          onClick={() => setActiveTab("listings")}
+          aria-label="View my listings"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm font-medium">My Listings</p>
-              <h3 className="text-xl md:text-2xl font-bold text-gray-800 mt-1">
-                {listings.length}
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">
+                {listings?.length ?? 0}
               </h3>
             </div>
-            <div className="bg-blue-100 p-2 md:p-3 rounded-full">
-              <Home className="h-5 md:h-6 w-5 md:w-6 text-blue-600" />
+            <div className="bg-teal-100 p-2 sm:p-3 rounded-full">
+              <Home className="h-5 sm:h-6 w-5 sm:w-6 text-teal-600" />
             </div>
           </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100">
+        </button>
+        <button
+          className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:bg-teal-50 transition-colors"
+          onClick={() => setActiveTab("saved")}
+          aria-label="View saved properties"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm font-medium">
                 Saved Properties
               </p>
-              <h3 className="text-xl md:text-2xl font-bold text-gray-800 mt-1">
-                {savedProperties.length}
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">
+                {savedProperties?.length ?? 0}
               </h3>
             </div>
-            <div className="bg-green-100 p-2 md:p-3 rounded-full">
-              <Heart className="h-5 md:h-6 w-5 md:w-6 text-green-600" />
+            <div className="bg-teal-100 p-2 sm:p-3 rounded-full">
+              <Heart className="h-5 sm:h-6 w-5 sm:w-6 text-teal-600" />
             </div>
           </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-100">
+        </button>
+        <button
+          className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:bg-teal-50 transition-colors"
+          onClick={() => setActiveTab("messages")}
+          aria-label="View messages"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm font-medium">Messages</p>
-              <h3 className="text-xl md:text-2xl font-bold text-gray-800 mt-1">
-                {messages.length}
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">
+                {messages?.length ?? 0}
               </h3>
             </div>
-            <div className="bg-purple-100 p-2 md:p-3 rounded-full">
-              <MessageSquare className="h-5 md:h-6 w-5 md:w-6 text-purple-600" />
+            <div className="bg-teal-100 p-2 sm:p-3 rounded-full">
+              <MessageSquare className="h-5 sm:h-6 w-5 sm:w-6 text-teal-600" />
             </div>
+          </div>
+        </button>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left Column - Tables */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Recent Listings Table */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-800">
+                Recent Listings
+              </h2>
+              <button
+                onClick={() => setActiveTab("listings")}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+              >
+                View All
+              </button>
+            </div>
+            {listings.length === 0 ? (
+              <EmptyState icon={Home} message="No listings yet" />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 text-gray-500 uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Property</th>
+                      <th className="px-4 py-2 text-right">For</th>
+                      <th className="px-4 py-2 text-right">Price</th>
+                      <th className="px-4 py-2 text-right">Posted</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {listings.slice(0, MAX_TABLE_ROWS).map((listing) => (
+                      <tr
+                        key={listing._id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-4 py-2">
+                          <div className="flex items-center">
+                            <div className="h-8 w-8 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                              {listing.imageUrls?.length > 0 ? (
+                                <img
+                                  src={listing.imageUrls[0]}
+                                  alt={listing.title}
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="flex items-center justify-center h-full w-full">
+                                  <Home className="h-4 w-4 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="ml-2">
+                              <p className="text-xs font-medium text-gray-800 truncate max-w-[150px]">
+                                {listing.title || "Untitled Listing"}
+                              </p>
+                              <p className="text-xs text-gray-500 capitalize">
+                                {listing.listingType || "N/A"}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2 text-right whitespace-nowrap text-xs text-gray-500">
+                          {listing.rentOrSale || "N/A"}
+                        </td>
+                        <td className="px-4 py-2 text-right whitespace-nowrap">
+                          <span className="text-xs font-medium text-gray-800">
+                            {listing.price ? `$${listing.price}` : "N/A"}
+                          </span>
+                          {listing.rentOrSale === "rent" && (
+                            <span className="text-xs text-gray-500 ml-1">
+                              /mo
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-right whitespace-nowrap text-xs text-gray-500">
+                          {formatDate(listing.createdAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Property Map Overview */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-800">
+                Property Map
+              </h2>
+              <button
+                onClick={() => setActiveTab("listings")}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+              >
+                View All
+              </button>
+            </div>
+            {mapMarkers.length === 0 ? (
+              <EmptyState
+                icon={Home}
+                message="No property locations available"
+              />
+            ) : (
+              <div className="h-64">
+                <MapWithAllProperties markers={mapMarkers} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column - Charts and Messages */}
+        <div className="space-y-4">
+          {/* Listing Distribution Chart */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-800">
+                Listing Distribution
+              </h2>
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => setChartType("pie")}
+                  className={`p-1 rounded ${
+                    chartType === "pie"
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                  aria-label="Pie chart view"
+                >
+                  <PieChartIcon className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setChartType("bar")}
+                  className={`p-1 rounded ${
+                    chartType === "bar"
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-500 hover:bg-gray-100"
+                  }`}
+                  aria-label="Bar chart view"
+                >
+                  <BarChart2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            {listings.length === 0 ? (
+              <EmptyState
+                icon={PieChartIcon}
+                message="No listing data available"
+              />
+            ) : (
+              <div className="p-3">
+                <div className="flex justify-center mb-3">
+                  <div className="flex space-x-6">
+                    <button
+                      onClick={() => setActiveChartData("rentOrSale")}
+                      className={`text-xs font-medium ${
+                        activeChartData === "rentOrSale"
+                          ? "text-blue-600 border-b-2 border-blue-500"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      By Rent/Sale
+                    </button>
+                    <button
+                      onClick={() => setActiveChartData("listingType")}
+                      className={`text-xs font-medium ${
+                        activeChartData === "listingType"
+                          ? "text-blue-600 border-b-2 border-blue-500"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      By Type
+                    </button>
+                  </div>
+                </div>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {chartType === "pie" ? (
+                      <RechartsPieChart>
+                        <Pie
+                          data={currentChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={70}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({ name, percent }) =>
+                            `${name}: ${(percent * 100).toFixed(0)}%`
+                          }
+                        >
+                          {currentChartData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={CHART_COLORS[index % CHART_COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value) => [`${value} listings`, "Count"]}
+                        />
+                      </RechartsPieChart>
+                    ) : (
+                      <BarChart
+                        data={currentChartData}
+                        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value) => [`${value} listings`, "Count"]}
+                        />
+                        <Legend />
+                        <Bar
+                          dataKey="value"
+                          name="Count"
+                          fill="#0088FE"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Recent Messages Table */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
+              <h2 className="text-sm font-semibold text-gray-800">
+                Recent Messages
+              </h2>
+              <button
+                onClick={() => setActiveTab("messages")}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+              >
+                View All
+              </button>
+            </div>
+            {messages.length === 0 ? (
+              <EmptyState icon={MessageSquare} message="No messages yet" />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 text-gray-500 uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Sender</th>
+                      <th className="px-4 py-2 text-right">Message</th>
+                      <th className="px-4 py-2 text-right">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {messages.slice(0, MAX_TABLE_ROWS).map((message) => (
+                      <tr
+                        key={message._id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-4 py-2">
+                          <p className="text-xs font-medium text-gray-800 truncate max-w-[120px]">
+                            {message.sender?.fullname || "Unknown Sender"}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate max-w-[120px]">
+                            {message.sender?.email || "No email"}
+                          </p>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <p className="text-xs text-gray-700 truncate max-w-[150px]">
+                            {message.content || "No content"}
+                          </p>
+                        </td>
+                        <td className="px-4 py-2 text-right whitespace-nowrap text-xs text-gray-500">
+                          {formatDate(message.createdAt)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      <div className="mb-6 md:mb-8">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <button
-            onClick={() => navigate("/create-listing-landing")}
-            className="flex items-center justify-center py-2 px-3 md:py-3 md:px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2 text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add New Listing
-          </button>
-          <button
-            onClick={() => navigate("/listings")}
-            className="flex items-center justify-center py-2 px-3 md:py-3 md:px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2 text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            Browse Properties
-          </button>
-          <button
-            onClick={() => setActiveTab("profile")}
-            className="flex items-center justify-center py-2 px-3 md:py-3 md:px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2 text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            Update Profile
-          </button>
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center justify-center py-2 px-3 md:py-3 md:px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition duration-150"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2 text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Go Back to Website
-          </button>
-        </div>
-      </div>
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Activity</h2>
-      <div className="space-y-4">
-        {listings.length > 0 ? (
-          listings
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .slice(0, 3)
-            .map((listing) => (
-              <div
-                key={listing._id}
-                className="flex items-center p-4 border rounded-lg"
-              >
-                <div className="flex-shrink-0 h-16 w-16 bg-gray-200 rounded-md overflow-hidden">
-                  {listing.imageUrls && listing.imageUrls.length > 0 ? (
-                    <img
-                      src={listing.imageUrls[0]}
-                      alt={listing.title}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-gray-200">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 text-gray-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className="ml-4 flex-1">
-                  <h3 className="text-sm font-medium text-gray-800">
-                    {listing.title}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    ${listing.price} · {listing.bedrooms} BD ·{" "}
-                    {listing.bathrooms} BA
-                  </p>
-                </div>
-                <div className="text-sm text-gray-500">
-                  Posted on {formatDate(listing.createdAt)}
-                </div>
-              </div>
-            ))
-        ) : (
-          <p className="text-gray-500">No recent listings available.</p>
-        )}
-      </div>
     </div>
   );
+};
+
+DashboardOverview.propTypes = {
+  listings: PropTypes.array,
+  savedProperties: PropTypes.array,
+  messages: PropTypes.array,
+  formatDate: PropTypes.func.isRequired,
+  navigate: PropTypes.func.isRequired,
+  setActiveTab: PropTypes.func.isRequired,
 };
 
 export default DashboardOverview;

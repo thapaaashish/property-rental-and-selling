@@ -2,18 +2,20 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { FileText, CheckCircle, XCircle } from "lucide-react";
+import Popup from "../common/Popup";
 
 const KycVerification = () => {
   const { currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [processing, setProcessing] = useState({});
   const [showRejectModal, setShowRejectModal] = useState(null); // Track userId for modal
   const [rejectReason, setRejectReason] = useState("");
   const [modalError, setModalError] = useState(null);
-  const [notification, setNotification] = useState({ message: "", type: "" }); // Success/error notification
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupType, setPopupType] = useState("success");
 
   // Check if user is admin
   useEffect(() => {
@@ -26,7 +28,6 @@ const KycVerification = () => {
   useEffect(() => {
     const fetchPendingKyc = async () => {
       setLoading(true);
-      setError(null);
       try {
         const response = await fetch("/api/kyc/pending", {
           method: "GET",
@@ -39,10 +40,16 @@ const KycVerification = () => {
         if (data.success) {
           setPendingRequests(data.users);
         } else {
-          setError(data.message || "Failed to fetch pending KYC requests");
+          setPopupMessage(
+            data.message || "Failed to fetch pending KYC requests"
+          );
+          setPopupType("error");
+          setShowPopup(true);
         }
       } catch (err) {
-        setError("An error occurred while fetching KYC requests");
+        setPopupMessage("An error occurred while fetching KYC requests");
+        setPopupType("error");
+        setShowPopup(true);
         console.error("Error fetching KYC requests:", err);
       } finally {
         setLoading(false);
@@ -70,17 +77,19 @@ const KycVerification = () => {
         setPendingRequests((prev) =>
           prev.filter((user) => user._id !== userId)
         );
-        setNotification({
-          message: `KYC ${status} successfully`,
-          type: "success",
-        });
-        setTimeout(() => setNotification({ message: "", type: "" }), 3000); // Auto-hide after 3s
+        setPopupMessage(`KYC ${status} successfully`);
+        setPopupType("success");
+        setShowPopup(true);
       } else {
-        setError(data.message || `Failed to ${status} KYC`);
+        setPopupMessage(data.message || `Failed to ${status} KYC`);
+        setPopupType("error");
+        setShowPopup(true);
         console.error("KYC verification error:", data);
       }
     } catch (err) {
-      setError("An error occurred while processing the KYC request");
+      setPopupMessage("An error occurred while processing the KYC request");
+      setPopupType("error");
+      setShowPopup(true);
       console.error("Error processing KYC:", err);
     } finally {
       setProcessing((prev) => ({ ...prev, [userId]: false }));
@@ -112,21 +121,13 @@ const KycVerification = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-6">
           KYC Verification Dashboard
         </h1>
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
-            {error}
-          </div>
-        )}
-        {notification.message && (
-          <div
-            className={`mb-4 p-4 rounded-md ${
-              notification.type === "success"
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {notification.message}
-          </div>
+        {showPopup && (
+          <Popup
+            message={popupMessage}
+            type={popupType}
+            duration={3000}
+            onClose={() => setShowPopup(false)}
+          />
         )}
         {loading ? (
           <p className="text-gray-600">Loading pending KYC requests...</p>

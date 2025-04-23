@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  signOutUserStart,
+  signOutUserSuccess,
+  signOutUserFailure,
+} from "../redux/user/userSlice";
 import EditListingForm from "./EditListingForm";
 import Wishlists from "./Wishlists";
 import Profile from "./Profile";
@@ -15,14 +20,17 @@ import {
   Clock,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 import MyListings from "../components/UserDashboard/MyListings";
 import DashboardOverview from "../components/UserDashboard/DashboardOverview";
 import Messages from "../components/UserDashboard/Messages";
+import LoadingSpinner from "../components/common/LoadingSpinner";
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-  const { currentUser } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
+  const { currentUser, loading } = useSelector((state) => state.user);
   const [listings, setListings] = useState([]);
   const [savedProperties, setSavedProperties] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -102,7 +110,7 @@ const UserDashboard = () => {
 
       if (response.ok) {
         setListings(listings.filter((l) => l._id !== listingId));
-        setShowDeletePopup(true); // Show delete success popup
+        setShowDeletePopup(true);
         return true;
       } else {
         console.error("Failed to delete listing:", await response.text());
@@ -141,13 +149,25 @@ const UserDashboard = () => {
       day: "numeric",
     });
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  const handleSignout = async () => {
+    try {
+      dispatch(signOutUserStart());
+      const response = await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (data.success === false) {
+        throw new Error(data.message || "Failed to sign out");
+      }
+      dispatch(signOutUserSuccess());
+      navigate("/sign-in");
+    } catch (err) {
+      dispatch(signOutUserFailure(err.message));
+    }
+  };
+
+  if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -179,7 +199,7 @@ const UserDashboard = () => {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 z-40`}
       >
-        {/* Sidebar Header  */}
+        {/* Sidebar Header */}
         <div className={`p-4 ${sidebarCollapsed ? "px-3" : "px-6"} border-b`}>
           <h2 className="flex items-center">
             {!sidebarCollapsed ? (
@@ -231,19 +251,43 @@ const UserDashboard = () => {
         </nav>
 
         {/* Enhanced Footer */}
-        <div className={`p-4 border-t ${sidebarCollapsed ? "px-3" : "px-6"}`}>
-          <button
-            onClick={() => navigate("/")}
-            className={`flex items-center w-full text-gray-600 hover:text-teal-700 cursor-pointer ${
-              sidebarCollapsed ? "justify-center" : ""
-            }`}
-            title={sidebarCollapsed ? "Back to Website" : ""}
-          >
-            <Home className="h-5 w-5" />
-            {!sidebarCollapsed && (
-              <span className="ml-3 text-sm">Back to Website</span>
-            )}
-          </button>
+        <div
+          className={`mt-auto border-t px-4 py-3 ${
+            sidebarCollapsed ? "px-3 py-4" : "px-6 py-4"
+          }`}
+        >
+          <div className="space-y-2">
+            <button
+              onClick={handleSignout}
+              disabled={loading}
+              className={`flex items-center w-full cursor-pointer text-sm font-medium rounded-md transition-colors duration-200 ${
+                sidebarCollapsed ? "justify-center" : "justify-start"
+              } ${
+                loading
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-600 hover:bg-teal-50 hover:text-teal-700"
+              } p-2`}
+              title={sidebarCollapsed ? "Log Out" : ""}
+            >
+              <LogOut className="h-5 w-5" />
+              {!sidebarCollapsed && (
+                <span className="ml-3">
+                  {loading ? "Logging out..." : "Log Out"}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => navigate("/")}
+              className={`flex items-center w-full cursor-pointer text-sm font-medium rounded-md transition-colors duration-200 ${
+                sidebarCollapsed ? "justify-center" : "justify-start"
+              } text-gray-600 hover:bg-teal-50 hover:text-teal-700 p-2`}
+              title={sidebarCollapsed ? "Go to Website" : ""}
+            >
+              <Home className="h-5 w-5" />
+              {!sidebarCollapsed && <span className="ml-3">Go to Website</span>}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -268,7 +312,7 @@ const UserDashboard = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm W-gray-100 overflow-hidden">
             {activeTab === "overview" && (
               <DashboardOverview
                 listings={listings}
@@ -276,6 +320,7 @@ const UserDashboard = () => {
                 messages={messages}
                 formatDate={formatDate}
                 navigate={navigate}
+                setActiveTab={setActiveTab}
               />
             )}
 
@@ -308,6 +353,7 @@ const UserDashboard = () => {
                 messages={messages}
                 formatDate={formatDate}
                 navigate={navigate}
+                currentUser={currentUser}
               />
             )}
 

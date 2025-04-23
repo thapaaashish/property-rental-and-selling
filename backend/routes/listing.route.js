@@ -12,6 +12,7 @@ import {
   getListingsForHomePage,
   getListingsForPublic,
   getCityCounts,
+  getAllLocations,
 } from "../controllers/listing.controller.js";
 
 const router = express.Router();
@@ -41,5 +42,7 @@ router.post("/update-status/:id", verifyToken, updateListingStatus);
 
 // New public route for city counts
 router.get("/city-counts", getCityCounts);
+
+router.get("/locations", getAllLocations);
 
 export default router;

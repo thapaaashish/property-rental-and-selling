@@ -207,6 +207,7 @@ export const updateUserBanStatus = async (req, res, next) => {
   }
 };
 
+// Update lock status of a property (Admin only)
 export const updateLockStatus = async (req, res, next) => {
   if (req.user.role !== "admin") {
     return next(errorHandler(403, "Admin access required"));
@@ -217,6 +218,12 @@ export const updateLockStatus = async (req, res, next) => {
   if (typeof adminLockedStatus !== "boolean") {
     return next(
       errorHandler(400, "Invalid lock status. Must be true or false")
+    );
+  }
+
+  if (adminLockedStatus === true && !reason?.trim()) {
+    return next(
+      errorHandler(400, "Reason is required when locking a property")
     );
   }
 
@@ -250,6 +257,9 @@ export const updateLockStatus = async (req, res, next) => {
     listing.adminLockedStatus = adminLockedStatus;
     if (adminLockedStatus === true) {
       listing.status = "inactive";
+      listing.lockReason = reason; // Store the lock reason
+    } else {
+      listing.lockReason = null; // Clear reason when unlocking
     }
     await listing.save();
 

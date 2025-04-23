@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Home, Lock, Unlock, Eye, Trash2 } from "lucide-react";
+import { Home, Lock, Unlock, Eye, Trash2, Loader2 } from "lucide-react";
 import axios from "axios";
 import Popup from "../common/Popup";
 import DeleteConfirmation from "../common/DeleteConfirmation";
 import { MapWithAllProperties } from "../GoogleMap";
+import ReasonInputModal from "./ReasonInputModal";
 
 const PropertiesTab = ({
   properties: initialProperties = [],
@@ -15,6 +16,9 @@ const PropertiesTab = ({
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupType, setPopupType] = useState("success");
+  const [showLockReasonModal, setShowLockReasonModal] = useState(false);
+  const [selectedPropertyId, setSelectedPropertyId] = useState(null);
+  const [loadingStates, setLoadingStates] = useState({}); // Track loading per property
 
   // Sync initialProperties if provided
   useEffect(() => {
@@ -70,12 +74,58 @@ const PropertiesTab = ({
   };
 
   const handleLockToggle = async (propertyId, lock) => {
+    if (lock) {
+      // Show modal to input lock reason
+      setSelectedPropertyId(propertyId);
+      setShowLockReasonModal(true);
+    } else {
+      // Unlock directly without reason
+      setLoadingStates((prev) => ({ ...prev, [propertyId]: true }));
+      try {
+        const response = await axios.patch(
+          `/api/admin/listings/${propertyId}/lock`,
+          { adminLockedStatus: false },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
+        );
+        setProperties((prev) =>
+          prev.map((property) =>
+            property._id === propertyId
+              ? { ...property, adminLockedStatus: false }
+              : property
+          )
+        );
+        setPopupMessage(response.data.message || "Listing unlocked");
+        setPopupType("success");
+        setShowPopup(true);
+      } catch (error) {
+        console.error("Error in handleLockToggle:", error.response || error);
+        setPopupMessage(
+          error.response?.data?.message || "Failed to update lock status"
+        );
+        setPopupType("error");
+        setShowPopup(true);
+      } finally {
+        // Ensure loading state is visible for at least 500ms
+        setTimeout(() => {
+          setLoadingStates((prev) => ({ ...prev, [propertyId]: false }));
+        }, 500);
+      }
+    }
+  };
+
+  const handleLockSubmit = async (reason) => {
+    setLoadingStates((prev) => ({ ...prev, [selectedPropertyId]: true }));
     try {
       const response = await axios.patch(
-        `/api/admin/listings/${propertyId}/lock`,
+        `/api/admin/listings/${selectedPropertyId}/lock`,
         {
-          adminLockedStatus: lock,
-          ...(lock ? { status: "inactive" } : {}),
+          adminLockedStatus: true,
+          reason,
+          status: "inactive",
         },
         {
           headers: {
@@ -83,32 +133,34 @@ const PropertiesTab = ({
           },
         }
       );
-
-      if (response.status === 200) {
-        setProperties((prev) =>
-          prev.map((property) =>
-            property._id === propertyId
-              ? {
-                  ...property,
-                  adminLockedStatus: lock,
-                  ...(lock ? { status: "inactive" } : {}),
-                }
-              : property
-          )
-        );
-        setPopupMessage(
-          response.data.message || `Listing ${lock ? "locked" : "unlocked"}`
-        );
-        setPopupType("success");
-        setShowPopup(true);
-      }
+      setProperties((prev) =>
+        prev.map((property) =>
+          property._id === selectedPropertyId
+            ? {
+                ...property,
+                adminLockedStatus: true,
+                status: "inactive",
+              }
+            : property
+        )
+      );
+      setPopupMessage(response.data.message || "Listing locked");
+      setPopupType("success");
+      setShowPopup(true);
     } catch (error) {
-      console.error("Error in handleLockToggle:", error.response || error);
+      console.error("Error in handleLockSubmit:", error.response || error);
       setPopupMessage(
-        error.response?.data?.message || "Failed to update lock status"
+        error.response?.data?.message || "Failed to lock property"
       );
       setPopupType("error");
       setShowPopup(true);
+    } finally {
+      // Ensure loading state is visible for at least 500ms
+      setTimeout(() => {
+        setLoadingStates((prev) => ({ ...prev, [selectedPropertyId]: false }));
+        setShowLockReasonModal(false);
+        setSelectedPropertyId(null);
+      }, 500);
     }
   };
 
@@ -130,6 +182,18 @@ const PropertiesTab = ({
           onClose={() => setShowPopup(false)}
         />
       )}
+      <ReasonInputModal
+        isOpen={showLockReasonModal}
+        onClose={() => {
+          setShowLockReasonModal(false);
+          setSelectedPropertyId(null);
+        }}
+        onSubmit={handleLockSubmit}
+        title="Lock Property"
+        actionLabel="Lock Property"
+        entityName="locking this property"
+        loading={loadingStates[selectedPropertyId] || false}
+      />
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-gray-800">All Properties</h2>
       </div>
@@ -202,6 +266,7 @@ const PropertiesTab = ({
               <tbody className="divide-y divide-gray-200">
                 {properties.map((property) => {
                   const isLocked = property.adminLockedStatus === true;
+                  const isLoading = loadingStates[property._id] || false;
 
                   return (
                     <tr key={property._id}>
@@ -280,7 +345,7 @@ const PropertiesTab = ({
                               navigate(`/property/${property._id}`)
                             }
                             className="p-2 text-teal-600 hover:text-teal-800 hover:bg-teal-50 rounded-full"
-                            disabled={actionLoading}
+                            disabled={actionLoading || isLoading}
                             title="View property"
                           >
                             <Eye className="h-4 w-4" />
@@ -288,7 +353,7 @@ const PropertiesTab = ({
                           <DeleteConfirmation
                             itemName="property"
                             onDelete={() => handleDeleteProperty(property._id)}
-                            disabled={actionLoading}
+                            disabled={actionLoading || isLoading}
                           />
                           <button
                             onClick={() =>
@@ -299,12 +364,14 @@ const PropertiesTab = ({
                                 ? "text-green-600 hover:text-green-800 hover:bg-green-50"
                                 : "text-red-600 hover:text-red-800 hover:bg-red-50"
                             }`}
-                            disabled={actionLoading}
+                            disabled={actionLoading || isLoading}
                             title={
                               isLocked ? "Unlock property" : "Lock property"
                             }
                           >
-                            {isLocked ? (
+                            {isLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : isLocked ? (
                               <Unlock className="h-4 w-4" />
                             ) : (
                               <Lock className="h-4 w-4" />

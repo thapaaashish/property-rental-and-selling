@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   MapPin,
   Bed,
@@ -28,10 +29,13 @@ import {
   MovingServicePopup,
 } from "../components/MovingServicesCard";
 import PropertyReviews from "./PropertyReviews";
+import Popup from "../components/common/Popup";
+import StartChatButton from "../components/StartChatButton";
 
 const PropertyDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { currentUser } = useSelector((state) => state.user);
   const [property, setProperty] = useState(null);
   const [agent, setAgent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +44,7 @@ const PropertyDetails = () => {
   const [activeTab, setActiveTab] = useState("description");
   const [movingServices, setMovingServices] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
+  const [showChatPopup, setShowChatPopup] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -435,10 +440,11 @@ const PropertyDetails = () => {
                   </div>
                 </div>
                 <div className="pt-3 border-t border-gray-200 space-y-3">
-                  <button className="cursor-pointer w-full bg-gray-900 text-white font-medium px-4 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm flex justify-center items-center">
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Contact Agent
-                  </button>
+                  <StartChatButton
+                    receiverId={agent?._id}
+                    receiverEmail={agent?.email}
+                  />
+
                   <button
                     className="w-full bg-blue-600 text-white font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm flex justify-center items-center"
                     onClick={() => navigate(`/user/${agent?._id}`)}
@@ -485,6 +491,14 @@ const PropertyDetails = () => {
           <MovingServicePopup
             {...selectedService}
             onClose={() => setSelectedService(null)}
+          />
+        )}
+        {showChatPopup && (
+          <Popup
+            message="Conversation started!"
+            type="success"
+            duration={3000}
+            onClose={() => setShowChatPopup(false)}
           />
         )}
       </div>

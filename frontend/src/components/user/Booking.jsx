@@ -13,6 +13,8 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Popup from "../common/Popup";
+import StartChatButton from "../StartChatButton";
+import { generateRoomId } from "../../utils/roomId";
 
 const BookingForm = ({ property }) => {
   const navigate = useNavigate();
@@ -420,16 +422,10 @@ const BookingForm = ({ property }) => {
                         <Phone className="inline mr-2 h-4 w-4" />
                         Call
                       </a>
-                      <button
-                        onClick={() =>
-                          showPopup("SMS feature coming soon!", "info")
-                        }
-                        className="py-3 px-4 text-sm font-semibold bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-lg hover:from-gray-900 hover:to-black transition-all"
-                        aria-label="Send message to agent"
-                      >
-                        <MessageSquare className="inline mr-2 h-4 w-4" />
-                        Send Message
-                      </button>
+                      <StartChatButton
+                        receiverId={property.userRef}
+                        receiverEmail={agentEmail}
+                      />
                     </div>
                   </>
                 ) : (

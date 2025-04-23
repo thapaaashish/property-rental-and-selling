@@ -117,6 +117,7 @@ const listingSchema = new mongoose.Schema(
       default: "active",
     },
     adminLockedStatus: { type: Boolean, default: false },
+    lockReason: { type: String, default: null },
   },
   { timestamps: true }
 );

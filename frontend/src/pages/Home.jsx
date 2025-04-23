@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { FaSearch, FaArrowUp } from "react-icons/fa";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Map } from "lucide-react";
 import { useInView } from "react-intersection-observer";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSwipeable } from "react-swipeable";
 import MovingServicesSection from "../components/MovingServicesCard.jsx";
+import ListingsMapModal from "../components/home/ListingsMapModal.jsx";
 
 const CitySection = React.lazy(() => import("../components/home/CitySection"));
 const Features = React.lazy(() => import("../components/home/Features"));
@@ -48,6 +49,7 @@ const Home = () => {
     location: "",
   });
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
   const [isLoaded, setIsLoaded] = useState(true);
 
   const parallaxRef = useRef(null);
@@ -336,6 +338,7 @@ const Home = () => {
         </Suspense>
       </motion.section>
 
+      {/* Scroll to Top Button */}
       <motion.button
         onClick={scrollToTop}
         animate={{
@@ -359,6 +362,22 @@ const Home = () => {
       >
         <FaArrowUp />
       </motion.button>
+
+      {/* Show Map Button */}
+      <motion.button
+        onClick={() => setShowMapModal(true)}
+        className="fixed left-6 bottom-6 cursor-pointer bg-teal-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-300 flex items-center space-x-2"
+        aria-label="Show map of all listings"
+      >
+        <Map className="h-5 w-5" />
+        <span className="text-sm font-medium">Show Map</span>
+      </motion.button>
+
+      {/* Map Modal */}
+      <ListingsMapModal
+        isOpen={showMapModal}
+        onClose={() => setShowMapModal(false)}
+      />
     </div>
   );
 };

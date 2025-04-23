@@ -58,7 +58,7 @@ const UserSchema = new mongoose.Schema(
     },
     bio: {
       type: String,
-      default: "This user hasn't added a bio yet.",
+      default: "None",
       maxlength: 200,
     },
     banStatus: {

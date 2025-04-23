@@ -67,3 +67,27 @@ export const getPublicMovingServices = async (req, res, next) => {
     next(errorHandler(500, "Error fetching public moving services"));
   }
 };
+
+// Delete a moving service (Admin only)
+export const deleteMovingService = async (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return next(errorHandler(403, "Admin access required"));
+  }
+
+  const { id } = req.params;
+
+  try {
+    const service = await MovingService.findById(id);
+    if (!service) {
+      return next(errorHandler(404, "Service not found"));
+    }
+
+    await service.deleteOne();
+    res.status(200).json({
+      message: "Service deleted successfully",
+      success: true,
+    });
+  } catch (error) {
+    next(errorHandler(500, error.message || "Error deleting moving service"));
+  }
+};

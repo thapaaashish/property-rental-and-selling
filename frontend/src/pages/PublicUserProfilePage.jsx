@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Users, Home, AlertCircle, MapPin } from "lucide-react";
+import StartChatButton from "../components/StartChatButton";
 
 const PublicUserProfilePage = () => {
   const { userId } = useParams();
@@ -158,17 +159,6 @@ const PublicUserProfilePage = () => {
                   </div>
                 </div>
 
-                {/* Location */}
-                {/* <div className="flex items-start">
-                  <MapPin className="h-5 w-5 text-gray-400 mr-3 mt-1" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      Location
-                    </p>
-                    <p className="mt-1 text-sm text-gray-900">{fullAddress}</p>
-                  </div>
-                </div> */}
-
                 {/* Joined Date */}
                 <div className="flex items-start">
                   <svg
@@ -191,6 +181,12 @@ const PublicUserProfilePage = () => {
                     </p>
                   </div>
                 </div>
+
+                <StartChatButton
+                  receiverId={user._id}
+                  receiverEmail={user.email} // Fallback, not used if receiverId is provided
+                  buttonText="Message User"
+                />
               </div>
             </div>
           </div>

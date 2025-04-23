@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import {
   CheckCircle,
@@ -6,7 +6,6 @@ import {
   Calendar,
   DollarSign,
   Tag,
-  Phone,
   Clock,
   Home,
   ChevronDown,
@@ -88,7 +87,6 @@ const AgentBookings = () => {
 
   const showPopup = (message, type = "success") => {
     setPopup({ visible: true, message, type });
-    setTimeout(() => setPopup({ ...popup, visible: false }), 3000);
   };
 
   const handleStatusChange = async (bookingId, newStatus) => {
@@ -118,7 +116,6 @@ const AgentBookings = () => {
         throw new Error(data.message || `Failed to ${newStatus} booking`);
       }
 
-      // Update bookings state immediately
       setBookings((prev) =>
         prev.map((booking) =>
           booking._id === bookingId
@@ -127,7 +124,6 @@ const AgentBookings = () => {
         )
       );
 
-      // Update properties state
       const booking = bookings.find((b) => b._id === bookingId);
       if (newStatus === "confirmed") {
         setProperties((prev) =>
@@ -142,7 +138,6 @@ const AgentBookings = () => {
         );
         showPopup("Booking confirmed and property status updated!");
       } else if (newStatus === "cancelled" && booking.status === "confirmed") {
-        // Revert property status to active if cancelling a confirmed booking
         setProperties((prev) =>
           prev.map((property) =>
             property._id === booking.listing._id
@@ -181,11 +176,23 @@ const AgentBookings = () => {
     return `Expires in ${diffDays} day${diffDays !== 1 ? "s" : ""}`;
   };
 
+  const bookingCounts = useMemo(() => ({
+    all: bookings.length,
+    pending: bookings.filter((b) => b.status === "pending").length,
+    confirmed: bookings.filter((b) => b.status === "confirmed").length,
+    cancelled: bookings.filter((b) => b.status === "cancelled").length,
+  }), [bookings]);
+
+  const filteredProperties = properties.filter((property) => {
+    const propertyBookings = getPropertyBookings(property._id);
+    return propertyBookings.length > 0;
+  });
+
   const StatusBadge = ({ status, expiresAt }) => {
     const getStatusStyles = () => {
       switch (status) {
         case "confirmed":
-          return "bg-green-100 text-green-800 border-green-200";
+          return "bg-teal-100 text-teal-800 border-teal-200";
         case "cancelled":
           return "bg-red-100 text-red-800 border-red-200";
         case "pending":
@@ -212,7 +219,7 @@ const AgentBookings = () => {
           className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border ${getStatusStyles()}`}
         >
           {getStatusIcon()}
-          <span>{status}</span>
+          <span className="capitalize">{status}</span>
         </div>
         {status === "pending" && expiresAt && (
           <span className="text-xs mt-1 text-gray-500">
@@ -225,21 +232,28 @@ const AgentBookings = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-400"></div>
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="flex items-center gap-2 text-gray-600">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading bookings...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-screen px-4">
-        <div className="max-w-md text-center">
-          <div className="text-lg text-gray-800 mb-2">Error</div>
-          <p className="text-gray-600 mb-4">{error}</p>
+      <div className="flex justify-center items-center min-h-screen bg-gray-50 px-4">
+        <div className="bg-white rounded-xl shadow-sm p-6 max-w-md w-full text-center border border-gray-100">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-red-50 mb-4">
+            <XCircle className="h-6 w-6 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Error</h2>
+          <p className="text-gray-600 text-sm mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+            className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors"
+            aria-label="Retry loading bookings"
           >
             Try Again
           </button>
@@ -248,96 +262,113 @@ const AgentBookings = () => {
     );
   }
 
-  const bookingCounts = {
-    all: bookings.length,
-    pending: bookings.filter((b) => b.status === "pending").length,
-    confirmed: bookings.filter((b) => b.status === "confirmed").length,
-    cancelled: bookings.filter((b) => b.status === "cancelled").length,
-  };
-
-  const filteredProperties = properties.filter((property) => {
-    const propertyBookings = getPropertyBookings(property._id);
-    return propertyBookings.length > 0;
-  });
-
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-50">
       <div className="mb-8">
-        <h1 className="text-3xl text-gray-900 mb-2">Booking Requests</h1>
-        <p className="text-gray-500">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-2">
+          <Calendar className="h-6 w-6 text-teal-600" />
+          Booking Requests
+        </h1>
+        <p className="text-sm text-gray-500 mt-2">
           Manage booking requests for your {properties.length}{" "}
           {properties.length === 1 ? "property" : "properties"}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div
+      {/* Filter Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        <button
           onClick={() => setStatusFilter("all")}
-          className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer ${
+          className={`bg-white rounded-xl shadow-sm p-4 border ${
             statusFilter === "all"
-              ? "border-gray-400 bg-gray-50"
-              : "border-gray-200"
-          }`}
+              ? "border-teal-500 bg-teal-50"
+              : "border-gray-100 hover:bg-teal-50"
+          } transition-colors cursor-pointer`}
+          aria-label="Filter by all bookings"
         >
-          <div>
-            <p className="text-sm text-gray-500">All Bookings</p>
-            <p className="text-2xl font-light">{bookingCounts.all}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">All Bookings</p>
+              <p className="text-2xl font-bold text-gray-800">
+                {bookingCounts.all}
+              </p>
+            </div>
+            <Filter className="h-5 w-5 text-teal-600" />
           </div>
-          <Filter className="h-5 w-5 text-gray-400" />
-        </div>
-        <div
+        </button>
+        <button
           onClick={() => setStatusFilter("pending")}
-          className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer ${
+          className={`bg-white rounded-xl shadow-sm p-4 border ${
             statusFilter === "pending"
-              ? "border-gray-400 bg-gray-50"
-              : "border-gray-200"
-          }`}
+              ? "border-teal-500 bg-teal-50"
+              : "border-gray-100 hover:bg-teal-50"
+          } transition-colors cursor-pointer`}
+          aria-label="Filter by pending bookings"
         >
-          <div>
-            <p className="text-sm text-gray-500">Pending</p>
-            <p className="text-2xl font-light">{bookingCounts.pending}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-2xl font-bold text-gray-800">
+                {bookingCounts.pending}
+              </p>
+            </div>
+            <Clock className="h-5 w-5 text-teal-600" />
           </div>
-          <Clock className="h-5 w-5 text-gray-400" />
-        </div>
-        <div
+        </button>
+        <button
           onClick={() => setStatusFilter("confirmed")}
-          className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer ${
+          className={`bg-white rounded-xl shadow-sm p-4 border ${
             statusFilter === "confirmed"
-              ? "border-gray-400 bg-gray-50"
-              : "border-gray-200"
-          }`}
+              ? "border-teal-500 bg-teal-50"
+              : "border-gray-100 hover:bg-teal-50"
+          } transition-colors cursor-pointer`}
+          aria-label="Filter by confirmed bookings"
         >
-          <div>
-            <p className="text-sm text-gray-500">Confirmed</p>
-            <p className="text-2xl font-light">{bookingCounts.confirmed}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Confirmed</p>
+              <p className="text-2xl font-bold text-gray-800">
+                {bookingCounts.confirmed}
+              </p>
+            </div>
+            <CheckCircle className="h-5 w-5 text-teal-600" />
           </div>
-          <CheckCircle className="h-5 w-5 text-gray-400" />
-        </div>
-        <div
+        </button>
+        <button
           onClick={() => setStatusFilter("cancelled")}
-          className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer ${
+          className={`bg-white rounded-xl shadow-sm p-4 border ${
             statusFilter === "cancelled"
-              ? "border-gray-400 bg-gray-50"
-              : "border-gray-200"
-          }`}
+              ? "border-teal-500 bg-teal-50"
+              : "border-gray-100 hover:bg-teal-50"
+          } transition-colors cursor-pointer`}
+          aria-label="Filter by cancelled bookings"
         >
-          <div>
-            <p className="text-sm text-gray-500">Cancelled</p>
-            <p className="text-2xl font-light">{bookingCounts.cancelled}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Cancelled</p>
+              <p className="text-2xl font-bold text-gray-800">
+                {bookingCounts.cancelled}
+              </p>
+            </div>
+            <XCircle className="h-5 w-5 text-teal-600" />
           </div>
-          <XCircle className="h-5 w-5 text-gray-400" />
-        </div>
+        </button>
       </div>
 
+      {/* Properties and Bookings */}
       {filteredProperties.length === 0 ? (
-        <div className="border border-gray-200 rounded-lg p-12 text-center">
-          <p className="text-gray-500 mb-2">
+        <div className="bg-white rounded-xl shadow-sm p-6 text-center border border-gray-100">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-teal-50 mb-4">
+            <Home className="h-6 w-6 text-teal-600" />
+          </div>
+          <p className="text-gray-600 text-sm mb-4">
             No {statusFilter !== "all" ? statusFilter : ""} bookings found
           </p>
           {statusFilter !== "all" && (
             <button
               onClick={() => setStatusFilter("all")}
-              className="text-sm text-gray-600 underline"
+              className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+              aria-label="View all bookings"
             >
               View all bookings
             </button>
@@ -350,22 +381,24 @@ const AgentBookings = () => {
             return (
               <div
                 key={property._id}
-                className="border border-gray-200 rounded-lg overflow-hidden"
+                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
               >
-                <div
-                  className="p-4 borderioned items-center cursor-pointer hover:bg-gray-50 transition-colors"
+                <button
+                  className="w-full flex justify-between items-center p-4 sm:p-6 hover:bg-teal-50 transition-colors"
                   onClick={() => togglePropertyExpand(property._id)}
+                  aria-expanded={expandedProperties[property._id]}
+                  aria-label={`Toggle details for ${property.title}`}
                 >
                   <div className="flex items-center gap-4">
-                    <Home className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <h2 className="text-lg font-medium text-gray-900">
+                    <Home className="h-5 w-5 text-teal-600" />
+                    <div className="text-left">
+                      <h2 className="text-base sm:text-lg font-semibold text-gray-800 truncate max-w-[200px] sm:max-w-[300px]">
                         {property.title}
                       </h2>
                       <p className="text-sm text-gray-500">
                         {propertyBookings.length}{" "}
-                        {propertyBookings.length === 1 ? "booking" : "bookings"}{" "}
-                        • ${property.price.toLocaleString()}{" "}
+                        {propertyBookings.length === 1 ? "booking" : "bookings"} •
+                        ${property.price.toLocaleString()}{" "}
                         {property.rentOrSale === "Rent" ? "/month" : ""} •
                         Status: {property.status}
                       </p>
@@ -381,22 +414,26 @@ const AgentBookings = () => {
                       <ChevronDown className="h-5 w-5 text-gray-500" />
                     )}
                   </div>
-                </div>
+                </button>
                 {expandedProperties[property._id] && (
                   <div className="divide-y divide-gray-100">
                     {propertyBookings.map((booking) => (
                       <div
                         key={booking._id}
-                        className="p-6 hover:bg-gray-50 transition-colors"
+                        className="p-4 sm:p-6 hover:bg-teal-50 transition-colors"
                       >
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-start">
                           <div className="md:col-span-3">
                             <div className="flex items-center gap-3">
                               {booking.user.avatar ? (
                                 <img
                                   src={booking.user.avatar}
-                                  alt={booking.user.fullname}
+                                  alt={booking.user.fullname || "User avatar"}
                                   className="w-12 h-12 rounded-full object-cover border border-gray-200"
+                                  onError={(e) =>
+                                    (e.target.src =
+                                      "https://via.placeholder.com/48?text=No+Image")
+                                  }
                                 />
                               ) : (
                                 <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
@@ -404,13 +441,13 @@ const AgentBookings = () => {
                                 </div>
                               )}
                               <div>
-                                <p className="font-medium text-gray-900">
-                                  {booking.user.fullname}
+                                <p className="text-sm font-medium text-gray-800 truncate max-w-[150px]">
+                                  {booking.user.fullname || "Unknown"}
                                 </p>
-                                <p className="text-sm text-gray-500">
-                                  {booking.user.email}
+                                <p className="text-xs text-gray-500 truncate max-w-[150px]">
+                                  {booking.user.email || "No email"}
                                 </p>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-xs text-gray-500">
                                   {booking.user.phone || "No phone provided"}
                                 </p>
                               </div>
@@ -418,45 +455,47 @@ const AgentBookings = () => {
                           </div>
                           <div className="md:col-span-3 flex flex-col gap-2">
                             <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-400" />
+                              <Calendar className="h-4 w-4 text-teal-600" />
                               <p className="text-sm font-medium text-gray-700">
                                 {booking.bookingType === "Rent"
                                   ? "Rental Period"
                                   : "Purchase"}
                               </p>
                             </div>
-                            {booking.bookingType === "Rent" ? (
-                              <div className="ml-6">
-                                <p className="text-sm text-gray-900">
-                                  From{" "}
-                                  {new Date(
-                                    booking.startDate
-                                  ).toLocaleDateString()}
+                            <div className="ml-6">
+                              {booking.bookingType === "Rent" ? (
+                                <>
+                                  <p className="text-sm text-gray-800">
+                                    From{" "}
+                                    {new Date(
+                                      booking.startDate
+                                    ).toLocaleDateString()}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {booking.durationDays} days
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="text-sm text-gray-800">
+                                  One-time purchase
                                 </p>
-                                <p className="text-sm text-gray-500">
-                                  {booking.durationDays} days
-                                </p>
-                              </div>
-                            ) : (
-                              <p className="ml-6 text-sm text-gray-900">
-                                One-time purchase
-                              </p>
-                            )}
+                              )}
+                            </div>
                           </div>
                           <div className="md:col-span-2 flex flex-col gap-2">
                             <div className="flex items-center gap-2">
-                              <DollarSign className="h-4 w-4 text-gray-400" />
+                              <DollarSign className="h-4 w-4 text-teal-600" />
                               <p className="text-sm font-medium text-gray-700">
                                 Amount
                               </p>
                             </div>
-                            <p className="ml-6 text-sm text-gray-900">
+                            <p className="ml-6 text-sm text-gray-800">
                               ${booking.totalPrice.toLocaleString()}
                             </p>
                           </div>
                           <div className="md:col-span-2 flex flex-col gap-2">
                             <div className="flex items-center gap-2">
-                              <Tag className="h-4 w-4 text-gray-400" />
+                              <Tag className="h-4 w-4 text-teal-600" />
                               <p className="text-sm font-medium text-gray-700">
                                 Status
                               </p>
@@ -475,8 +514,10 @@ const AgentBookings = () => {
                                   onClick={() =>
                                     handleStatusChange(booking._id, "confirmed")
                                   }
-                                  className="flex items-center px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-500"
+                                  className="flex items-center px-3 sm:px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:bg-teal-300"
                                   disabled={processing[booking._id]}
+                                  aria-label="Confirm booking"
+                                  title="Confirm booking"
                                 >
                                   {processing[booking._id] ? (
                                     <>
@@ -491,8 +532,10 @@ const AgentBookings = () => {
                                   onClick={() =>
                                     handleStatusChange(booking._id, "cancelled")
                                   }
-                                  className="flex items-center px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:border-gray-200 disabled:text-gray-400"
+                                  className="flex items-center px-3 sm:px-4 py-2 text-sm border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:border-gray-200 disabled:text-gray-400"
                                   disabled={processing[booking._id]}
+                                  aria-label="Reject booking"
+                                  title="Reject booking"
                                 >
                                   {processing[booking._id] ? (
                                     <>
@@ -515,8 +558,18 @@ const AgentBookings = () => {
                                       : "confirmed"
                                   )
                                 }
-                                className="flex items-center px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:border-gray-200 disabled:text-gray-400"
+                                className="flex items-center px-3 sm:px-4 py-2 text-sm border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:border-gray-200 disabled:text-gray-400"
                                 disabled={processing[booking._id]}
+                                aria-label={
+                                  booking.status === "confirmed"
+                                    ? "Cancel booking"
+                                    : "Reconfirm booking"
+                                }
+                                title={
+                                  booking.status === "confirmed"
+                                    ? "Cancel booking"
+                                    : "Reconfirm booking"
+                                }
                               >
                                 {processing[booking._id] ? (
                                   <>
@@ -533,9 +586,9 @@ const AgentBookings = () => {
                           </div>
                         </div>
                         <div className="mt-4 pt-4 border-t border-gray-100">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-gray-400" />
+                              <Clock className="h-4 w-4 text-teal-600" />
                               <div>
                                 <p className="text-xs text-gray-500">
                                   Requested on
@@ -547,12 +600,15 @@ const AgentBookings = () => {
                                   at{" "}
                                   {new Date(
                                     booking.createdAt
-                                  ).toLocaleTimeString()}
+                                  ).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
                                 </p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Home className="h-4 w-4 text-gray-400" />
+                              <Home className="h-4 w-4 text-teal-600" />
                               <div>
                                 <p className="text-xs text-gray-500">
                                   Property Details
@@ -565,11 +621,9 @@ const AgentBookings = () => {
                                 </p>
                               </div>
                             </div>
-                            <div className="md:text-right">
-                              <p className="text-xs text-gray-500">
-                                Booking ID
-                              </p>
-                              <p className="text-sm font-mono text-gray-500">
+                            <div className="sm:text-right">
+                              <p className="text-xs text-gray-500">Booking ID</p>
+                              <p className="text-sm font-mono text-gray-500 truncate">
                                 {booking._id}
                               </p>
                             </div>
@@ -588,6 +642,7 @@ const AgentBookings = () => {
         <Popup
           message={popup.message}
           type={popup.type}
+          duration={3000}
           onClose={() => setPopup({ ...popup, visible: false })}
         />
       )}

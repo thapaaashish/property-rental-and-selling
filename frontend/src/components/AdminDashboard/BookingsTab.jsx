@@ -95,9 +95,9 @@ const BookingsTab = ({ bookings = [], navigate, actionLoading }) => {
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {/* <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -107,7 +107,7 @@ const BookingsTab = ({ bookings = [], navigate, actionLoading }) => {
                   className="hover:bg-gray-50 transition-colors"
                 >
                   <td className="py-4 px-4">
-                    <div className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
+                    <div className="text-sm font-medium text-gray-900 truncate max-w-[220px]">
                       {booking.listing?.title || "Unknown Listing"}
                     </div>
                     <div className="text-sm text-gray-500 capitalize">
@@ -118,7 +118,7 @@ const BookingsTab = ({ bookings = [], navigate, actionLoading }) => {
                     <div className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
                       {booking.user?.fullname || "Unknown User"}
                     </div>
-                    <div className="text-sm text-gray-500 truncate max-w-[150px]">
+                    <div className="text-sm text-gray-500 truncate max-w-[200px]">
                       {booking.user?.email || "No email"}
                     </div>
                   </td>
@@ -141,23 +141,15 @@ const BookingsTab = ({ bookings = [], navigate, actionLoading }) => {
                   <td className="py-4 px-4 text-sm text-gray-500">
                     {formatDate(booking.createdAt)}
                   </td>
-                  <td className="py-4 px-4 text-sm font-medium">
+                  {/* <td className="py-4 px-4 text-sm font-medium">
                     <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => navigate(`/booking/${booking._id}`)}
-                        className="p-2 text-teal-600 hover:text-teal-800 hover:bg-teal-50 rounded-full"
-                        disabled={actionLoading}
-                        title="View booking"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
                       <DeleteConfirmation
                         itemName="booking"
                         onDelete={() => handleDeleteBooking(booking._id)}
                         disabled={actionLoading}
                       />
                     </div>
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>

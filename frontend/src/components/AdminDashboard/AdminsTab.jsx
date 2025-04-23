@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Users } from "lucide-react";
-import AdminCard from "./AdminCard"; // Import the new AdminCard component
+import { Users, X } from "lucide-react";
+import AdminCard from "./AdminCard";
+import Popup from "../common/Popup";
 
 const AdminsTab = ({
   users,
@@ -9,15 +10,18 @@ const AdminsTab = ({
   navigate,
   setUsers,
 }) => {
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedAdmin, setSelectedAdmin] = useState(null); // State for selected admin
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [formData, setFormData] = useState({
     fullname: "",
     email: "",
     password: "",
   });
-  const [formError, setFormError] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
   const [formLoading, setFormLoading] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupType, setPopupType] = useState("success");
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString("en-US", {
@@ -29,16 +33,40 @@ const AdminsTab = ({
   // Filter only admins
   const adminUsers = users.filter((user) => user.role === "admin");
 
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.fullname.trim()) {
+      errors.fullname = "Full name is required";
+    }
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      errors.email = "Invalid email format";
+    }
+    if (!formData.password) {
+      errors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+    }
+    return errors;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error for field on change
+    setFormErrors((prev) => ({ ...prev, [name]: null }));
   };
 
   const handleAddAdmin = async (e) => {
     e.preventDefault();
-    setFormError(null);
-    setFormLoading(true);
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
 
+    setFormLoading(true);
     try {
       const response = await fetch("/api/admin/create-admin", {
         method: "POST",
@@ -55,12 +83,17 @@ const AdminsTab = ({
         throw new Error(data.message || "Failed to create admin");
       }
 
-      // Update users state with the new admin
       setUsers((prev) => [...prev, data]);
-      setShowAddForm(false);
+      setShowAddModal(false);
       setFormData({ fullname: "", email: "", password: "" });
+      setFormErrors({});
+      setPopupMessage("Admin created successfully");
+      setPopupType("success");
+      setShowPopup(true);
     } catch (err) {
-      setFormError(err.message);
+      setPopupMessage(err.message);
+      setPopupType("error");
+      setShowPopup(true);
     } finally {
       setFormLoading(false);
     }
@@ -74,13 +107,30 @@ const AdminsTab = ({
     setSelectedAdmin(null);
   };
 
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setFormData({ fullname: "", email: "", password: "" });
+    setFormErrors({});
+  };
+
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-6xl mx-auto">
+      {showPopup && (
+        <Popup
+          message={popupMessage}
+          type={popupType}
+          duration={3000}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800">All Admins</h2>
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+          <Users className="h-6 w-6 mr-2 text-teal-600" />
+          All Admins
+        </h2>
         <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center text-sm font-medium text-white bg-teal-500 py-2 px-4 rounded-lg hover:bg-teal-400"
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center text-sm font-medium text-white bg-teal-600 py-2 px-4 rounded-xl hover:bg-teal-700 disabled:bg-teal-300 transition-colors"
           disabled={actionLoading}
         >
           <svg
@@ -101,76 +151,132 @@ const AdminsTab = ({
         </button>
       </div>
 
-      {/* Add Admin Form */}
-      {showAddForm && (
-        <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Create New Admin
-          </h3>
-          <form onSubmit={handleAddAdmin}>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Add Admin Modal */}
+      {showAddModal && (
+        <div
+          className="fixed inset-0 backdrop-blur-xs bg-black/30 flex items-center justify-center z-50"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Create New Admin
+              </h3>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-600 hover:text-gray-800"
+                aria-label="Close modal"
+                disabled={formLoading}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAddAdmin} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="fullname"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Full Name
                 </label>
                 <input
+                  id="fullname"
                   type="text"
                   name="fullname"
                   value={formData.fullname}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm"
+                  className={`mt-1 w-full p-2 border ${
+                    formErrors.fullname ? "border-red-500" : "border-gray-200"
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm`}
                   required
+                  aria-invalid={formErrors.fullname ? "true" : "false"}
+                  aria-describedby={
+                    formErrors.fullname ? "fullname-error" : undefined
+                  }
                 />
+                {formErrors.fullname && (
+                  <p id="fullname-error" className="mt-1 text-sm text-red-600">
+                    {formErrors.fullname}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Email
                 </label>
                 <input
+                  id="email"
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm"
+                  className={`mt-1 w-full p-2 border ${
+                    formErrors.email ? "border-red-500" : "border-gray-200"
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm`}
                   required
+                  aria-invalid={formErrors.email ? "true" : "false"}
+                  aria-describedby={
+                    formErrors.email ? "email-error" : undefined
+                  }
                 />
+                {formErrors.email && (
+                  <p id="email-error" className="mt-1 text-sm text-red-600">
+                    {formErrors.email}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Password
                 </label>
                 <input
+                  id="password"
                   type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm"
+                  className={`mt-1 w-full p-2 border ${
+                    formErrors.password ? "border-red-500" : "border-gray-200"
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm`}
                   required
                   minLength={6}
+                  aria-invalid={formErrors.password ? "true" : "false"}
+                  aria-describedby={
+                    formErrors.password ? "password-error" : undefined
+                  }
                 />
+                {formErrors.password && (
+                  <p id="password-error" className="mt-1 text-sm text-red-600">
+                    {formErrors.password}
+                  </p>
+                )}
               </div>
-            </div>
-            {formError && (
-              <p className="mt-2 text-sm text-red-600">{formError}</p>
-            )}
-            <div className="mt-4 flex space-x-2">
-              <button
-                type="submit"
-                className="text-sm font-medium text-white bg-teal-500 py-2 px-4 rounded-lg hover:bg-teal-400 disabled:bg-teal-300"
-                disabled={formLoading}
-              >
-                {formLoading ? "Creating..." : "Create Admin"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="text-sm font-medium text-gray-700 bg-gray-200 py-2 px-4 rounded-lg hover:bg-gray-300"
-                disabled={formLoading}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+              <div className="flex space-x-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 disabled:bg-teal-300 transition-colors text-sm font-medium"
+                  disabled={formLoading}
+                >
+                  {formLoading ? "Creating..." : "Create Admin"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                  disabled={formLoading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -191,74 +297,67 @@ const AdminsTab = ({
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Admin
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Joined Date
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {adminUsers.map((user) => (
-                <tr key={user._id}>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden">
-                        {user.avatar ? (
-                          <img
-                            src={user.avatar}
-                            alt={user.fullname || "Admin Avatar"}
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              e.target.src =
-                                "https://via.placeholder.com/40?text=No+Image";
-                            }}
-                          />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center bg-gray-200">
-                            <Users className="h-5 w-5 text-gray-400" />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-teal-50 text-gray-700 uppercase tracking-wider">
+                <tr>
+                  <th className="py-3 px-6 text-left">Admin</th>
+                  <th className="py-3 px-6 text-left">Email</th>
+                  <th className="py-3 px-6 text-left">Joined Date</th>
+                  <th className="py-3 px-6 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {adminUsers.map((user) => (
+                  <tr
+                    key={user._id}
+                    className="hover:bg-teal-50 transition-colors"
+                  >
+                    <td className="py-4 px-6">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden">
+                          {user.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt={user.fullname || "Admin Avatar"}
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                e.target.src =
+                                  "https://via.placeholder.com/40?text=No+Image";
+                              }}
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center bg-gray-200">
+                              <Users className="h-5 w-5 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-3">
+                          <div className="text-sm font-medium text-gray-900">
+                            {user.fullname || "N/A"}
                           </div>
-                        )}
-                      </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.fullname || "N/A"}
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4 text-sm text-gray-500">
-                    {user.email}
-                  </td>
-                  <td className="py-4 px-4 text-sm text-gray-500">
-                    {formatDate(user.createdAt)}
-                  </td>
-                  <td className="py-4 px-4 text-sm font-medium">
-                    <div className="flex space-x-2">
+                    </td>
+                    <td className="py-4 px-6 text-gray-600">{user.email}</td>
+                    <td className="py-4 px-6 text-gray-600">
+                      {formatDate(user.createdAt)}
+                    </td>
+                    <td className="py-4 px-6">
                       <button
                         onClick={() => handleViewAdmin(user)}
-                        className="text-teal-500 hover:text-teal-600"
+                        className="text-teal-600 hover:text-teal-700 font-medium"
                         disabled={actionLoading}
                       >
                         View
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

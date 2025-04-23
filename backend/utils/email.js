@@ -161,109 +161,110 @@ const templates = {
       <p>We’ll notify you once the owner confirms your booking.</p>
     </div>
   `,
+
   userBanned: (user, admin, reason) => `
-  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <h2 style="color: #e53e3e;">Account Banned</h2>
-    <p>Dear ${user.fullname || "User"},</p>
-    
-    <div style="background-color: #fff5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
-      <h3 style="color: #e53e3e; margin-top: 0;">Ban Details</h3>
-      <p><strong>Reason:</strong> ${
-        reason || "Violation of terms of service"
-      }</p>
-      <p><strong>Banned By:</strong> ${admin.fullname || "Administrator"}</p>
-      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #e53e3e;">Account Banned</h2>
+      <p>Dear ${user.fullname || "User"},</p>
+      
+      <div style="background-color: #fff5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
+        <h3 style="color: #e53e3e; margin-top: 0;">Ban Details</h3>
+        <p><strong>Reason:</strong> ${
+          reason || "Violation of terms of service"
+        }</p>
+        <p><strong>Banned By:</strong> ${admin.fullname || "Administrator"}</p>
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+      </div>
+      
+      <p>Your account has been restricted and you will no longer be able to:</p>
+      <ul>
+        <li>Log in to your account</li>
+        <li>Create new bookings</li>
+        <li>Access premium features</li>
+      </ul>
+      
+      <p>If you believe this is a mistake, please contact our support team.</p>
     </div>
-    
-    <p>Your account has been restricted and you will no longer be able to:</p>
-    <ul>
-      <li>Log in to your account</li>
-      <li>Create new bookings</li>
-      <li>Access premium features</li>
-    </ul>
-    
-    <p>If you believe this is a mistake, please contact our support team.</p>
-  </div>
-`,
+  `,
 
   userUnbanned: (user, admin) => `
-  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <h2 style="color: #38a169;">Account Unbanned</h2>
-    <p>Dear ${user.fullname || "User"},</p>
-    
-    <p>We're pleased to inform you that your account has been unbanned by ${
-      admin.fullname || "an administrator"
-    }.</p>
-    
-    <p>You can now:</p>
-    <ul>
-      <li>Log in to your account</li>
-      <li>Make new bookings</li>
-      <li>Access all features</li>
-    </ul>
-    
-    <p>Welcome back to our platform!</p>
-  </div>
-`,
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #38a169;">Account Unbanned</h2>
+      <p>Dear ${user.fullname || "User"},</p>
+      
+      <p>We're pleased to inform you that your account has been unbanned by ${
+        admin.fullname || "an administrator"
+      }.</p>
+      
+      <p>You can now:</p>
+      <ul>
+        <li>Log in to your account</li>
+        <li>Make new bookings</li>
+        <li>Access all features</li>
+      </ul>
+      
+      <p>Welcome back to our platform!</p>
+    </div>
+  `,
 
   propertyLocked: (property, admin, reason) => `
-  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <h2 style="color: #e53e3e;">Property Locked</h2>
-    <p>Dear ${property.userRef.fullname || "Property Owner"},</p>
-    
-    <div style="background-color: #fff5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
-      <h3 style="color: #e53e3e; margin-top: 0;">Lock Details</h3>
-      <p><strong>Property:</strong> ${property.title}</p>
-      <p><strong>Reason:</strong> ${reason || "Administrative action"}</p>
-      <p><strong>Locked By:</strong> ${admin.fullname || "Administrator"}</p>
-      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #e53e3e;">Property Locked</h2>
+      <p>Dear ${property.userRef.fullname || "Property Owner"},</p>
+      
+      <div style="background-color: #fff5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
+        <h3 style="color: #e53e3e; margin-top: 0;">Lock Details</h3>
+        <p><strong>Property:</strong> ${property.title}</p>
+        <p><strong>Reason:</strong> ${reason || "Administrative action"}</p>
+        <p><strong>Locked By:</strong> ${admin.fullname || "Administrator"}</p>
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+      </div>
+      
+      <p>Your property listing has been temporarily locked and is no longer visible to users.</p>
+      
+      <p>If you have questions about this action, please contact our support team.</p>
     </div>
-    
-    <p>Your property listing has been temporarily locked and is no longer visible to users.</p>
-    
-    <p>If you have questions about this action, please contact our support team.</p>
-  </div>
-`,
+  `,
 
   propertyUnlocked: (property, admin) => `
-  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <h2 style="color: #38a169;">Property Unlocked</h2>
-    <p>Dear ${property.userRef.fullname || "Property Owner"},</p>
-    
-    <p>We're pleased to inform you that your property "${
-      property.title
-    }" has been unlocked by ${admin.fullname || "an administrator"}.</p>
-    
-    <p>Your listing is now:</p>
-    <ul>
-      <li>Visible to all users</li>
-      <li>Available for bookings</li>
-      <li>Fully functional</li>
-    </ul>
-    
-    <p>Thank you for your cooperation.</p>
-  </div>
-`,
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #38a169;">Property Unlocked</h2>
+      <p>Dear ${property.userRef.fullname || "Property Owner"},</p>
+      
+      <p>We're pleased to inform you that your property "${
+        property.title
+      }" has been unlocked by ${admin.fullname || "an administrator"}.</p>
+      
+      <p>Your listing is now:</p>
+      <ul>
+        <li>Visible to all users</li>
+        <li>Available for bookings</li>
+        <li>Fully functional</li>
+      </ul>
+      
+      <p>Thank you for your cooperation.</p>
+    </div>
+  `,
 
   adminActionNotification: (action, target, admin, reason) => `
-  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <h2>Admin Action Performed</h2>
-    <p>Dear ${admin.fullname || "Administrator"},</p>
-    
-    <div style="background-color: #f0f9ff; padding: 15px; border-radius: 4px; margin: 15px 0;">
-      <h3 style="margin-top: 0;">Action Details</h3>
-      <p><strong>Action:</strong> ${action}</p>
-      <p><strong>Target:</strong> ${
-        target.name || target.title || target.email
-      }</p>
-      ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ""}
-      <p><strong>Performed By:</strong> You</p>
-      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Admin Action Performed</h2>
+      <p>Dear ${admin.fullname || "Administrator"},</p>
+      
+      <div style="background-color: #f0f9ff; padding: 15px; border-radius: 4px; margin: 15px 0;">
+        <h3 style="margin-top: 0;">Action Details</h3>
+        <p><strong>Action:</strong> ${action}</p>
+        <p><strong>Target:</strong> ${
+          target.name || target.title || target.email
+        }</p>
+        ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ""}
+        <p><strong>Performed By:</strong> You</p>
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+      </div>
+      
+      <p>This is a confirmation of the action you just performed.</p>
     </div>
-    
-    <p>This is a confirmation of the action you just performed.</p>
-  </div>
-`,
+  `,
 };
 
 // Email functions

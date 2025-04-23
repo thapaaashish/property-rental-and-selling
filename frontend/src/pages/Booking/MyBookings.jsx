@@ -11,12 +11,14 @@ import {
   AlertCircle,
   Hourglass,
   AlertTriangle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Popup from "../../components/common/Popup";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import axios from "axios";
 import PaymentButton from "../../components/payment/PaymentButton";
+import StartChatButton from "../../components/StartChatButton";
 
 const MyBookings = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -34,14 +36,13 @@ const MyBookings = () => {
     bookingId: null,
   });
   const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    active: true,
+    expired: true,
+    unavailable: true,
+    cancelled: true,
+  });
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Edit form states
-  const [editStartDate, setEditStartDate] = useState(null);
-  const [editEndDate, setEditEndDate] = useState(null);
-  const [editTotalPrice, setEditTotalPrice] = useState(0);
-  const [editLoading, setEditLoading] = useState(false);
 
   // Fetch bookings
   const fetchBookings = useCallback(async () => {
@@ -110,6 +111,13 @@ const MyBookings = () => {
   const deletedPropertyBookings = bookings.filter(
     (booking) => booking.status === "property_deleted"
   );
+
+  const toggleSection = (section) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
 
   const showPopup = (message, type = "success") => {
     setPopup({ visible: true, message, type });
@@ -213,20 +221,29 @@ const MyBookings = () => {
   const renderBookingCard = (booking) => (
     <div
       key={booking._id}
-      className={`bg-white border rounded-lg overflow-hidden transition-colors ${
+      className={`bg-white rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-md ${
         booking.status === "property_deleted"
-          ? "border-red-200 bg-red-50"
-          : "border-gray-200 hover:border-gray-300"
+          ? "border-l-4 border-red-500"
+          : booking.status === "confirmed"
+          ? "border-l-4 border-green-500"
+          : booking.status === "pending"
+          ? "border-l-4 border-yellow-500"
+          : "border-l-4 border-gray-300"
       }`}
     >
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-medium text-gray-900">
-            {booking.listing?.title || "Property No Longer Available"}
-          </h2>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {booking.listing?.title || "Property No Longer Available"}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Booking ID: {booking._id}
+            </p>
+          </div>
           <div className="flex items-center">
             <span
-              className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${
+              className={`text-xs font-semibold px-3 py-1 rounded-full ${
                 booking.status === "confirmed"
                   ? "bg-green-100 text-green-800"
                   : booking.status === "cancelled"
@@ -247,21 +264,11 @@ const MyBookings = () => {
                 ? "property deleted"
                 : booking.status}
             </span>
-            {booking.status === "pending" && booking.expiresAt && (
-              <span className="ml-2 text-xs text-gray-500">
-                {new Date(booking.expiresAt) > new Date()
-                  ? `Expires in ${Math.ceil(
-                      (new Date(booking.expiresAt) - new Date()) /
-                        (1000 * 60 * 60)
-                    )} hours`
-                  : "Expired"}
-              </span>
-            )}
           </div>
         </div>
 
         {booking.status === "property_deleted" ? (
-          <div className="flex items-start mb-4">
+          <div className="flex items-start p-3 bg-red-50 rounded-lg mb-4">
             <AlertTriangle className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
             <p className="text-red-600">
               The property associated with this booking has been removed by the
@@ -270,46 +277,68 @@ const MyBookings = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-sm text-gray-500">Booking Type</p>
-                <p className="font-medium">{booking.bookingType}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Booking Type
+                </p>
+                <p className="font-medium mt-1">{booking.bookingType}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Total Price</p>
-                <p className="font-medium">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Total Price
+                </p>
+                <p className="font-medium mt-1">
                   Rs {booking.totalPrice.toLocaleString()}
                 </p>
               </div>
               {booking.bookingType === "Rent" && (
                 <>
-                  <div>
-                    <p className="text-sm text-gray-500">Start Date</p>
-                    <p className="font-medium">
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Start Date
+                    </p>
+                    <p className="font-medium mt-1">
                       {booking.startDate
                         ? new Date(booking.startDate).toLocaleDateString()
                         : "N/A"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">End Date</p>
-                    <p className="font-medium">
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      End Date
+                    </p>
+                    <p className="font-medium mt-1">
                       {booking.endDate
                         ? new Date(booking.endDate).toLocaleDateString()
                         : "N/A"}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Duration</p>
-                    <p className="font-medium">{booking.durationDays} days</p>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Duration
+                    </p>
+                    <p className="font-medium mt-1">
+                      {booking.durationDays} days
+                    </p>
                   </div>
                 </>
               )}
             </div>
 
+            {booking.status === "confirmed" && booking.listing?.userRef && (
+              <div className="mb-4">
+                <StartChatButton
+                  receiverId={booking.listing.userRef}
+                  buttonText="Message Property Owner"
+                  className="w-full md:w-auto"
+                />
+              </div>
+            )}
+
             {booking.status === "confirmed" && (
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <span className="text-sm text-gray-500">
                       Payment Status:
@@ -341,33 +370,33 @@ const MyBookings = () => {
           </>
         )}
 
-        <div className="flex justify-end space-x-4 mt-4">
+        <div className="flex flex-wrap justify-end gap-3 mt-6">
           {booking.status === "pending" &&
             (!booking.expiresAt ||
               new Date(booking.expiresAt) > new Date()) && (
               <>
                 <button
                   onClick={() => handleEditBooking(booking)}
-                  className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+                  className="flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                 >
-                  <Edit2 className="mr-1 h-4 w-4" /> Edit
+                  <Edit2 className="mr-2 h-4 w-4" /> Edit
                 </button>
                 <button
                   onClick={() =>
                     setCancelPopup({ visible: true, bookingId: booking._id })
                   }
-                  className="flex items-center text-red-600 hover:text-red-800 transition-colors"
+                  className="flex items-center px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
                 >
-                  <Trash2 className="mr-1 h-4 w-4" /> Cancel
+                  <Trash2 className="mr-2 h-4 w-4" /> Cancel
                 </button>
               </>
             )}
           {booking.listing?._id && (
             <button
               onClick={() => navigate(`/property/${booking.listing._id}`)}
-              className="flex items-center text-gray-800 font-medium hover:text-gray-600 transition-colors"
+              className="flex items-center px-4 py-2 text-sm font-medium text-gray-800 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              View property <ArrowRight className="ml-1 h-4 w-4" />
+              View Property <ArrowRight className="ml-2 h-4 w-4" />
             </button>
           )}
         </div>
@@ -378,7 +407,7 @@ const MyBookings = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-400"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
       </div>
     );
   }
@@ -386,14 +415,13 @@ const MyBookings = () => {
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-screen px-4">
-        <div className="max-w-md text-center">
-          <div className="text-lg font-medium text-gray-800 mb-2">Error</div>
-          <p className="text-gray-600 mb-4">{error}</p>
+        <div className="max-w-md text-center bg-white p-8 rounded-xl shadow-sm">
+          <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            onClick={() => navigate("/listings")}
+            className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
-            Try Again
+            Explore Properties
           </button>
         </div>
       </div>
@@ -401,179 +429,258 @@ const MyBookings = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-medium text-gray-900 mb-2">My Bookings</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Bookings</h1>
         <p className="text-gray-500">
-          {bookings.length} {bookings.length === 1 ? "booking" : "bookings"}
+          {bookings.length} {bookings.length === 1 ? "booking" : "bookings"} in
+          total
         </p>
       </div>
 
       {verifyingPayment && (
-        <div className="flex justify-center items-center mb-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-gray-400 mr-2"></div>
-          <span className="text-gray-600">Verifying payment...</span>
+        <div className="flex justify-center items-center mb-6 p-4 bg-blue-50 rounded-lg">
+          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mr-3"></div>
+          <span className="text-blue-700 font-medium">
+            Verifying payment...
+          </span>
         </div>
       )}
 
       {bookings.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-gray-600 mb-2">You have no bookings yet</p>
+        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+          <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <Hourglass className="h-12 w-12 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-medium text-gray-900 mb-2">
+            No Bookings Yet
+          </h3>
+          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            You haven't made any bookings yet. Start exploring our properties to
+            find your perfect stay.
+          </p>
           <button
             onClick={() => navigate("/listings")}
-            className="text-gray-800 font-medium hover:text-gray-600 transition-colors"
+            className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
           >
-            Browse properties →
+            Browse Properties
           </button>
         </div>
       ) : (
         <div className="space-y-8">
           {activeBookings.length > 0 && (
-            <div>
-              <div className="flex items-center mb-4">
-                <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                <h2 className="text-xl font-medium">Active Bookings</h2>
-                <span className="ml-2 text-sm text-gray-500">
-                  {activeBookings.length}
-                </span>
-              </div>
-              <div className="space-y-4">
-                {activeBookings.map(renderBookingCard)}
-              </div>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <button
+                onClick={() => toggleSection("active")}
+                className="w-full flex justify-between items-center p-6 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center">
+                  <CheckCircle className="h-6 w-6 text-green-500 mr-3" />
+                  <h2 className="text-xl font-semibold">Active Bookings</h2>
+                  <span className="ml-3 px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                    {activeBookings.length}
+                  </span>
+                </div>
+                {expandedSections.active ? (
+                  <ChevronUp className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+              {expandedSections.active && (
+                <div className="px-6 pb-6 space-y-4">
+                  {activeBookings.map(renderBookingCard)}
+                </div>
+              )}
             </div>
           )}
 
           {pendingExpiredBookings.length > 0 && (
-            <div>
-              <div className="flex items-center mb-4">
-                <Hourglass className="h-5 w-5 text-orange-500 mr-2" />
-                <h2 className="text-xl font-medium">Expired Bookings</h2>
-                <span className="ml-2 text-sm text-gray-500">
-                  {pendingExpiredBookings.length}
-                </span>
-              </div>
-              <div className="space-y-4">
-                {pendingExpiredBookings.map(renderBookingCard)}
-              </div>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <button
+                onClick={() => toggleSection("expired")}
+                className="w-full flex justify-between items-center p-6 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center">
+                  <Hourglass className="h-6 w-6 text-orange-500 mr-3" />
+                  <h2 className="text-xl font-semibold">Expired Bookings</h2>
+                  <span className="ml-3 px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
+                    {pendingExpiredBookings.length}
+                  </span>
+                </div>
+                {expandedSections.expired ? (
+                  <ChevronUp className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+              {expandedSections.expired && (
+                <div className="px-6 pb-6 space-y-4">
+                  {pendingExpiredBookings.map(renderBookingCard)}
+                </div>
+              )}
             </div>
           )}
 
           {deletedPropertyBookings.length > 0 && (
-            <div>
-              <div className="flex items-center mb-4">
-                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                <h2 className="text-xl font-medium">Unavailable Properties</h2>
-                <span className="ml-2 text-sm text-gray-500">
-                  {deletedPropertyBookings.length}
-                </span>
-              </div>
-              <div className="space-y-4">
-                {deletedPropertyBookings.map(renderBookingCard)}
-              </div>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <button
+                onClick={() => toggleSection("unavailable")}
+                className="w-full flex justify-between items-center p-6 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center">
+                  <AlertCircle className="h-6 w-6 text-red-500 mr-3" />
+                  <h2 className="text-xl font-semibold">
+                    Unavailable Properties
+                  </h2>
+                  <span className="ml-3 px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
+                    {deletedPropertyBookings.length}
+                  </span>
+                </div>
+                {expandedSections.unavailable ? (
+                  <ChevronUp className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+              {expandedSections.unavailable && (
+                <div className="px-6 pb-6 space-y-4">
+                  {deletedPropertyBookings.map(renderBookingCard)}
+                </div>
+              )}
             </div>
           )}
 
           {cancelledBookings.length > 0 && (
-            <div>
-              <div className="flex items-center mb-4">
-                <XCircle className="h-5 w-5 text-red-500 mr-2" />
-                <h2 className="text-xl font-medium">Cancelled Bookings</h2>
-                <span className="ml-2 text-sm text-gray-500">
-                  {cancelledBookings.length}
-                </span>
-              </div>
-              <div className="space-y-4">
-                {cancelledBookings.map(renderBookingCard)}
-              </div>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <button
+                onClick={() => toggleSection("cancelled")}
+                className="w-full flex justify-between items-center p-6 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center">
+                  <XCircle className="h-6 w-6 text-gray-500 mr-3" />
+                  <h2 className="text-xl font-semibold">Cancelled Bookings</h2>
+                  <span className="ml-3 px-3 py-1 bg-gray-100 text-gray-800 text-sm font-medium rounded-full">
+                    {cancelledBookings.length}
+                  </span>
+                </div>
+                {expandedSections.cancelled ? (
+                  <ChevronUp className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+              {expandedSections.cancelled && (
+                <div className="px-6 pb-6 space-y-4">
+                  {cancelledBookings.map(renderBookingCard)}
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
+      {/* Popup Modals */}
       {cancelPopup.visible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 backdrop-blur-xs">
-          <div className="bg-white border-2 border-gray-300 rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-medium mb-4">Cancel Booking</h2>
-            <p className="mb-6">
-              Are you sure you want to cancel this booking?
-            </p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() =>
-                  setCancelPopup({ visible: false, bookingId: null })
-                }
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                No, Keep It
-              </button>
-              <button
-                onClick={handleCancelBooking}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Yes, Cancel
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Cancel Booking</h2>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to cancel this booking? This action cannot
+                be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() =>
+                    setCancelPopup({ visible: false, bookingId: null })
+                  }
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  No, Keep It
+                </button>
+                <button
+                  onClick={handleCancelBooking}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Yes, Cancel Booking
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {editPopup.visible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 backdrop-blur-xs">
-          <div className="bg-white border-2 border-gray-900 rounded-lg p-6 max-w-md w-full mx-4 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full relative">
             <button
               onClick={closeEditPopup}
-              className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
             >
-              <X className="h-5 w-5" />
+              <X className="h-6 w-6" />
             </button>
-            <h2 className="text-xl font-medium mb-4">Edit Booking</h2>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              {editPopup.booking.bookingType === "Rent" && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium">
-                      Start Date
-                    </label>
-                    <DatePicker
-                      selected={editStartDate}
-                      onChange={(date) => setEditStartDate(date)}
-                      minDate={new Date()}
-                      className="w-full p-2 border rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium">
-                      End Date
-                    </label>
-                    <DatePicker
-                      selected={editEndDate}
-                      onChange={(date) => setEditEndDate(date)}
-                      minDate={editStartDate || new Date()}
-                      className="w-full p-2 border rounded"
-                    />
-                  </div>
-                </>
-              )}
-              <div>
-                <label className="block text-sm font-medium">Total Price</label>
-                <input
-                  type="number"
-                  value={editTotalPrice}
-                  readOnly
-                  className="w-full p-2 border rounded cursor-not-allowed bg-gray-100"
-                  min="0"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={editLoading}
-                className={`w-full py-2 text-white rounded ${
-                  editLoading ? "bg-gray-400" : "bg-gray-800 hover:bg-gray-700"
-                }`}
-              >
-                {editLoading ? "Saving..." : "Save Changes"}
-              </button>
-            </form>
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Edit Booking</h2>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                {editPopup.booking.bookingType === "Rent" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Start Date
+                      </label>
+                      <DatePicker
+                        selected={editStartDate}
+                        onChange={(date) => setEditStartDate(date)}
+                        minDate={new Date()}
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        End Date
+                      </label>
+                      <DatePicker
+                        selected={editEndDate}
+                        onChange={(date) => setEditEndDate(date)}
+                        minDate={editStartDate || new Date()}
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
+                      />
+                    </div>
+                  </>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Total Price
+                  </label>
+                  <input
+                    type="number"
+                    value={editTotalPrice}
+                    readOnly
+                    className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                    min="0"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className={`w-full py-3 text-white rounded-lg font-medium ${
+                    editLoading
+                      ? "bg-teal-400 cursor-not-allowed"
+                      : "bg-teal-600 hover:bg-teal-700"
+                  }`}
+                >
+                  {editLoading ? (
+                    <span className="flex items-center justify-center">
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                      Saving...
+                    </span>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

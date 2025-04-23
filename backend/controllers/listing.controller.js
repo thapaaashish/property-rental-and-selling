@@ -310,3 +310,20 @@ export const getCityCounts = async (req, res, next) => {
     next(errorHandler(500, "Error fetching city counts"));
   }
 };
+
+// Get all listings with valid coordinates
+export const getAllLocations = async (req, res) => {
+  try {
+    const listings = await Listing.find({
+      status: "active",
+      location: { $exists: true },
+      "location.coordinates": { $size: 2 },
+    }).select(
+      "title location.coordinates imageUrls price listingType rentOrSale"
+    );
+    res.json(listings);
+  } catch (error) {
+    console.error("Error fetching listings:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};

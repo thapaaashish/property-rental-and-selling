@@ -6,7 +6,7 @@ import {
   signOutUserSuccess,
   signOutUserFailure,
 } from "../redux/user/userSlice";
-import LoadingSpinner from "../components/AdminDashboard/LoadingSpinner";
+import LoadingSpinner from "../components/common/LoadingSpinner";
 import OverviewTab from "../components/AdminDashboard/OverviewTab";
 import PropertiesTab from "../components/AdminDashboard/PropertiesTab";
 import SettingsTab from "../components/AdminDashboard/SettingsTab";
@@ -346,6 +346,7 @@ const AdminDashboard = () => {
                 properties={properties}
                 users={users}
                 bookings={bookings}
+                setActiveTab={setActiveTab}
               />
             </>
           )}

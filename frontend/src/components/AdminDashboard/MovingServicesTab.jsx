@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Package, Search, Trash2, Edit, X } from "lucide-react";
 import Popup from "../common/Popup";
+import DeleteConfirmation from "../common/DeleteConfirmation";
 import debounce from "lodash.debounce";
 
 const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
@@ -18,7 +19,9 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupType, setPopupType] = useState("success");
   const [sortConfig, setSortConfig] = useState({
     key: "name",
     direction: "asc",
@@ -38,16 +41,20 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
           setServices(data);
           setFilteredServices(data);
         } else {
-          setApiError(data.message || "Failed to fetch services");
+          setPopupMessage(data.message || "Failed to fetch services");
+          setPopupType("error");
+          setShowPopup(true);
         }
       } catch (err) {
-        setApiError("Error fetching services");
+        setPopupMessage("Error fetching services");
+        setPopupType("error");
+        setShowPopup(true);
       } finally {
         setLoading(false);
       }
     };
     fetchServices();
-  }, [setApiError]);
+  }, []);
 
   // Debounced search
   const debouncedFilter = useCallback(
@@ -156,6 +163,9 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
           servicesOffered: "",
         });
         setIsAdding(false);
+        setPopupMessage("Service added successfully!");
+        setPopupType("success");
+        setShowPopup(true);
       } else {
         setError(data.message || "Failed to add service");
       }
@@ -167,8 +177,6 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
   };
 
   const handleDeleteService = async (serviceId) => {
-    if (!window.confirm("Are you sure you want to delete this service?"))
-      return;
     setLoading(true);
     try {
       const res = await fetch(`/api/moving-services/${serviceId}`, {
@@ -183,12 +191,18 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
         setFilteredServices((prev) =>
           prev.filter((service) => service._id !== serviceId)
         );
-        setShowDeletePopup(true);
+        setPopupMessage("Service deleted successfully!");
+        setPopupType("success");
+        setShowPopup(true);
       } else {
-        setApiError(data.message || "Failed to delete service");
+        setPopupMessage(data.message || "Failed to delete service");
+        setPopupType("error");
+        setShowPopup(true);
       }
     } catch (err) {
-      setApiError("Error deleting service");
+      setPopupMessage("Error deleting service");
+      setPopupType("error");
+      setShowPopup(true);
     } finally {
       setLoading(false);
     }
@@ -216,6 +230,14 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
+      {showPopup && (
+        <Popup
+          message={popupMessage}
+          type={popupType}
+          duration={3000}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
       <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
         <Package className="h-6 w-6 mr-2 text-teal-600" />
         Moving Services
@@ -323,14 +345,13 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
                     <td className="px-6 py-4 text-gray-600">
                       {service.servicesOffered.join(", ")}
                     </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button
-                        onClick={() => handleDeleteService(service._id)}
+                    <td className="px-6 py-4 space-x-2">
+                      <DeleteConfirmation
+                        itemName="service"
+                        onDelete={() => handleDeleteService(service._id)}
+                        disabled={actionLoading || loading}
                         className="text-red-600 hover:text-red-700"
-                        disabled={actionLoading}
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                      />
                     </td>
                   </tr>
                 ))}
@@ -342,7 +363,7 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
 
       {/* Add Service Modal */}
       {isAdding && (
-        <div className="fixed inset-0 backdrop-blur-xs  bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
@@ -498,16 +519,6 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
             </form>
           </div>
         </div>
-      )}
-
-      {/* Success Popup */}
-      {showDeletePopup && (
-        <Popup
-          message="Service deleted successfully!"
-          type="success"
-          duration={3000}
-          onClose={() => setShowDeletePopup(false)}
-        />
       )}
     </div>
   );

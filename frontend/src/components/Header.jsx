@@ -8,9 +8,7 @@ import {
   signOutUserSuccess,
 } from "../redux/user/userSlice";
 import { IoMdMenu } from "react-icons/io";
-import { IoMdNotificationsOutline } from "react-icons/io";
-import axios from "axios";
-import { Bell } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 
 const Header = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -18,75 +16,17 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
-  // const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  // const [notifications, setNotifications] = useState([]);
-  // const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const profileButtonRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const profilePopupRef = useRef(null);
   const mobilePopupRef = useRef(null);
-  // const notificationRef = useRef(null);
-  const notificationButtonRef = useRef(null);
   const backdropRef = useRef(null);
   const navigate = useNavigate();
 
   // Check if user is an admin
   const isAdmin = currentUser && currentUser.role === "admin";
-
-  // Fetch notifications
-  // useEffect(() => {
-  //   if (currentUser) {
-  //     fetchNotifications();
-  //   }
-  // }, [currentUser]);
-
-  // const fetchNotifications = async () => {
-  //   try {
-  //     const res = await axios.get("/api/notifications");
-  //     setNotifications(res.data);
-  //     setUnreadCount(res.data.filter((n) => !n.read).length);
-  //   } catch (error) {
-  //     console.error("Error fetching notifications:", error);
-  //   }
-  // };
-
-  // const handleNotificationClick = async (notification) => {
-  //   try {
-  //     await axios.put(`/api/notifications/${notification._id}/read`);
-
-  //     if (notification.relatedEntityModel === "Booking") {
-  //       navigate(`/bookings/${notification.relatedEntity}`);
-  //     }
-
-  //     setNotifications(
-  //       notifications.map((n) =>
-  //         n._id === notification._id ? { ...n, read: true } : n
-  //       )
-  //     );
-  //     setUnreadCount(unreadCount - 1);
-  //     setIsNotificationOpen(false);
-  //   } catch (error) {
-  //     console.error("Error handling notification:", error);
-  //   }
-  // };
-
-  // const markAllAsRead = async () => {
-  //   try {
-  //     await axios.put("/api/notifications/read-all");
-  //     setNotifications(notifications.map((n) => ({ ...n, read: true })));
-  //     setUnreadCount(0);
-  //   } catch (error) {
-  //     console.error("Error marking all as read:", error);
-  //   }
-  // };
-
-  // const toggleNotifications = (e) => {
-  //   e.stopPropagation();
-  //   setIsNotificationOpen(!isNotificationOpen);
-  //   setIsProfilePopupOpen(false);
-  //   setIsMobileMenuOpen(false);
-  // };
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -130,42 +70,57 @@ const Header = () => {
           setIsProfilePopupOpen(false);
         }
       }
-
-      // if (isNotificationOpen) {
-      //   if (
-      //     notificationButtonRef.current &&
-      //     !notificationButtonRef.current.contains(event.target) &&
-      //     notificationRef.current &&
-      //     !notificationRef.current.contains(event.target)
-      //   ) {
-      //     setIsNotificationOpen(false);
-      //   }
-      // }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isMobileMenuOpen, isProfilePopupOpen /*, isNotificationOpen*/]);
+  }, [isMobileMenuOpen, isProfilePopupOpen]);
+
+  // Fetch unread messages count
+  useEffect(() => {
+    const fetchUnreadMessagesCount = async () => {
+      if (!currentUser) return;
+      
+      try {
+        const response = await fetch("/api/chat/unread-count", {
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setUnreadCount(data.unreadCount || 0);
+        }
+      } catch (error) {
+        console.error("Error fetching unread messages count:", error);
+      }
+    };
+
+    fetchUnreadMessagesCount();
+
+    // Set up interval to check for new messages periodically (every 30 seconds)
+    const intervalId = setInterval(fetchUnreadMessagesCount, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [currentUser]);
 
   const toggleMobileMenu = (e) => {
     e.stopPropagation();
     setIsMobileMenuOpen(!isMobileMenuOpen);
     setIsProfilePopupOpen(false);
-    // setIsNotificationOpen(false);
   };
 
   const toggleProfilePopup = (e) => {
     e.stopPropagation();
     setIsProfilePopupOpen(!isProfilePopupOpen);
     setIsMobileMenuOpen(false);
-    // setIsNotificationOpen(false);
   };
 
   const handleMenuItemClick = (path) => (e) => {
     e.stopPropagation();
     setIsProfilePopupOpen(false);
     setIsMobileMenuOpen(false);
-    // setIsNotificationOpen(false);
     navigate(path);
   };
 
@@ -177,7 +132,6 @@ const Header = () => {
       dispatch(signOutUserSuccess());
       setIsProfilePopupOpen(false);
       setIsMobileMenuOpen(false);
-      // setIsNotificationOpen(false);
       navigate("/");
     } catch (error) {
       dispatch(signOutUserFailure(error.message));
@@ -218,88 +172,21 @@ const Header = () => {
               </button>
             </Link>
 
-            {/* Notification Dropdown */}
+            {/* Messages Icon with Badge */}
             {currentUser && (
               <div className="relative">
                 <button
-                  ref={notificationButtonRef}
-                  // onClick={toggleNotifications}
-                  className="p-2 rounded-full hover:bg-gray-100 focus:outline-none relative"
-                  aria-label="Notifications"
+                  onClick={() => navigate("/messages")}
+                  className="p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+                  aria-label="Messages"
                 >
-                  <Bell className="text-gray-600 w-5 h-5" />
-                  {/* {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-black rounded-full" />
-                  )} */}
+                  <MessageSquare className="text-gray-600 w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
                 </button>
-
-                {/* {isNotificationOpen && (
-                  <div
-                    ref={notificationRef}
-                    className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg z-50 text-sm"
-                  >
-                    <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
-                      <span className="font-medium text-gray-900">
-                        Notifications
-                      </span>
-                      <button
-                        onClick={markAllAsRead}
-                        className="text-xs text-gray-500 hover:text-black cursor-pointer"
-                      >
-                        Mark all as read
-                      </button>
-                    </div>
-
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="px-4 py-6 text-center text-gray-500">
-                          No notifications
-                        </div>
-                      ) : (
-                        notifications.map((notification) => (
-                          <div
-                            key={notification._id}
-                            onClick={() =>
-                              handleNotificationClick(notification)
-                            }
-                            className={`px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors ${
-                              !notification.read ? "bg-gray-50" : "bg-white"
-                            } hover:bg-gray-100`}
-                          >
-                            <div className="flex justify-between items-start">
-                              <span className="font-medium text-gray-900">
-                                {notification.title}
-                              </span>
-                              <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">
-                                {new Date(
-                                  notification.createdAt
-                                ).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                            </div>
-                            <p className="text-gray-600 mt-1">
-                              {notification.message}
-                            </p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    <div className="p-2 border-t border-gray-200 text-center">
-                      <button
-                        onClick={() => {
-                          navigate("/notifications");
-                          setIsNotificationOpen(false);
-                        }}
-                        className="text-xs text-gray-500 hover:text-black cursor-pointer"
-                      >
-                        View all notifications
-                      </button>
-                    </div>
-                  </div>
-                )} */}
               </div>
             )}
 
@@ -356,6 +243,12 @@ const Header = () => {
                             Wishlists
                           </button>
                           <button
+                            onClick={handleMenuItemClick("/messages")}
+                            className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
+                          >
+                            Messages
+                          </button>
+                          <button
                             onClick={handleMenuItemClick("/my-bookings")}
                             className="block w-full text-left px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded-lg"
                           >
@@ -399,16 +292,22 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-2">
             {currentUser && (
-              <button
-                ref={notificationButtonRef}
-                // onClick={toggleNotifications}
-                className="p-1 rounded-full hover:bg-gray-200 relative"
-              >
-                <IoMdNotificationsOutline className="text-gray-600 w-5 h-5" />
-                {/* {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                )} */}
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    navigate("/messages");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="p-1 rounded-full hover:bg-gray-200"
+                >
+                  <MessageSquare className="text-gray-600 w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center text-xs">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+              </div>
             )}
 
             <button
@@ -485,24 +384,6 @@ const Header = () => {
                     </Link>
                   </li>
 
-                  {/* {currentUser && (
-                    <li className="border-b border-gray-200 pb-2 mb-2">
-                      <button
-                        onClick={() => {
-                          navigate("/notifications");
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="flex items-center w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
-                      >
-                        <IoMdNotificationsOutline className="text-gray-600 w-5 h-5" />
-                        Notifications
-                        {unreadCount > 0 && (
-                          <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
-                        )}
-                      </button>
-                    </li>
-                  )} */}
-
                   {currentUser ? (
                     <>
                       {!isAdmin && (
@@ -518,6 +399,12 @@ const Header = () => {
                             className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
                           >
                             Wishlists
+                          </button>
+                          <button
+                            onClick={handleMenuItemClick("/messages")}
+                            className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer"
+                          >
+                            Messages
                           </button>
                           <button
                             onClick={handleMenuItemClick("/my-bookings")}
