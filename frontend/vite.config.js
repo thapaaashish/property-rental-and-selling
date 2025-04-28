@@ -6,13 +6,16 @@ import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfil
 export default defineConfig({
   define: {
     "process.env.VITE_API_URL": JSON.stringify(
-      process.env.VITE_API_URL || "http://localhost:3000"
+      process.env.VITE_API_URL ||
+        "https://property-rental-and-selling.onrender.com"
     ),
   },
   server: {
     proxy: {
       "/api": {
-        target: process.env.VITE_API_URL || "http://localhost:3000",
+        target:
+          process.env.VITE_API_URL ||
+          "https://property-rental-and-selling.onrender.com",
         secure: false,
         changeOrigin: true,
       },
