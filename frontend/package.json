@@ -15,6 +15,7 @@
     "@react-google-maps/api": "^2.20.6",
     "@reduxjs/toolkit": "^2.6.0",
     "@tailwindcss/vite": "^4.0.3",
+    "axios": "^1.9.0",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "firebase": "^11.3.1",
