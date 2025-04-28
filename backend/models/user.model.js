@@ -45,8 +45,7 @@ const UserSchema = new mongoose.Schema(
     address: { type: String, default: "None" },
     city: { type: String, default: "None" },
     province: { type: String, default: "None" },
-    zipCode: { type: String, default: "None" },
-    profileCompleted: { type: Boolean, default: false },
+    zipCode: { type: String },
     refreshToken: {
       type: String,
       required: false,

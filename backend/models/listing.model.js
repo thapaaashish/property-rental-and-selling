@@ -44,6 +44,16 @@ const listingSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    yearBuilt: {
+      type: Number,
+      min: 1800,
+      max: new Date().getFullYear(),
+    },
+    propertyType: {
+      type: String,
+      enum: ["Residential", "Commercial", "Industrial"],
+      default: "Residential",
+    },
     address: {
       street: {
         type: String,
@@ -119,6 +129,7 @@ const listingSchema = new mongoose.Schema(
     adminLockedStatus: { type: Boolean, default: false },
     lockReason: { type: String, default: null },
   },
+
   { timestamps: true }
 );
 

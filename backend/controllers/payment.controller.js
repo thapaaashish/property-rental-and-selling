@@ -58,7 +58,7 @@ export const initiatePayment = async (req, res, next) => {
       purchase_order_name: `Property: ${booking.listing?.title || "Unknown"}`,
       customer_info: {
         name: booking.user.fullname || "Customer",
-        email: booking.user.email || "",
+        email: booking.user.email || "N/A",
         phone: booking.user.phone || "9800000000",
       },
     };
