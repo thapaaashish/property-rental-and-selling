@@ -188,7 +188,7 @@ const MyListings = ({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
         <h2 className="text-xl font-bold text-gray-800">My Listings</h2>
         <button
-          onClick={() => navigate("/create-listing")}
+          onClick={() => navigate("/create-listing-landing")}
           className="flex items-center text-sm font-medium text-white bg-blue-600 py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-150 w-full md:w-auto justify-center"
         >
           <svg

@@ -1,36 +1,8 @@
 import React, { useState, useMemo } from "react";
-import {
-  Home,
-  Heart,
-  MessageSquare,
-  PieChart as PieChartIcon,
-  BarChart2,
-} from "lucide-react";
-import {
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
+import { Home, Heart, MessageSquare } from "lucide-react";
 import { MapWithAllProperties } from "../GoogleMap";
 import PropTypes from "prop-types";
 
-// Constants
-const CHART_COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884d8",
-  "#82ca9d",
-];
 const MAX_TABLE_ROWS = 5;
 
 const DashboardOverview = ({
@@ -41,32 +13,6 @@ const DashboardOverview = ({
   navigate,
   setActiveTab,
 }) => {
-  const [chartType, setChartType] = useState("pie");
-  const [activeChartData, setActiveChartData] = useState("rentOrSale");
-
-  // Memoized chart data
-  const { rentOrSaleData, listingTypeData } = useMemo(() => {
-    const rentOrSaleCount = listings.reduce((acc, property) => {
-      const type = property.rentOrSale || "Other";
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {});
-    const listingTypeCount = listings.reduce((acc, property) => {
-      const type = property.listingType || "Other";
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {});
-    const rentOrSaleData = Object.keys(rentOrSaleCount).map((key) => ({
-      name: key.charAt(0).toUpperCase() + key.slice(1),
-      value: rentOrSaleCount[key],
-    }));
-    const listingTypeData = Object.keys(listingTypeCount).map((key) => ({
-      name: key.charAt(0).toUpperCase() + key.slice(1),
-      value: listingTypeCount[key],
-    }));
-    return { rentOrSaleData, listingTypeData };
-  }, [listings]);
-
   // Memoized map markers
   const mapMarkers = useMemo(() => {
     return listings
@@ -123,9 +69,6 @@ const DashboardOverview = ({
       <p className="text-gray-500 text-xs">{message}</p>
     </div>
   );
-
-  const currentChartData =
-    activeChartData === "rentOrSale" ? rentOrSaleData : listingTypeData;
 
   return (
     <div className="bg-gray-50 p-4">
@@ -298,121 +241,6 @@ const DashboardOverview = ({
 
         {/* Right Column - Charts and Messages */}
         <div className="space-y-4">
-          {/* Listing Distribution Chart */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-800">
-                Listing Distribution
-              </h2>
-              <div className="flex space-x-1">
-                <button
-                  onClick={() => setChartType("pie")}
-                  className={`p-1 rounded ${
-                    chartType === "pie"
-                      ? "bg-blue-100 text-blue-600"
-                      : "text-gray-500 hover:bg-gray-100"
-                  }`}
-                  aria-label="Pie chart view"
-                >
-                  <PieChartIcon className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setChartType("bar")}
-                  className={`p-1 rounded ${
-                    chartType === "bar"
-                      ? "bg-blue-100 text-blue-600"
-                      : "text-gray-500 hover:bg-gray-100"
-                  }`}
-                  aria-label="Bar chart view"
-                >
-                  <BarChart2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            {listings.length === 0 ? (
-              <EmptyState
-                icon={PieChartIcon}
-                message="No listing data available"
-              />
-            ) : (
-              <div className="p-3">
-                <div className="flex justify-center mb-3">
-                  <div className="flex space-x-6">
-                    <button
-                      onClick={() => setActiveChartData("rentOrSale")}
-                      className={`text-xs font-medium ${
-                        activeChartData === "rentOrSale"
-                          ? "text-blue-600 border-b-2 border-blue-500"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
-                    >
-                      By Rent/Sale
-                    </button>
-                    <button
-                      onClick={() => setActiveChartData("listingType")}
-                      className={`text-xs font-medium ${
-                        activeChartData === "listingType"
-                          ? "text-blue-600 border-b-2 border-blue-500"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
-                    >
-                      By Type
-                    </button>
-                  </div>
-                </div>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    {chartType === "pie" ? (
-                      <RechartsPieChart>
-                        <Pie
-                          data={currentChartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={70}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label={({ name, percent }) =>
-                            `${name}: ${(percent * 100).toFixed(0)}%`
-                          }
-                        >
-                          {currentChartData.map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={CHART_COLORS[index % CHART_COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value) => [`${value} listings`, "Count"]}
-                        />
-                      </RechartsPieChart>
-                    ) : (
-                      <BarChart
-                        data={currentChartData}
-                        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip
-                          formatter={(value) => [`${value} listings`, "Count"]}
-                        />
-                        <Legend />
-                        <Bar
-                          dataKey="value"
-                          name="Count"
-                          fill="#0088FE"
-                          radius={[4, 4, 0, 0]}
-                        />
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Recent Messages Table */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">

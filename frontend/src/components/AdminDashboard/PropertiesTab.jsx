@@ -206,12 +206,6 @@ const PropertiesTab = ({
           <p className="text-gray-600 mb-4">
             There are no properties in the system yet.
           </p>
-          <button
-            onClick={() => navigate("/create-listing")}
-            className="text-sm font-medium text-white bg-teal-500 py-2 px-4 rounded-lg hover:bg-teal-400 transition duration-150"
-          >
-            Create a Property
-          </button>
         </div>
       ) : (
         <div className="space-y-6">

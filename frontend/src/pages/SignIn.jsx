@@ -59,6 +59,9 @@ const SignIn = () => {
           errorMessage = "No account found with this email. Please sign up.";
         } else if (errorMessage === "Invalid credentials") {
           errorMessage = "Incorrect email or password. Please try again.";
+        } else if (errorMessage.includes("Your account is banned")) {
+          // Handle banned user case
+          errorMessage = data.message; // Use the full message including ban reason
         }
         dispatch(signInFailure(errorMessage));
         return;

@@ -139,7 +139,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {[
                 { to: "/listings", label: "Buy Property" },
-                { to: "/create-listing", label: "List Property" },
+                { to: "/create-listing-landing", label: "List Property" },
                 { to: "/listings", label: "Rent Property" },
                 { to: "/moving-services", label: "Moving Services" },
               ].map((service, index) => (

@@ -112,6 +112,7 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
     },
     location: listing.location || { type: "Point", coordinates: [0, 0] },
     amenities: listing.amenities || [],
+    nearbyAmenities: listing.nearbyAmenities || "", // Added nearbyAmenities
     imageUrls: listing.imageUrls || [],
   });
   const [files, setFiles] = useState([]);
@@ -137,6 +138,7 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
       },
       location: listing.location || { type: "Point", coordinates: [0, 0] },
       amenities: listing.amenities || [],
+      nearbyAmenities: listing.nearbyAmenities || "", // Added nearbyAmenities
       imageUrls: listing.imageUrls || [],
     });
   }, [listing]);
@@ -460,6 +462,19 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
                 />
               </div>
             </div>
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nearby Amenities
+              </label>
+              <textarea
+                name="nearbyAmenities"
+                value={editFormData.nearbyAmenities}
+                onChange={handleEditChange}
+                placeholder="e.g., Coffee shop 0.5 miles away, bus stop nearby"
+                className="w-full p-2 border rounded bg-white bg-opacity-95"
+                rows="3"
+              />
+            </div>
           </div>
         )}
         {editStep === 4 && (
@@ -562,7 +577,20 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
               {Object.values(editFormData.address).join(", ")}
             </p>
             <p>
-              <strong>Amenities:</strong> {editFormData.amenities.join(", ")}
+              <strong>Amenities:</strong>{" "}
+              {editFormData.amenities.length > 0
+                ? editFormData.amenities.join(", ")
+                : "None"}
+            </p>
+            <p>
+              <strong>Nearby Amenities:</strong>{" "}
+              {editFormData.nearbyAmenities || "None"}
+            </p>
+            <p>
+              <strong>Images:</strong>{" "}
+              {editFormData.imageUrls.length > 0
+                ? editFormData.imageUrls.length + " uploaded"
+                : "None"}
             </p>
           </div>
         )}

@@ -5,7 +5,6 @@ import SignUp from "./pages/SignUp";
 import AboutUs from "./pages/AboutUs";
 import Profile from "./pages/Profile";
 import VerifyEmail from "./pages/VerifyEmail";
-import CreateListing from "./pages/CreateListing";
 import ForgotPassword from "./pages/ForgotPassword";
 import PropertyDetails from "./components/PropertyDetails";
 import Layout from "./components/Layout";
@@ -43,6 +42,10 @@ export const App = () => {
           <Route path="/user/:userId" element={<PublicUserProfilePage />} />
           <Route path="/moving-services" element={<MovingServices />} />
           <Route path="/payment-failure" element={<Failure />} />
+          <Route
+            path="/create-listing-landing"
+            element={<ListingLandingPage />}
+          />
         </Route>
         <Route path="/payment-success" element={<Success />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -53,10 +56,6 @@ export const App = () => {
           <Route element={<Layout />}>
             <Route path="/profile" element={<Profile />} />
             <Route path="/my-bookings" element={<MyBookings />} />
-            <Route
-              path="/create-listing-landing"
-              element={<ListingLandingPage />}
-            />
           </Route>
         </Route>
 
@@ -70,7 +69,6 @@ export const App = () => {
 
         {/* User Private Routes with No Header and No Footer */}
         <Route element={<UserPrivateRoute />}>
-          <Route path="/create-listing" element={<CreateListing />} />
           <Route path="/user-dashboard" element={<UserDashboard />} />
         </Route>
 

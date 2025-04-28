@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   CheckCircle,
+  XCircle,
   Camera,
   Edit2,
   Mail,
@@ -9,6 +10,7 @@ import {
   MapPin,
   Upload,
   FileText,
+  AlertCircle,
 } from "lucide-react";
 import ChangePassword from "../components/user/ChangePassword";
 import { useNavigate } from "react-router-dom";
@@ -52,13 +54,28 @@ const Profile = () => {
         if (data.success) {
           setKycStatus(data.kycStatus);
           setKycRejectedReason(data.rejectedReason);
+          // Update Redux store if user data changes
+          if (data.user) {
+            dispatch(updateUser(data.user));
+          }
         }
       } catch (error) {
         console.error("Error fetching KYC status:", error);
       }
     };
     fetchKycStatus();
-  }, [currentUser._id]);
+  }, [currentUser._id, dispatch]);
+
+  // Check if profile is completed
+  const isProfileCompleted = (user) => {
+    return (
+      user.phone &&
+      user.address !== "None" &&
+      user.city !== "None" &&
+      user.province !== "None" &&
+      user.zipCode !== "None"
+    );
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -163,6 +180,7 @@ const Profile = () => {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({ imageUrl }),
         });
 
@@ -315,6 +333,62 @@ const Profile = () => {
     setPopup({ show: false, message: "", type: "error" });
   };
 
+  // Render KYC status label
+  const renderKycStatusLabel = () => {
+    switch (kycStatus) {
+      case "verified":
+        return (
+          <div className="flex items-center text-green-600">
+            <CheckCircle className="h-4 w-4 mr-1" />
+            <span className="text-sm">Verified User</span>
+          </div>
+        );
+      case "pending":
+        return (
+          <div className="flex items-center text-yellow-600">
+            <AlertCircle className="h-4 w-4 mr-1" />
+            <span className="text-sm">KYC Pending</span>
+          </div>
+        );
+      case "rejected":
+        return (
+          <div className="flex items-center text-red-600">
+            <XCircle className="h-4 w-4 mr-1" />
+            <span className="text-sm">KYC Rejected</span>
+          </div>
+        );
+      case "not_verified":
+      default:
+        return (
+          <div className="flex items-center text-gray-500">
+            <XCircle className="h-4 w-4 mr-1" />
+            <span className="text-sm">KYC Not Verified</span>
+          </div>
+        );
+    }
+  };
+
+  // Render profile completion status
+  const renderProfileStatusLabel = () => {
+    const completed = isProfileCompleted(userProfile);
+    return (
+      <div
+        className={`flex items-center ${
+          completed ? "text-green-600" : "text-red-600"
+        }`}
+      >
+        {completed ? (
+          <CheckCircle className="h-4 w-4 mr-1" />
+        ) : (
+          <XCircle className="h-4 w-4 mr-1" />
+        )}
+        <span className="text-sm">
+          {completed ? "Profile Completed" : "Profile Incomplete"}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen pb-16">
       {/* Header */}
@@ -360,10 +434,8 @@ const Profile = () => {
                 <h2 className="text-2xl font-bold text-gray-900">
                   {userProfile.fullname || "User"}
                 </h2>
-                <div className="flex items-center text-green-600">
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  <span className="text-sm">Verified User</span>
-                </div>
+                {renderKycStatusLabel()}
+                {renderProfileStatusLabel()}
               </div>
             </div>
             <div className="absolute top-4 right-4">
@@ -515,7 +587,7 @@ const Profile = () => {
                         />
                       ) : (
                         <p className="text-gray-900">
-                          {userProfile.phone || "N/A"}
+                          {userProfile.phone || "None"}
                         </p>
                       )}
                     </div>
@@ -573,7 +645,7 @@ const Profile = () => {
                       />
                     ) : (
                       <p className="text-gray-900">
-                        {userProfile.province || "N/A"}
+                        {userProfile.province || "None"}
                       </p>
                     )}
                   </div>
@@ -583,7 +655,7 @@ const Profile = () => {
                     </label>
                     {isEditing ? (
                       <input
-                        type="text"
+                        type="number"
                         name="zipCode"
                         value={userProfile.zipCode || ""}
                         onChange={handleInputChange}
@@ -591,7 +663,7 @@ const Profile = () => {
                       />
                     ) : (
                       <p className="text-gray-900">
-                        {userProfile.zipCode || "N/A"}
+                        {userProfile.zipCode || "None"}
                       </p>
                     )}
                   </div>
