@@ -167,7 +167,27 @@ const Header = () => {
 
           <div className="hidden md:flex items-center space-x-4">
             <Link to="/create-listing-landing">
-              <button className="px-3 py-1.5 text-sm font-medium text-black hover:bg-black hover:text-white rounded-lg transition duration-300 cursor-pointer">
+              <button
+                className="
+      px-4 py-2 
+      text-white font-medium
+      bg-teal-500
+      rounded-lg
+      hover:bg-teal-600
+      shadow-sm
+      hover:shadow-md
+      transition-all duration-300
+      flex items-center gap-2  cursor-pointer
+    "
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                </svg>
                 List Your Property
               </button>
             </Link>
@@ -375,12 +395,31 @@ const Header = () => {
                   </li>
 
                   <li className="border-b border-gray-200 pb-2 mb-2">
-                    <Link
-                      to="/create-listing-landing"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg"
-                    >
-                      List Your Property
+                    <Link to="/create-listing-landing">
+                      <button
+                        className="
+      px-5 py-2.5
+      text-white text-sm font-medium
+      bg-teal-500
+      rounded-lg
+      hover:bg-teal-600
+      shadow-sm
+      hover:shadow-md
+      transition-all duration-300
+      flex items-center justify-center gap-2
+      w-full cursor-pointer
+    "
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                        </svg>
+                        List Your Property
+                      </button>
                     </Link>
                   </li>
 

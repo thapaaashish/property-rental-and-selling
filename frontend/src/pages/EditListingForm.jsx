@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { LoadScript, GoogleMap, Marker } from "@react-google-maps/api";
+import FormInput from "../components/PropertyListing/FormInput";
+import { Calendar } from "lucide-react";
 
 const steps = [
   "Property Type",
@@ -112,12 +114,16 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
     },
     location: listing.location || { type: "Point", coordinates: [0, 0] },
     amenities: listing.amenities || [],
-    nearbyAmenities: listing.nearbyAmenities || "", // Added nearbyAmenities
+    nearbyAmenities: listing.nearbyAmenities || "",
     imageUrls: listing.imageUrls || [],
+    yearBuilt: listing.yearBuilt || "", // Added yearBuilt
+    propertyType: listing.propertyType || "Residential", // Added propertyType with default
   });
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isValid, setIsValid] = useState(true);
 
   useEffect(() => {
     setEditFormData({
@@ -138,14 +144,31 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
       },
       location: listing.location || { type: "Point", coordinates: [0, 0] },
       amenities: listing.amenities || [],
-      nearbyAmenities: listing.nearbyAmenities || "", // Added nearbyAmenities
+      nearbyAmenities: listing.nearbyAmenities || "",
       imageUrls: listing.imageUrls || [],
+      yearBuilt: listing.yearBuilt || "", // Added yearBuilt
+      propertyType: listing.propertyType || "Residential", // Added propertyType
     });
   }, [listing]);
 
+  useEffect(() => {
+    setIsValid(validateStep());
+  }, [editFormData, editStep]);
+
+  useEffect(() => {
+    if (editFormData.listingType === "Room") {
+      setEditFormData((prev) => ({ ...prev, rentOrSale: "Rent" }));
+      setErrors((prev) => ({ ...prev, rentOrSale: "" }));
+    }
+  }, [editFormData.listingType]);
+
   const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData((prev) => ({ ...prev, [name]: value }));
+    setEditFormData((prev) => ({
+      ...prev,
+      [name]: name === "yearBuilt" ? Number(value) || "" : value, // Convert yearBuilt to number or keep as empty string
+    }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleAddressChange = (e) => {
@@ -153,6 +176,10 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
     setEditFormData((prev) => ({
       ...prev,
       address: { ...prev.address, [name]: value },
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      address: { ...prev.address, [name]: "" },
     }));
   };
 
@@ -164,14 +191,16 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
         ? [...prev.amenities, value]
         : prev.amenities.filter((item) => item !== value),
     }));
+    setErrors((prev) => ({ ...prev, amenities: "" }));
   };
 
   const handleImageChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    const validFiles = selectedFiles.filter(
-      (file) => file.size <= 5 * 1024 * 1024 && file.type.startsWith("image/")
+    const selectedFiles = Array.from(e.target.files).filter(
+      (file) => file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024
     );
-    setFiles((prev) => [...prev, ...validFiles]);
+    if (selectedFiles.length > 0) {
+      setFiles((prev) => [...prev, ...selectedFiles]);
+    }
   };
 
   const handleImageSubmit = async () => {
@@ -190,12 +219,10 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
             `https://api.cloudinary.com/v1_1/${
               import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
             }/image/upload`,
-            {
-              method: "POST",
-              body: data,
-            }
-          ).then((res) => res.json());
+            { method: "POST", body: data }
+          ).then((response) => response.json());
         });
+
         const results = await Promise.all(uploadPromises);
         const urls = results.map((result) => result.secure_url);
         setEditFormData((prev) => ({
@@ -204,10 +231,12 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
         }));
         setFiles([]);
       } catch (error) {
-        setImageUploadError("Image upload failed");
+        setImageUploadError("Image upload failed.");
       } finally {
         setUploading(false);
       }
+    } else {
+      setImageUploadError("Upload 1-6 images.");
     }
   };
 
@@ -219,6 +248,8 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
   };
 
   const handleSubmit = async () => {
+    if (!isValid) return;
+
     console.log("Updating listing at:", `/api/listings/update/${listing._id}`);
     console.log("Form Data:", editFormData);
     try {
@@ -226,6 +257,7 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`, // Added Authorization header for consistency with CreateListingForm
         },
         credentials: "include",
         body: JSON.stringify(editFormData),
@@ -247,6 +279,55 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
     }
   };
 
+  const validateStep = () => {
+    const newErrors = {};
+    if (editStep === 0 && !editFormData.listingType)
+      newErrors.listingType = "Required";
+    if (editStep === 1 && !editFormData.rentOrSale)
+      newErrors.rentOrSale = "Required";
+    if (editStep === 2) {
+      if (!editFormData.title) newErrors.title = "Required";
+      if (!editFormData.description) newErrors.description = "Required";
+      if (!editFormData.price) newErrors.price = "Required";
+      if (editFormData.listingType !== "Room" && !editFormData.bedrooms)
+        newErrors.bedrooms = "Required";
+      if (!editFormData.bathrooms) newErrors.bathrooms = "Required";
+      if (!editFormData.area) newErrors.area = "Required";
+      if (!editFormData.propertyType) newErrors.propertyType = "Required";
+      if (
+        editFormData.yearBuilt &&
+        (editFormData.yearBuilt < 1800 ||
+          editFormData.yearBuilt > new Date().getFullYear())
+      )
+        newErrors.yearBuilt = `Year must be between 1800 and ${new Date().getFullYear()}`;
+    }
+    if (editStep === 3) {
+      if (!editFormData.address.city)
+        newErrors.address = { ...newErrors.address, city: "Required" };
+      if (!editFormData.address.state)
+        newErrors.address = { ...newErrors.address, state: "Required" };
+      if (!editFormData.address.country)
+        newErrors.address = { ...newErrors.address, country: "Required" };
+      if (
+        !editFormData.location.coordinates[0] ||
+        !editFormData.location.coordinates[1]
+      )
+        newErrors.location = "Select a location";
+    }
+    if (editStep === 4 && editFormData.amenities.length === 0)
+      newErrors.amenities = "Select at least one";
+    if (editStep === 5 && editFormData.imageUrls.length === 0)
+      newErrors.images = "Upload at least one";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const nextStep = () => {
+    if (validateStep()) setEditStep((prev) => prev + 1);
+  };
+
+  const prevStep = () => setEditStep((prev) => prev - 1);
+
   return (
     <div className="p-6">
       <h3 className="text-xl font-bold text-gray-800 mb-4">
@@ -254,112 +335,115 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
       </h3>
       <div className="space-y-4">
         {editStep === 0 && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Property Type
-            </label>
-            <select
-              name="listingType"
-              value={editFormData.listingType}
-              onChange={handleEditChange}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">Select Type</option>
-              {["Room", "Apartment", "House"].map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormInput
+            label="Property Type"
+            name="listingType"
+            type="select"
+            value={editFormData.listingType}
+            onChange={handleEditChange}
+            options={["Room", "Apartment", "House"]}
+            error={errors.listingType}
+            required
+            className="w-full p-2 border rounded bg-white bg-opacity-95"
+          />
         )}
         {editStep === 1 && (
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Rent or Sale
-            </label>
-            {["Rent", "Sale"].map((option) => (
-              <label key={option} className="flex items-center">
-                <input
-                  type="radio"
-                  name="rentOrSale"
-                  value={option}
-                  checked={editFormData.rentOrSale === option}
-                  onChange={handleEditChange}
-                  className="mr-2"
-                />
-                <span>{option}</span>
-              </label>
-            ))}
+            <FormInput
+              label="Rent or Sale"
+              name="rentOrSale"
+              type="radio"
+              value={editFormData.rentOrSale}
+              onChange={handleEditChange}
+              options={
+                editFormData.listingType === "Room"
+                  ? ["Rent"]
+                  : ["Rent", "Sale"]
+              }
+              error={errors.rentOrSale}
+              required
+              disabled={editFormData.listingType === "Room"}
+            />
+            {editFormData.listingType === "Room" && (
+              <p className="text-sm text-gray-500">
+                Rooms can only be listed for rent.
+              </p>
+            )}
           </div>
         )}
         {editStep === 2 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title
-              </label>
-              <input
-                name="title"
-                value={editFormData.title}
-                onChange={handleEditChange}
-                placeholder="Title"
-                className="w-full p-2 border rounded bg-white bg-opacity-95"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={editFormData.price}
-                onChange={handleEditChange}
-                placeholder="Price"
-                className="w-full p-2 border rounded bg-white bg-opacity-95"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bedrooms
-              </label>
-              <input
-                type="number"
-                name="bedrooms"
-                value={editFormData.bedrooms}
-                onChange={handleEditChange}
-                placeholder="Bedrooms"
-                className="w-full p-2 border rounded bg-white bg-opacity-95"
-                disabled={editFormData.listingType === "Room"}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bathrooms
-              </label>
-              <input
-                type="number"
-                name="bathrooms"
-                value={editFormData.bathrooms}
-                onChange={handleEditChange}
-                placeholder="Bathrooms"
-                className="w-full p-2 border rounded bg-white bg-opacity-95"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Area (sqft)
-              </label>
-              <input
-                type="number"
-                name="area"
-                value={editFormData.area}
-                onChange={handleEditChange}
-                placeholder="Area (sqft)"
-                className="w-full p-2 border rounded bg-white bg-opacity-95"
-              />
-            </div>
+            <FormInput
+              label="Title"
+              name="title"
+              type="text"
+              value={editFormData.title}
+              onChange={handleEditChange}
+              error={errors.title}
+              required
+              className="w-full p-2 border rounded bg-white bg-opacity-95"
+            />
+            <FormInput
+              label="Price (Rs)"
+              name="price"
+              type="number"
+              value={editFormData.price}
+              onChange={handleEditChange}
+              error={errors.price}
+              required
+              className="w-full p-2 border rounded bg-white bg-opacity-95"
+            />
+            <FormInput
+              label="Bedrooms"
+              name="bedrooms"
+              type="number"
+              value={editFormData.bedrooms}
+              onChange={handleEditChange}
+              error={errors.bedrooms}
+              required={editFormData.listingType !== "Room"}
+              disabled={editFormData.listingType === "Room"}
+              className="w-full p-2 border rounded bg-white bg-opacity-95"
+            />
+            <FormInput
+              label="Bathrooms"
+              name="bathrooms"
+              type="number"
+              value={editFormData.bathrooms}
+              onChange={handleEditChange}
+              error={errors.bathrooms}
+              required
+              className="w-full p-2 border rounded bg-white bg-opacity-95"
+            />
+            <FormInput
+              label="Area (sqft)"
+              name="area"
+              type="number"
+              value={editFormData.area}
+              onChange={handleEditChange}
+              error={errors.area}
+              required
+              className="w-full p-2 border rounded bg-white bg-opacity-95"
+            />
+            <FormInput
+              label="Year Built"
+              name="yearBuilt"
+              type="number"
+              value={editFormData.yearBuilt}
+              onChange={handleEditChange}
+              error={errors.yearBuilt}
+              className="w-full p-2 border rounded bg-white bg-opacity-95"
+            />
+            <FormInput
+              label="Property Type"
+              name="propertyType"
+              type="select"
+              value={editFormData.propertyType}
+              onChange={handleEditChange}
+              options={["Residential", "Commercial", "Industrial"]}
+              error={errors.propertyType}
+              required
+              className="w-full p-2 border rounded bg-white bg-opacity-95"
+            />
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Description
@@ -372,6 +456,9 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
                 className="w-full p-2 border rounded bg-white bg-opacity-95"
                 rows="3"
               />
+              {errors.description && (
+                <p className="text-sm text-red-500">{errors.description}</p>
+              )}
             </div>
           </div>
         )}
@@ -401,66 +488,52 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
               }}
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Street
-                </label>
-                <input
-                  name="street"
-                  value={editFormData.address.street}
-                  onChange={handleAddressChange}
-                  placeholder="Street"
-                  className="w-full p-2 border rounded bg-white bg-opacity-95"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City
-                </label>
-                <input
-                  name="city"
-                  value={editFormData.address.city}
-                  onChange={handleAddressChange}
-                  placeholder="City"
-                  className="w-full p-2 border rounded bg-white bg-opacity-95"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State
-                </label>
-                <input
-                  name="state"
-                  value={editFormData.address.state}
-                  onChange={handleAddressChange}
-                  placeholder="State"
-                  className="w-full p-2 border rounded bg-white bg-opacity-95"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ZIP
-                </label>
-                <input
-                  name="zip"
-                  value={editFormData.address.zip}
-                  onChange={handleAddressChange}
-                  placeholder="ZIP"
-                  className="w-full p-2 border rounded bg-white bg-opacity-95"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Country
-                </label>
-                <input
-                  name="country"
-                  value={editFormData.address.country}
-                  onChange={handleAddressChange}
-                  placeholder="Country"
-                  className="w-full p-2 border rounded bg-white bg-opacity-95"
-                />
-              </div>
+              <FormInput
+                label="Street"
+                name="street"
+                type="text"
+                value={editFormData.address.street}
+                onChange={handleAddressChange}
+                className="w-full p-2 border rounded bg-white bg-opacity-95"
+              />
+              <FormInput
+                label="City"
+                name="city"
+                type="text"
+                value={editFormData.address.city}
+                onChange={handleAddressChange}
+                error={errors.address?.city}
+                required
+                className="w-full p-2 border rounded bg-white bg-opacity-95"
+              />
+              <FormInput
+                label="State"
+                name="state"
+                type="text"
+                value={editFormData.address.state}
+                onChange={handleAddressChange}
+                error={errors.address?.state}
+                required
+                className="w-full p-2 border rounded bg-white bg-opacity-95"
+              />
+              <FormInput
+                label="ZIP"
+                name="zip"
+                type="text"
+                value={editFormData.address.zip}
+                onChange={handleAddressChange}
+                className="w-full p-2 border rounded bg-white bg-opacity-95"
+              />
+              <FormInput
+                label="Country"
+                name="country"
+                type="text"
+                value={editFormData.address.country}
+                onChange={handleAddressChange}
+                error={errors.address?.country}
+                required
+                className="w-full p-2 border rounded bg-white bg-opacity-95"
+              />
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -490,6 +563,11 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
                 "Pool",
                 "Gym",
                 "Air Conditioning",
+                "CCTV Surveillance",
+                "Solar Power",
+                "Rooftop Access",
+                "Garden",
+                "Elevator",
               ].map((amenity) => (
                 <label key={amenity} className="flex items-center">
                   <input
@@ -503,6 +581,9 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
                 </label>
               ))}
             </div>
+            {errors.amenities && (
+              <p className="text-sm text-red-500">{errors.amenities}</p>
+            )}
           </div>
         )}
         {editStep === 5 && (
@@ -520,7 +601,7 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
             <button
               onClick={handleImageSubmit}
               disabled={uploading}
-              className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600"
+              className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 disabled:bg-teal-300"
             >
               {uploading ? "Uploading..." : "Upload"}
             </button>
@@ -544,6 +625,9 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
                 </div>
               ))}
             </div>
+            {errors.images && (
+              <p className="text-sm text-red-500">{errors.images}</p>
+            )}
           </div>
         )}
         {editStep === 6 && (
@@ -561,7 +645,7 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
               <strong>Description:</strong> {editFormData.description}
             </p>
             <p>
-              <strong>Price:</strong> ${editFormData.price}
+              <strong>Price:</strong> Rs {editFormData.price.toLocaleString()}
             </p>
             <p>
               <strong>Bedrooms:</strong> {editFormData.bedrooms}
@@ -573,8 +657,23 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
               <strong>Area:</strong> {editFormData.area} sqft
             </p>
             <p>
+              <strong>Year Built:</strong>{" "}
+              {editFormData.yearBuilt || (
+                <span className="text-gray-500">-</span>
+              )}
+              {editFormData.yearBuilt && (
+                <Calendar
+                  size={16}
+                  className="inline-block ml-1 text-gray-400"
+                />
+              )}
+            </p>
+            <p>
+              <strong>Property Type:</strong> {editFormData.propertyType}
+            </p>
+            <p>
               <strong>Address:</strong>{" "}
-              {Object.values(editFormData.address).join(", ")}
+              {Object.values(editFormData.address).filter(Boolean).join(", ")}
             </p>
             <p>
               <strong>Amenities:</strong>{" "}
@@ -598,7 +697,7 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
       <div className="mt-6 flex justify-between">
         {editStep > 0 && (
           <button
-            onClick={() => setEditStep((prev) => prev - 1)}
+            onClick={prevStep}
             className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
           >
             Back
@@ -606,15 +705,17 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
         )}
         {editStep < steps.length - 1 ? (
           <button
-            onClick={() => setEditStep((prev) => prev + 1)}
-            className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
+            onClick={nextStep}
+            disabled={!isValid}
+            className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600 disabled:bg-teal-300"
           >
             Next
           </button>
         ) : (
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            disabled={!isValid}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-green-300"
           >
             Save Changes
           </button>
