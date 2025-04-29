@@ -80,14 +80,14 @@ const Header = () => {
   useEffect(() => {
     const fetchUnreadMessagesCount = async () => {
       if (!currentUser) return;
-      
+
       try {
         const response = await fetch("/api/chat/unread-count", {
           headers: {
             Authorization: `Bearer ${currentUser.refreshToken}`,
           },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           setUnreadCount(data.unreadCount || 0);
@@ -101,7 +101,7 @@ const Header = () => {
 
     // Set up interval to check for new messages periodically (every 30 seconds)
     const intervalId = setInterval(fetchUnreadMessagesCount, 30000);
-    
+
     return () => clearInterval(intervalId);
   }, [currentUser]);
 

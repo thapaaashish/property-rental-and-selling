@@ -340,7 +340,18 @@ export const google = async (req, res, next) => {
     }
 
     let user = await User.findOne({ email });
-    if (!user) {
+    if (user) {
+      // Check if user is banned
+      if (user.banStatus.isBanned) {
+        return res.status(403).json({
+          success: false,
+          message: `Your account is banned. Reason: ${
+            user.banStatus.reason || "No reason provided"
+          }`,
+        });
+      }
+    } else {
+      // Create new user if they don't exist
       const generatedPassword =
         Math.random().toString(36).slice(-8) +
         Math.random().toString(36).slice(-8);

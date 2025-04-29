@@ -42,14 +42,14 @@ export const App = () => {
           <Route path="/user/:userId" element={<PublicUserProfilePage />} />
           <Route path="/moving-services" element={<MovingServices />} />
           <Route path="/payment-failure" element={<Failure />} />
-          <Route
-            path="/create-listing-landing"
-            element={<ListingLandingPage />}
-          />
         </Route>
         <Route path="/payment-success" element={<Success />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route
+          path="/create-listing-landing"
+          element={<ListingLandingPage />}
+        />
 
         {/* User Private Routes with Header and Footer */}
         <Route element={<UserPrivateRoute />}>

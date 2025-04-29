@@ -333,57 +333,55 @@ const Profile = () => {
     setPopup({ show: false, message: "", type: "error" });
   };
 
-  // Render KYC status label
   const renderKycStatusLabel = () => {
     switch (kycStatus) {
       case "verified":
         return (
-          <div className="flex items-center text-green-600">
+          <div className="flex items-center text-green-600 bg-green-50 px-3 py-1 rounded-full">
             <CheckCircle className="h-4 w-4 mr-1" />
-            <span className="text-sm">Verified User</span>
+            <span className="text-sm font-medium">Verified</span>
           </div>
         );
       case "pending":
         return (
-          <div className="flex items-center text-yellow-600">
+          <div className="flex items-center text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full">
             <AlertCircle className="h-4 w-4 mr-1" />
-            <span className="text-sm">KYC Pending</span>
+            <span className="text-sm font-medium">Pending Review</span>
           </div>
         );
       case "rejected":
         return (
-          <div className="flex items-center text-red-600">
+          <div className="flex items-center text-red-600 bg-red-50 px-3 py-1 rounded-full">
             <XCircle className="h-4 w-4 mr-1" />
-            <span className="text-sm">KYC Rejected</span>
+            <span className="text-sm font-medium">Rejected</span>
           </div>
         );
       case "not_verified":
       default:
         return (
-          <div className="flex items-center text-gray-500">
+          <div className="flex items-center text-gray-600 bg-gray-50 px-3 py-1 rounded-full">
             <XCircle className="h-4 w-4 mr-1" />
-            <span className="text-sm">KYC Not Verified</span>
+            <span className="text-sm font-medium">Not Verified</span>
           </div>
         );
     }
   };
 
-  // Render profile completion status
   const renderProfileStatusLabel = () => {
     const completed = isProfileCompleted(userProfile);
     return (
       <div
         className={`flex items-center ${
-          completed ? "text-green-600" : "text-red-600"
-        }`}
+          completed ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"
+        } px-3 py-1 rounded-full`}
       >
         {completed ? (
           <CheckCircle className="h-4 w-4 mr-1" />
         ) : (
           <XCircle className="h-4 w-4 mr-1" />
         )}
-        <span className="text-sm">
-          {completed ? "Profile Completed" : "Profile Incomplete"}
+        <span className="text-sm font-medium">
+          {completed ? "Profile Complete" : "Profile Incomplete"}
         </span>
       </div>
     );
@@ -434,8 +432,10 @@ const Profile = () => {
                 <h2 className="text-2xl font-bold text-gray-900">
                   {userProfile.fullname || "User"}
                 </h2>
-                {renderKycStatusLabel()}
-                {renderProfileStatusLabel()}
+                <div className="flex space-x-3 mt-2">
+                  {renderKycStatusLabel()}
+                  {renderProfileStatusLabel()}
+                </div>
               </div>
             </div>
             <div className="absolute top-4 right-4">

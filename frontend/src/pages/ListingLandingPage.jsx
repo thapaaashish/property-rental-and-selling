@@ -112,14 +112,8 @@ const ListingLandingPage = () => {
     }
 
     return (
-      <div className="min-h-screen bg-gray-50 flex justify-center items-center p-4">
+      <div className="min-h-screen bg-gray-50 flex justify-center items-center p-9">
         <div className="w-full max-w-3xl">
-          <button
-            onClick={() => setShowForm(false)}
-            className="mb-4 px-4 py-2 text-teal-500 hover:text-teal-600 transition-colors"
-          >
-            Back to Landing Page
-          </button>
           <AddListingForm />
         </div>
       </div>
@@ -152,6 +146,13 @@ const ListingLandingPage = () => {
             aria-label="Start hosting today"
           >
             Start Hosting Today
+          </button>
+          <button
+            onClick={() => navigate("/")}
+            className="mt-4 px-8 py-3 bg-gray-400 text-gray-800 text-base sm:text-lg font-semibold rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300"
+            aria-label="Start hosting today"
+          >
+            Go Back
           </button>
         </div>
         <div className="w-full md:w-1/2 flex justify-center items-center">

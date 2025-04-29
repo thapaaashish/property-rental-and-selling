@@ -2,79 +2,25 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
-import { ArrowLeft, Upload, X } from "lucide-react";
-import Popup from "../common/Popup"; // Adjust the import path as needed
-import ReviewSection from "./ReviewSection"; // New component import
+import {
+  ArrowLeft,
+  Upload,
+  X,
+  Home,
+  DollarSign,
+  Ruler,
+  Bed,
+  Bath,
+  Layers,
+  Wifi,
+  MapPin,
+  Calendar,
+} from "lucide-react";
+import Popup from "../common/Popup";
 import LocationStep from "./LocationStep";
 import ImagesStep from "./ImagesStep";
-
-// FormInput Component
-const FormInput = ({
-  label,
-  name,
-  type = "text",
-  value,
-  onChange,
-  options = [],
-  error,
-  required = false,
-  disabled = false,
-  className = "",
-}) => {
-  return (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {type === "select" ? (
-        <select
-          name={name}
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
-          className={`w-full p-3 border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all disabled:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
-        >
-          <option value="">Select an option</option>
-          {options.map((option, index) => (
-            <option key={index} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      ) : type === "radio" ? (
-        <div className="flex gap-6">
-          {options.map((option, index) => (
-            <label
-              key={index}
-              className="flex items-center gap-2 text-gray-700"
-            >
-              <input
-                type="radio"
-                name={name}
-                value={option}
-                checked={value === option}
-                onChange={onChange}
-                disabled={disabled}
-                className="h-4 w-4 text-gray-900 border-gray-200 rounded-full focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed"
-              />
-              {option}
-            </label>
-          ))}
-        </div>
-      ) : (
-        <input
-          type={type}
-          name={name}
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
-          className={`w-full p-3 border border-gray-200 rounded-lg text-gray-700 focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all disabled:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
-        />
-      )}
-      {error && <p className="text-sm text-red-500">{error}</p>}
-    </div>
-  );
-};
+import ReviewSection from "./ReviewSection";
+import FormInput from "./FormInput";
 
 // GoogleMapComponent
 const steps = [
@@ -177,6 +123,8 @@ const CreateListingForm = () => {
     nearbyAmenities: "",
     imageUrls: [],
     userRef: "",
+    yearBuilt: "", // Added yearBuilt
+    propertyType: "Residential", // Added propertyType with default value
   });
   const [imageUploadError, setImageUploadError] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -202,7 +150,10 @@ const CreateListingForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "yearBuilt" ? Number(value) || "" : value, // Convert yearBuilt to number or keep as empty string
+    }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
@@ -353,6 +304,13 @@ const CreateListingForm = () => {
         newErrors.bedrooms = "Required";
       if (!formData.bathrooms) newErrors.bathrooms = "Required";
       if (!formData.area) newErrors.area = "Required";
+      if (!formData.propertyType) newErrors.propertyType = "Required";
+      if (
+        formData.yearBuilt &&
+        (formData.yearBuilt < 1800 ||
+          formData.yearBuilt > new Date().getFullYear())
+      )
+        newErrors.yearBuilt = `Year must be between 1800 and ${new Date().getFullYear()}`;
     }
     if (step === 3) {
       if (!formData.address.city)
@@ -383,7 +341,7 @@ const CreateListingForm = () => {
   const prevStep = () => setStep((prev) => prev - 1);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+    <div className="min-h-5 bg-gray-50 p-2 md:p-4">
       {/* Fixed Header */}
       <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-10">
         <div className="max-w-3xl mx-auto p-4 flex items-center justify-between">
@@ -408,7 +366,7 @@ const CreateListingForm = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-3xl mx-auto pt-20 pb-24">
+      <div className="max-w-3xl mx-auto">
         <h1 className="text-2xl font-semibold text-gray-900 mb-2">
           New Listing
         </h1>
@@ -418,6 +376,7 @@ const CreateListingForm = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {step === 0 && (
+            
             <FormInput
               label="Property Type"
               name="listingType"
@@ -427,7 +386,7 @@ const CreateListingForm = () => {
               options={["Room", "Apartment", "House"]}
               error={errors.listingType}
               required
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
+              className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-900 focus:outline-none"
             />
           )}
           {step === 1 && (
@@ -462,7 +421,7 @@ const CreateListingForm = () => {
                 onChange={handleChange}
                 error={errors.title}
                 required
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-900 focus:outline-none"
               />
               <FormInput
                 label="Price (Rs)"
@@ -472,7 +431,7 @@ const CreateListingForm = () => {
                 onChange={handleChange}
                 error={errors.price}
                 required
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-900 focus:outline-none"
               />
               <FormInput
                 label="Bedrooms"
@@ -483,7 +442,7 @@ const CreateListingForm = () => {
                 error={errors.bedrooms}
                 required={formData.listingType !== "Room"}
                 disabled={formData.listingType === "Room"}
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-900 focus:outline-none"
               />
               <FormInput
                 label="Bathrooms"
@@ -493,7 +452,7 @@ const CreateListingForm = () => {
                 onChange={handleChange}
                 error={errors.bathrooms}
                 required
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-900 focus:outline-none"
               />
               <FormInput
                 label="Area (sqft)"
@@ -503,7 +462,27 @@ const CreateListingForm = () => {
                 onChange={handleChange}
                 error={errors.area}
                 required
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-900 focus:outline-none"
+              />
+              <FormInput
+                label="Year Built"
+                name="yearBuilt"
+                type="number"
+                value={formData.yearBuilt}
+                onChange={handleChange}
+                error={errors.yearBuilt}
+                className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-900 focus:outline-none"
+              />
+              <FormInput
+                label="Property Type"
+                name="propertyType"
+                type="select"
+                value={formData.propertyType}
+                onChange={handleChange}
+                options={["Residential", "Commercial", "Industrial"]}
+                error={errors.propertyType}
+                required
+                className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-900 focus:outline-none"
               />
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -514,7 +493,7 @@ const CreateListingForm = () => {
                   value={formData.description}
                   onChange={handleChange}
                   rows="4"
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:border-gray-900 focus:outline-none"
                 />
                 {errors.description && (
                   <p className="text-sm text-red-500 mt-1">
@@ -529,7 +508,7 @@ const CreateListingForm = () => {
               formData={formData}
               errors={errors}
               handleAddressChange={handleAddressChange}
-              handleChange={handleLocationChange} // Use the new handler
+              handleChange={handleLocationChange}
             />
           )}
           {step === 4 && (

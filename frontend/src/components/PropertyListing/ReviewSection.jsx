@@ -1,15 +1,4 @@
-import React from "react";
-import {
-  MapPin,
-  Home,
-  DollarSign,
-  Ruler,
-  Bed,
-  Bath,
-  Layers,
-  Wifi,
-} from "lucide-react";
-
+// ReviewSection Component
 const ReviewSection = ({ formData }) => {
   const amenitiesIcons = {
     Wifi: <Wifi size={16} />,
@@ -100,6 +89,12 @@ const ReviewSection = ({ formData }) => {
             value={`${formData.area} sqft`}
             icon={<Ruler size={16} />}
           />
+          <DetailItem
+            label="Year Built"
+            value={formData.yearBuilt || "-"}
+            icon={<Calendar size={16} />}
+          />
+          <DetailItem label="Property Type" value={formData.propertyType} />
         </div>
       </div>
 

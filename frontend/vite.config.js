@@ -2,20 +2,15 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
 import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfill";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export default defineConfig({
-  define: {
-    "process.env.VITE_API_URL": JSON.stringify(
-      process.env.VITE_API_URL ||
-        "https://property-rental-and-selling.onrender.com"
-    ),
-  },
   server: {
     proxy: {
       "/api": {
-        target:
-          process.env.VITE_API_URL ||
-          "https://property-rental-and-selling.onrender.com",
+        target: process.env.VITE_API_URL,
         secure: false,
         changeOrigin: true,
       },

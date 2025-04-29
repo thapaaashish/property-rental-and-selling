@@ -248,9 +248,9 @@ const Home = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="relative w-full max-w-3xl mt-6 bg-gray-300 rounded-lg"
+            className="relative w-full max-w-3xl mt-6 bg-teal-400 rounded-lg"
           >
-            <div className="bg-white shadow-md rounded-lg overflow-hidden flex m-4">
+            <div className="bg-white shadow-md rounded-lg overflow-hidden flex m-0.5">
               <input
                 type="text"
                 id="name"
