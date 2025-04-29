@@ -20,6 +20,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import PaymentButton from "../../components/payment/PaymentButton";
 import StartChatButton from "../../components/StartChatButton";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const MyBookings = () => {
   const { currentUser } = useSelector((state) => state.user);
   const [bookings, setBookings] = useState([]);
@@ -54,7 +56,7 @@ const MyBookings = () => {
 
     try {
       const response = await fetch(
-        `/api/bookings/my-bookings/${currentUser._id}`
+        `${API_BASE}/api/bookings/my-bookings/${currentUser._id}`
       );
       const data = await response.json();
       if (response.ok) {
@@ -129,7 +131,7 @@ const MyBookings = () => {
 
     try {
       const response = await fetch(
-        `/api/bookings/cancel-guest/${cancelPopup.bookingId}`,
+        `${API_BASE}/api/bookings/cancel-guest/${cancelPopup.bookingId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -169,7 +171,7 @@ const MyBookings = () => {
 
     try {
       const response = await fetch(
-        `/api/bookings/edit/${editPopup.booking._id}`,
+        `${API_BASE}/api/bookings/edit/${editPopup.booking._id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

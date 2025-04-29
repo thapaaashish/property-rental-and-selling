@@ -10,6 +10,8 @@ import {
 import OAuth from "../components/OAuth";
 import Popup from "../components/common/Popup";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const SignIn = () => {
   const dispatch = useDispatch();
   const { loading, error, currentUser } = useSelector((state) => state.user);
@@ -45,7 +47,7 @@ const SignIn = () => {
 
     try {
       dispatch(signInStart());
-      const res = await fetch("/api/auth/signin", {
+      const res = await fetch(`${API_BASE}/api/auth/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

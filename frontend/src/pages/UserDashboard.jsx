@@ -27,6 +27,8 @@ import DashboardOverview from "../components/UserDashboard/DashboardOverview";
 import Messages from "../components/UserDashboard/Messages";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const UserDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -52,7 +54,7 @@ const UserDashboard = () => {
       setIsLoading(true);
       try {
         const listingsResponse = await fetch(
-          `/api/listings/user/${currentUser._id}`,
+          `${API_BASE}/api/listings/user/${currentUser._id}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -60,7 +62,7 @@ const UserDashboard = () => {
             },
           }
         );
-        const savedResponse = await fetch(`/api/wishlist/get`, {
+        const savedResponse = await fetch(`${API_BASE}/api/wishlist/get`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${currentUser.refreshToken}`,
@@ -103,7 +105,7 @@ const UserDashboard = () => {
 
   const handleDeleteListing = async (listingId) => {
     try {
-      const response = await fetch(`/api/listings/delete/${listingId}`, {
+      const response = await fetch(`${API_BASE}/api/listings/delete/${listingId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${currentUser.refreshToken}` },
       });
@@ -124,7 +126,7 @@ const UserDashboard = () => {
 
   const handleRemoveSaved = async (propertyId) => {
     try {
-      const response = await fetch(`/api/users/remove-saved/${propertyId}`, {
+      const response = await fetch(`${API_BASE}/api/users/remove-saved/${propertyId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${currentUser.refreshToken}` },
       });
@@ -152,7 +154,7 @@ const UserDashboard = () => {
   const handleSignout = async () => {
     try {
       dispatch(signOutUserStart());
-      const response = await fetch("/api/auth/signout", {
+      const response = await fetch(`${API_BASE}/api/auth/signout`, {
         method: "POST",
         credentials: "include",
       });

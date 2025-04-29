@@ -16,6 +16,8 @@ import Popup from "../common/Popup";
 import StartChatButton from "../StartChatButton";
 import { generateRoomId } from "../../utils/roomId";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const BookingForm = ({ property }) => {
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
@@ -50,7 +52,7 @@ const BookingForm = ({ property }) => {
       if (!userId) return;
 
       try {
-        const response = await fetch("/api/bookings/check-booking", {
+        const response = await fetch(`${API_BASE}/api/bookings/check-booking`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId, propertyId: property._id }),
@@ -120,7 +122,7 @@ const BookingForm = ({ property }) => {
         totalPrice: calculateTotalPrice(startDate, endDate),
       };
 
-      const response = await fetch("/api/bookings/create-booking", {
+      const response = await fetch(`${API_BASE}/api/bookings/create-booking`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bookingData),
@@ -164,7 +166,7 @@ const BookingForm = ({ property }) => {
         userEmail: currentUser.email,
       };
 
-      const response = await fetch("/api/email/send", {
+      const response = await fetch(`${API_BASE}/api/email/send`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

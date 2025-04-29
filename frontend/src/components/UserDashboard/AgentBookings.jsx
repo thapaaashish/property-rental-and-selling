@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import Popup from "../common/Popup";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const AgentBookings = () => {
   const { currentUser } = useSelector((state) => state.user);
   const [bookings, setBookings] = useState([]);
@@ -41,7 +43,7 @@ const AgentBookings = () => {
 
       try {
         const propertiesResponse = await fetch(
-          `/api/listings/user/${currentUser._id}`
+          `${API_BASE}/api/listings/user/${currentUser._id}`
         );
         const propertiesData = await propertiesResponse.json();
         if (!propertiesResponse.ok) {
@@ -52,7 +54,7 @@ const AgentBookings = () => {
         setProperties(propertiesData);
 
         const listingIds = propertiesData.map((property) => property._id);
-        const bookingsResponse = await fetch(`/api/bookings/for-listings`, {
+        const bookingsResponse = await fetch(`${API_BASE}/api/bookings/for-listings`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ listingIds }),
@@ -102,7 +104,7 @@ const AgentBookings = () => {
           ? `confirm/${bookingId}`
           : `cancel/${bookingId}`;
 
-      const response = await fetch(`/api/bookings/${endpoint}`, {
+      const response = await fetch(`${API_BASE}/api/bookings/${endpoint}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -30,6 +30,8 @@ import MovingServicesTab from "../components/AdminDashboard/MovingServicesTab";
 import KycVerification from "../components/AdminDashboard/KycVerification";
 import BookingsTab from "../components/AdminDashboard/BookingsTab";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -58,22 +60,22 @@ const AdminDashboard = () => {
       setIsLoading(true);
       setApiError(null);
       try {
-        const listingsRes = await fetch("/api/admin/listings", {
+        const listingsRes = await fetch(`${API_BASE}/api/admin/listings`, {
           method: "GET",
           credentials: "include",
         });
-        const usersRes = await fetch("/api/admin/users", {
+        const usersRes = await fetch(`${API_BASE}/api/admin/users`, {
           method: "GET",
           credentials: "include",
         });
         const bookingsRes = await fetch(
-          "/api/admin/bookings?populate=listing,user",
+          `${API_BASE}/api/admin/bookings?populate=listing,user`,
           {
             method: "GET",
             credentials: "include",
           }
         );
-        const verificationsRes = await fetch("/api/kyc/pending", {
+        const verificationsRes = await fetch(`${API_BASE}/api/kyc/pending`, {
           method: "GET",
           credentials: "include",
         });
@@ -117,7 +119,7 @@ const AdminDashboard = () => {
   const handleDeleteBooking = async (bookingId) => {
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
+      const response = await fetch(`${API_BASE}/api/admin/bookings/${bookingId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -139,7 +141,7 @@ const AdminDashboard = () => {
       return;
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/admin/listings/${propertyId}`, {
+      const response = await fetch(`${API_BASE}/api/admin/listings/${propertyId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -162,7 +164,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     setActionLoading(true);
     try {
-      const response = await fetch(`/api/user/delete/${userId}`, {
+      const response = await fetch(`${API_BASE}/api/user/delete/${userId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -182,7 +184,7 @@ const AdminDashboard = () => {
   const handleSignout = async () => {
     try {
       dispatch(signOutUserStart());
-      const response = await fetch("/api/auth/signout", {
+      const response = await fetch(`${API_BASE}/api/auth/signout`, {
         method: "POST",
         credentials: "include",
       });

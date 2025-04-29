@@ -8,6 +8,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import Popup from "../common/Popup"; // Adjust path as needed
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const DeleteAccount = ({ onClose }) => {
   const { currentUser, loading } = useSelector((state) => state.user);
   const dispatch = useDispatch();
@@ -27,7 +29,7 @@ const DeleteAccount = ({ onClose }) => {
     try {
       dispatch(deleteUserStart());
 
-      const res = await fetch(`/api/user/delete/${currentUser._id}`, {
+      const res = await fetch(`${API_BASE}/api/user/delete/${currentUser._id}`, {
         method: "DELETE",
         credentials: "include",
       });

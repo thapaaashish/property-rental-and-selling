@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { Star, Trash2, X } from "lucide-react";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 // Sub-component: Average Rating
 const AverageRating = ({ reviews }) => {
   const averageRating = reviews.length
@@ -308,7 +310,7 @@ const PropertyReviews = ({ propertyId, className }) => {
 
   const fetchReviews = async () => {
     try {
-      const response = await fetch(`/api/reviews/${propertyId}`);
+      const response = await fetch(`${API_BASE}/api/reviews/${propertyId}`);
       if (!response.ok) {
         const errorData = await response.json();
         if (response.status === 404) {
@@ -337,7 +339,7 @@ const PropertyReviews = ({ propertyId, className }) => {
   const handleReviewSubmit = async (reviewData) => {
     setSubmitting(true);
     try {
-      const response = await fetch("/api/reviews", {
+      const response = await fetch(`${API_BASE}/api/reviews`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -374,7 +376,7 @@ const PropertyReviews = ({ propertyId, className }) => {
     if (!showDeleteModal) return;
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/reviews/${showDeleteModal}`, {
+      const response = await fetch(`${API_BASE}/api/reviews/${showDeleteModal}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

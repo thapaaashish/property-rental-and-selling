@@ -4,6 +4,8 @@ import PropertyGrid from "../components/PropertyGrid";
 import SearchFilters from "../components/SearchFilters";
 import { MapWithAllProperties } from "../components/GoogleMap";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const Listings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [properties, setProperties] = useState([]);
@@ -45,11 +47,9 @@ const Listings = () => {
         query.set("startIndex", startIndex);
         query.set("limit", limit); // Override default 9
         const queryString = query.toString();
-        console.log(
-          "Fetching with query:",
-          `/api/listings/listings?${queryString}`
+        const response = await fetch(
+          `${API_BASE}/api/listings/listings?${queryString}`
         );
-        const response = await fetch(`/api/listings/listings?${queryString}`);
         if (!response.ok)
           throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();

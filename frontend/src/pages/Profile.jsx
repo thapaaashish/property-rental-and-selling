@@ -19,6 +19,8 @@ import { updateUser } from "../redux/user/userSlice";
 import heic2any from "heic2any";
 import Popup from "../components/common/Popup";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const Profile = () => {
   const { currentUser } = useSelector((state) => state.user);
   const dispatch = useDispatch();
@@ -43,7 +45,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchKycStatus = async () => {
       try {
-        const response = await fetch(`/api/kyc/status/${currentUser._id}`, {
+        const response = await fetch(`${API_BASE}/api/kyc/status/${currentUser._id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -88,7 +90,7 @@ const Profile = () => {
   const handleSaveProfile = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/user/update/${currentUser._id}`, {
+      const response = await fetch(`${API_BASE}/api/user/update/${currentUser._id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -175,7 +177,7 @@ const Profile = () => {
         const result = await response.json();
         const imageUrl = result.secure_url;
 
-        const saveResponse = await fetch("/api/user/upload-profile-picture", {
+        const saveResponse = await fetch(`${API_BASE}/api/user/upload-profile-picture`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -293,7 +295,7 @@ const Profile = () => {
       const documentUrl = result.secure_url;
 
       // Send document URL to backend for KYC processing
-      const saveResponse = await fetch(`/api/kyc/upload/${currentUser._id}`, {
+      const saveResponse = await fetch(`${API_BASE}/api/kyc/upload/${currentUser._id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

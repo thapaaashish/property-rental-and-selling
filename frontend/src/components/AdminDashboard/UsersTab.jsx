@@ -19,6 +19,8 @@ import UserCard from "./UserCard";
 import DeleteConfirmation from "../common/DeleteConfirmation";
 import ReasonInputModal from "./ReasonInputModal";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const UsersTab = ({
   users: initialUsers = [],
   currentUser,
@@ -71,7 +73,7 @@ const UsersTab = ({
     setLoadingStates((prev) => ({ ...prev, fetch: true }));
     try {
       const response = await axios.get(
-        `/api/admin/users?page=${pageNum}&limit=${usersPerPage}`,
+        `${API_BASE}/api/admin/users?page=${pageNum}&limit=${usersPerPage}`,
         {
           headers: {
             Authorization: `Bearer ${currentUser.refreshToken}`,
@@ -99,7 +101,7 @@ const UsersTab = ({
       setLoadingStates((prev) => ({ ...prev, [userId]: true }));
       try {
         const response = await axios.patch(
-          `/api/admin/users/${userId}/ban`,
+          `${API_BASE}/api/admin/users/${userId}/ban`,
           { isBanned: false },
           {
             headers: {
@@ -144,7 +146,7 @@ const UsersTab = ({
     setLoadingStates((prev) => ({ ...prev, [selectedUserId]: true }));
     try {
       const response = await axios.patch(
-        `/api/admin/users/${selectedUserId}/ban`,
+        `${API_BASE}/api/admin/users/${selectedUserId}/ban`,
         { isBanned: true, reason },
         {
           headers: {

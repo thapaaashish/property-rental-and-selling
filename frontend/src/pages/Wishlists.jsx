@@ -3,6 +3,8 @@ import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import PropertyGrid from "../components/PropertyGrid";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const Wishlists = () => {
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +14,7 @@ const Wishlists = () => {
   useEffect(() => {
     const fetchWishlistProperties = async () => {
       try {
-        const response = await fetch("/api/wishlist/get", {
+        const response = await fetch(`${API_BASE}/api/wishlist/get`, {
           credentials: "include",
         });
 
@@ -51,7 +53,7 @@ const Wishlists = () => {
 
   const handleRemoveFromWishlist = async (propertyId) => {
     try {
-      const response = await fetch("/api/wishlist/remove", {
+      const response = await fetch(`${API_BASE}/api/wishlist/remove`, {
         method: "POST",
         credentials: "include", // Include cookies
         headers: {
@@ -62,13 +64,13 @@ const Wishlists = () => {
 
       // Handle token expiration
       if (response.status === 403 || response.status === 401) {
-        const refreshResponse = await fetch("/api/auth/refresh", {
+        const refreshResponse = await fetch(`${API_BASE}/api/auth/refresh`, {
           credentials: "include",
         });
 
         if (refreshResponse.ok) {
           // Token refreshed, retry the original request
-          const retryResponse = await fetch("/api/wishlist/remove", {
+          const retryResponse = await fetch(`${API_BASE}/api/wishlist/remove`, {
             method: "POST",
             credentials: "include",
             headers: {

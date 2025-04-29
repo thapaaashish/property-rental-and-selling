@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const ForgotPasswordComponent = ({ onClose, onSuccess }) => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState(null);
@@ -14,7 +16,7 @@ const ForgotPasswordComponent = ({ onClose, onSuccess }) => {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/forgot-password", {
+      const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,7 +44,7 @@ const ForgotPasswordComponent = ({ onClose, onSuccess }) => {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/reset-password", {
+      const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

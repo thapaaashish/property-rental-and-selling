@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 export const MovingServicePopup = ({
   name,
   contact,
@@ -90,7 +92,7 @@ const MovingServicesSection = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await fetch("/api/moving-services/public", {
+        const res = await fetch(`${API_BASE}/api/moving-services/public`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

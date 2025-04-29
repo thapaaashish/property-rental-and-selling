@@ -7,6 +7,8 @@ import {
 import { Heart, HeartOff } from "lucide-react";
 import Popup from "./common/Popup";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const AddToWishlist = ({ propertyId }) => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state) => state.user);
@@ -22,7 +24,7 @@ const AddToWishlist = ({ propertyId }) => {
       if (!currentUser) return;
 
       try {
-        const response = await fetch("/api/wishlist/get", {
+        const response = await fetch(`${API_BASE}/api/wishlist/get`, {
           credentials: "include",
         });
 
@@ -62,8 +64,8 @@ const AddToWishlist = ({ propertyId }) => {
 
     try {
       const endpoint = isInWishlist
-        ? "/api/wishlist/remove"
-        : "/api/wishlist/add";
+        ? `${API_BASE}/api/wishlist/remove`
+        : `${API_BASE}/api/wishlist/add`;
 
       const response = await fetch(endpoint, {
         method: "POST",

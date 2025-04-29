@@ -9,6 +9,8 @@ import {
   signOutUserSuccess,
 } from "../../redux/user/userSlice";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const ChangePassword = ({ onClose }) => {
   const { currentUser } = useSelector((state) => state.user);
   const dispatch = useDispatch();
@@ -67,7 +69,7 @@ const ChangePassword = ({ onClose }) => {
       setIsLoading(true);
       dispatch(updatePasswordStart());
 
-      const res = await fetch(`/api/auth/change-password`, {
+      const res = await fetch(`${API_BASE}/api/auth/change-password`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -22,6 +22,8 @@ import ImagesStep from "./ImagesStep";
 import ReviewSection from "./ReviewSection";
 import FormInput from "./FormInput";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 // GoogleMapComponent
 const steps = [
   "Property Type",
@@ -264,7 +266,7 @@ const CreateListingForm = () => {
 
     setSubmitting(true);
     try {
-      const response = await fetch("/api/listings/create", {
+      const response = await fetch(`${API_BASE}/api/listings/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

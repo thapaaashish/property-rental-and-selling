@@ -7,6 +7,8 @@ import OAuth from "../components/OAuth";
 import { useSelector } from "react-redux";
 import Popup from "../components/common/Popup";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const Signup = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null); // For success popups
@@ -40,7 +42,7 @@ const Signup = () => {
     try {
       setLoading(true);
       setError(null); // Clear previous errors
-      const res = await fetch("/api/auth/signup", {
+      const res = await fetch(`${API_BASE}/api/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +81,7 @@ const Signup = () => {
       setError(null); // Clear previous errors
       console.log("Submitting OTP:", { email: formData.email, otp });
 
-      const res = await fetch("/api/auth/verify-otp", {
+      const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

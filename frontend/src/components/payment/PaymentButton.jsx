@@ -4,6 +4,8 @@ import { Loader2, CreditCard, CheckCircle } from "lucide-react";
 import Popup from "../common/Popup";
 import { useSelector } from "react-redux";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const PaymentButton = ({ booking, onPaymentSuccess }) => {
   const { currentUser } = useSelector((state) => state.user);
   const [loading, setLoading] = useState(false);
@@ -18,7 +20,7 @@ const PaymentButton = ({ booking, onPaymentSuccess }) => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "/api/payment/initiate",
+        `${API_BASE}/api/payment/initiate`,
         {
           bookingId: booking._id,
         },

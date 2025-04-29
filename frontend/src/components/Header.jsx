@@ -10,6 +10,8 @@ import {
 import { IoMdMenu } from "react-icons/io";
 import { MessageSquare } from "lucide-react";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const Header = () => {
   const { currentUser } = useSelector((state) => state.user);
   const dispatch = useDispatch();
@@ -82,7 +84,7 @@ const Header = () => {
       if (!currentUser) return;
 
       try {
-        const response = await fetch("/api/chat/unread-count", {
+        const response = await fetch(`${API_BASE}/api/chat/unread-count`, {
           headers: {
             Authorization: `Bearer ${currentUser.refreshToken}`,
           },
@@ -128,7 +130,7 @@ const Header = () => {
     e.stopPropagation();
     try {
       dispatch(signOutUserStart());
-      await fetch("/api/auth/signout", { method: "POST" });
+      await fetch(`${API_BASE}/api/auth/signout`, { method: "POST" });
       dispatch(signOutUserSuccess());
       setIsProfilePopupOpen(false);
       setIsMobileMenuOpen(false);

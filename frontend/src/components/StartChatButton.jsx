@@ -5,6 +5,8 @@ import { MessageSquare } from "lucide-react";
 import Popup from "../components/common/Popup";
 import { generateRoomId } from "../utils/roomId";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const StartChatButton = ({
   receiverId,
   receiverEmail,
@@ -48,8 +50,8 @@ const StartChatButton = ({
       // Fetch user details only if necessary
       if (!receiverId || receiverEmail) {
         const endpoint = receiverId
-          ? `/api/user/by-id/${receiverId}`
-          : `/api/user/by-email?email=${encodeURIComponent(receiverEmail)}`;
+          ? `${API_BASE}/api/user/by-id/${receiverId}`
+          : `${API_BASE}/api/user/by-email?email=${encodeURIComponent(receiverEmail)}`;
         const response = await fetch(endpoint, {
           headers: {
             Authorization: `Bearer ${currentUser.refreshToken}`,

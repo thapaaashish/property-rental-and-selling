@@ -3,6 +3,8 @@ import { Calendar, Eye, Trash2 } from "lucide-react";
 import Popup from "../common/Popup";
 import DeleteConfirmation from "../common/DeleteConfirmation";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const BookingsTab = ({ bookings = [], navigate, actionLoading }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
@@ -25,7 +27,7 @@ const BookingsTab = ({ bookings = [], navigate, actionLoading }) => {
 
   const handleDeleteBooking = async (bookingId) => {
     try {
-      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
+      const response = await fetch(`${API_BASE}/api/admin/bookings/${bookingId}`, {
         method: "DELETE",
         credentials: "include",
       });

@@ -6,6 +6,8 @@ import DeleteConfirmation from "../common/DeleteConfirmation";
 import { MapWithAllProperties } from "../GoogleMap";
 import ReasonInputModal from "./ReasonInputModal";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const PropertiesTab = ({
   properties: initialProperties = [],
   handleDeleteProperty,
@@ -30,7 +32,7 @@ const PropertiesTab = ({
     if (!initialProperties.length && !properties.length) {
       const fetchProperties = async () => {
         try {
-          const response = await axios.get("/api/admin/listings", {
+          const response = await axios.get(`${API_BASE}/api/admin/listings`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
             },
@@ -83,7 +85,7 @@ const PropertiesTab = ({
       setLoadingStates((prev) => ({ ...prev, [propertyId]: true }));
       try {
         const response = await axios.patch(
-          `/api/admin/listings/${propertyId}/lock`,
+          `${API_BASE}/api/admin/listings/${propertyId}/lock`,
           { adminLockedStatus: false },
           {
             headers: {
@@ -121,7 +123,7 @@ const PropertiesTab = ({
     setLoadingStates((prev) => ({ ...prev, [selectedPropertyId]: true }));
     try {
       const response = await axios.patch(
-        `/api/admin/listings/${selectedPropertyId}/lock`,
+        `${API_BASE}/api/admin/listings/${selectedPropertyId}/lock`,
         {
           adminLockedStatus: true,
           reason,

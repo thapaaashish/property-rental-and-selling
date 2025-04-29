@@ -7,6 +7,8 @@ const cityImages = {
     "https://upload.wikimedia.org/wikipedia/commons/6/66/Pokhara_and_Phewa_Lake.jpg",
 };
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 export default function CitySection() {
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +18,7 @@ export default function CitySection() {
   useEffect(() => {
     const fetchCityCounts = async () => {
       try {
-        const response = await fetch("/api/listings/city-counts", {
+        const response = await fetch(`${API_BASE}/api/listings/city-counts`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

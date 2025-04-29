@@ -3,6 +3,8 @@ import { Users, X } from "lucide-react";
 import AdminCard from "./AdminCard";
 import Popup from "../common/Popup";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const AdminsTab = ({
   users,
   currentUser,
@@ -68,7 +70,7 @@ const AdminsTab = ({
 
     setFormLoading(true);
     try {
-      const response = await fetch("/api/admin/create-admin", {
+      const response = await fetch(`${API_BASE}/api/admin/create-admin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

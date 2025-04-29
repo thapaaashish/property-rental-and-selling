@@ -4,6 +4,8 @@ import Popup from "../common/Popup";
 import DeleteConfirmation from "../common/DeleteConfirmation";
 import debounce from "lodash.debounce";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
@@ -32,7 +34,7 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
     const fetchServices = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/moving-services", {
+        const res = await fetch(`${API_BASE}/api/moving-services`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -128,7 +130,7 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
     }
 
     try {
-      const res = await fetch("/api/moving-services", {
+      const res = await fetch(`${API_BASE}/api/moving-services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -179,7 +181,7 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
   const handleDeleteService = async (serviceId) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/moving-services/${serviceId}`, {
+      const res = await fetch(`${API_BASE}/api/moving-services/${serviceId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });

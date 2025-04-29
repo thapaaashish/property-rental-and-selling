@@ -3,6 +3,8 @@ import { LoadScript, GoogleMap, Marker } from "@react-google-maps/api";
 import FormInput from "../components/PropertyListing/FormInput";
 import { Calendar } from "lucide-react";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const steps = [
   "Property Type",
   "Rent or Sale",
@@ -250,10 +252,10 @@ const EditListingForm = ({ listing, onSave, onCancel, currentUser }) => {
   const handleSubmit = async () => {
     if (!isValid) return;
 
-    console.log("Updating listing at:", `/api/listings/update/${listing._id}`);
+    console.log("Updating listing at:", `${API_BASE}/api/listings/update/${listing._id}`);
     console.log("Form Data:", editFormData);
     try {
-      const response = await fetch(`/api/listings/update/${listing._id}`, {
+      const response = await fetch(`${API_BASE}/api/listings/update/${listing._id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

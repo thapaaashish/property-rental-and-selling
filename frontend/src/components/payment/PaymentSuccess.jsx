@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { Loader2, CheckCircle2, XCircle, Info } from "lucide-react";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const Success = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,7 +31,7 @@ const Success = () => {
 
     try {
       const response = await axios.post(
-        "/api/payment/verify",
+        `${API_BASE}/api/payment/verify`,
         { pidx, purchaseOrderId },
         { withCredentials: true }
       );

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { MapWithAllProperties } from "../GoogleMap"; // Adjust path as needed
 import { X } from "lucide-react";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const ListingsMapModal = ({ isOpen, onClose }) => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -15,7 +17,7 @@ const ListingsMapModal = ({ isOpen, onClose }) => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch("/api/listings/locations", {
+        const response = await fetch(`${API_BASE}/api/listings/locations`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });

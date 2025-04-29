@@ -36,6 +36,8 @@ import PropertyReviews from "./PropertyReviews";
 import Popup from "../components/common/Popup";
 import StartChatButton from "../components/StartChatButton";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const PropertyDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -59,7 +61,7 @@ const PropertyDetails = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/listings/listings/${id}`);
+        const response = await fetch(`${API_BASE}/api/listings/listings/${id}`);
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
@@ -86,7 +88,7 @@ const PropertyDetails = () => {
     const fetchMovingServices = async () => {
       if (!property?.address?.city) return;
       try {
-        const res = await fetch("/api/moving-services/public", {
+        const res = await fetch(`${API_BASE}/api/moving-services/public`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

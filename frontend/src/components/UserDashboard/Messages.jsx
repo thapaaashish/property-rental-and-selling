@@ -5,6 +5,8 @@ import { useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import io from "socket.io-client";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const socket = io(import.meta.env.VITE_API_URL, {
   transports: ["websocket"],
   reconnection: true,
@@ -26,7 +28,7 @@ const Messages = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/chat/conversations", {
+      const response = await fetch(`${API_BASE}/api/chat/conversations`, {
         headers: {
           Authorization: `Bearer ${currentUser.refreshToken}`,
         },

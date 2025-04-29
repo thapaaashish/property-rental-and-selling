@@ -7,6 +7,8 @@ import { signInSuccess, signInFailure } from "../redux/user/userSlice";
 import { useNavigate } from "react-router-dom";
 import Popup from "./common/Popup";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const OAuth = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -30,8 +32,7 @@ const OAuth = () => {
       const defaultAvatar =
         "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1741705156/useravater_frbzaj.png";
 
-      console.log("Sending request to /api/auth/google");
-      const res = await fetch("/api/auth/google", {
+      const res = await fetch(`${API_BASE}/api/auth/google`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -44,7 +45,6 @@ const OAuth = () => {
       });
 
       const data = await res.json();
-      console.log("Response from /api/auth/google:", data);
 
       if (data.success) {
         console.log("Sign-in successful, dispatching signInSuccess");

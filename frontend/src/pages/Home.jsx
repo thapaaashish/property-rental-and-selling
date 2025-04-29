@@ -8,6 +8,8 @@ import { useSwipeable } from "react-swipeable";
 import MovingServicesSection from "../components/MovingServicesCard.jsx";
 import ListingsMapModal from "../components/home/ListingsMapModal.jsx";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const CitySection = React.lazy(() => import("../components/home/CitySection"));
 const Features = React.lazy(() => import("../components/home/Features"));
 const FeaturedProperties = React.lazy(() =>
@@ -97,7 +99,7 @@ const Home = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/listings/listings-home?type=${propertyType}&listingType=${listingType}&status=active&limit=5`
+          `${API_BASE}/api/listings/listings-home?type=${propertyType}&listingType=${listingType}&status=active&limit=5`
         );
         if (!response.ok) {
           console.error(

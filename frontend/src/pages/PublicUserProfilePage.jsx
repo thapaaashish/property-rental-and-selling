@@ -4,6 +4,9 @@ import axios from "axios";
 import { Users, Home, AlertCircle, MapPin } from "lucide-react";
 import StartChatButton from "../components/StartChatButton";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
+
 const PublicUserProfilePage = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -20,13 +23,13 @@ const PublicUserProfilePage = () => {
       try {
         // Fetch user details
         const userResponse = await axios.get(
-          `/api/user/user-details/${userId}`
+          `${API_BASE}/api/user/user-details/${userId}`
         );
         setUser(userResponse.data);
 
         // Fetch user's listings
         const listingsResponse = await axios.get(
-          `/api/listings/user-public/${userId}`
+          `${API_BASE}/api/listings/user-public/${userId}`
         );
         setListings(listingsResponse.data || []);
       } catch (err) {

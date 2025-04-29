@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { FileText, CheckCircle, XCircle } from "lucide-react";
 import Popup from "../common/Popup";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const KycVerification = () => {
   const { currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
@@ -29,7 +31,7 @@ const KycVerification = () => {
     const fetchPendingKyc = async () => {
       setLoading(true);
       try {
-        const response = await fetch("/api/kyc/pending", {
+        const response = await fetch(`${API_BASE}/api/kyc/pending`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -64,7 +66,7 @@ const KycVerification = () => {
   const handleVerifyKyc = async (userId, status, rejectedReason = "") => {
     setProcessing((prev) => ({ ...prev, [userId]: true }));
     try {
-      const response = await fetch("/api/kyc/verify", {
+      const response = await fetch(`${API_BASE}/api/kyc/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -4,6 +4,8 @@ import { X } from "lucide-react";
 import ConfirmationModal from "../ConfirmationModal";
 import Popup from "../common/Popup";
 
+const API_BASE = import.meta.env.VITE_API_URL;
+
 const MyListings = ({
   listings = [],
   setListings = () => {},
@@ -61,7 +63,7 @@ const MyListings = ({
     }));
 
     try {
-      const response = await fetch(`/api/listings/update-status/${listingId}`, {
+      const response = await fetch(`${API_BASE}/api/listings/update-status/${listingId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
