@@ -44,15 +44,7 @@ const PrivacyPolicy = () => {
       </section>
 
       <section className="mb-6">
-        <h2 className="text-xl font-semibold">4. Cookies and Tracking</h2>
-        <p>
-          We use cookies to enhance your experience. You can manage your cookie
-          preferences through your browser settings.
-        </p>
-      </section>
-
-      <section className="mb-6">
-        <h2 className="text-xl font-semibold">5. Data Security</h2>
+        <h2 className="text-xl font-semibold">4. Data Security</h2>
         <p>
           We use standard security measures to protect your data, but no system
           is completely secure.
@@ -60,7 +52,7 @@ const PrivacyPolicy = () => {
       </section>
 
       <section className="mb-6">
-        <h2 className="text-xl font-semibold">6. Your Rights</h2>
+        <h2 className="text-xl font-semibold">5. Your Rights</h2>
         <p>
           You may access, correct, or delete your personal data by logging into
           your account or contacting us directly.
@@ -68,9 +60,9 @@ const PrivacyPolicy = () => {
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold">7. Contact Us</h2>
+        <h2 className="text-xl font-semibold">6. Contact Us</h2>
         <p>
-          📧 Email: privacy@homefinder.com
+          📧 Email: taashish510@gmail.com
           <br />
           📍 Address: [Kathmandu, Nepal]
         </p>

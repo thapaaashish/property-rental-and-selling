@@ -24,7 +24,7 @@ import {
   Truck,
   ArrowRight,
 } from "lucide-react";
-import AddToWishlist from "../components/AddToWishlist";
+import AddToWishlist from "../components/common/AddToWishlist";
 import ShareButton from "../components/Share/ShareButton";
 import GoogleMapComponent from "./GoogleMap";
 import BookingForm from "../components/user/Booking";

@@ -22,8 +22,7 @@ const StartChatButton = ({
   const handleStartChat = async () => {
     if (!currentUser) {
       setError("You need to be logged in to start a chat");
-      setShowPopup(true);
-      return;
+      return; // ⛔ Don't continue execution
     }
 
     if (!receiverId && !receiverEmail) {
@@ -32,7 +31,6 @@ const StartChatButton = ({
       return;
     }
 
-    // Prevent self-chat
     if (receiverId && receiverId === currentUser._id) {
       console.error("Cannot start chat with yourself");
       setError("You cannot start a chat with yourself");
@@ -47,11 +45,12 @@ const StartChatButton = ({
       let receiverName = "Unknown User";
       let receiverAvatar = "/placeholder.svg";
 
-      // Fetch user details only if necessary
       if (!receiverId || receiverEmail) {
         const endpoint = receiverId
           ? `${API_BASE}/api/user/by-id/${receiverId}`
-          : `${API_BASE}/api/user/by-email?email=${encodeURIComponent(receiverEmail)}`;
+          : `${API_BASE}/api/user/by-email?email=${encodeURIComponent(
+              receiverEmail
+            )}`;
         const response = await fetch(endpoint, {
           headers: {
             Authorization: `Bearer ${currentUser.refreshToken}`,
@@ -59,9 +58,7 @@ const StartChatButton = ({
         });
 
         if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error("User not found");
-          }
+          if (response.status === 404) throw new Error("User not found");
           throw new Error("Failed to fetch user details");
         }
 
@@ -70,7 +67,6 @@ const StartChatButton = ({
         receiverName = userData.fullname || "Unknown User";
         receiverAvatar = userData.avatar || "/placeholder.svg";
 
-        // Check for self-chat after fetching
         if (fetchedReceiverId === currentUser._id) {
           throw new Error("You cannot start a chat with yourself");
         }
@@ -87,6 +83,8 @@ const StartChatButton = ({
           agentName: receiverName,
         },
       });
+
+      // ✅ Only show success popup after successful navigation
       setShowPopup(true);
     } catch (error) {
       console.error("Error starting chat:", error.message);

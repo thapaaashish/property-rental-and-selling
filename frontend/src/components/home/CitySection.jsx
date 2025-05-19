@@ -76,7 +76,7 @@ export default function CitySection() {
           {cities.map((city) => (
             <div
               key={city.name}
-              className="relative h-80 rounded-lg overflow-hidden group cursor-pointer"
+              className="relative h-80 rounded-lg overflow-hidden group"
             >
               <div className="absolute inset-0 bg-black opacity-40 group-hover:opacity-50 transition-opacity" />
               <img

@@ -599,7 +599,7 @@ const UsersTab = ({
         </>
       )}
       {banDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
             <h3 className="text-lg font-bold mb-4 flex items-center">
               <Lock className="h-5 w-5 mr-2 text-red-500" />
@@ -623,7 +623,7 @@ const UsersTab = ({
                 <p className="text-sm font-medium text-gray-500">Banned By</p>
                 <p className="mt-1 text-sm text-gray-900">
                   {banDetails.bannedBy
-                    ? `Admin ID: ${banDetails.bannedBy}`
+                    ? `Admin Name: ${banDetails.bannedBy}`
                     : "System"}
                 </p>
               </div>

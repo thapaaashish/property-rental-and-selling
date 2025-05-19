@@ -49,14 +49,14 @@ const TermsOfService = () => {
         <h2 className="text-xl font-semibold">5. Bookings</h2>
         <p>
           Booking a property constitutes acceptance of the host's terms.
-          Payments (if enabled) will be handled by third-party providers.
+          Payments will be handled by third-party providers.
         </p>
       </section>
 
       <section className="mb-6">
         <h2 className="text-xl font-semibold">6. Payments and Fees</h2>
         <p>
-          Payment functionality will be added soon. When available, it will be
+          Payment functionality will be
           subject to third-party payment processor terms.
         </p>
       </section>
@@ -106,7 +106,7 @@ const TermsOfService = () => {
       <section>
         <h2 className="text-xl font-semibold">12. Contact Us</h2>
         <p>
-          📧 Email: support@homefinder.com
+          📧 Email: taashish510@gmail.com
           <br />
           📍 Address: [Kathmandu, Nepal]
         </p>

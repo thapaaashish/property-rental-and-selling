@@ -19,7 +19,7 @@ const ForgotPasswordComponent = ({ onClose, onSuccess }) => {
       const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.refreshToken}`,
         },
         body: JSON.stringify({ email }),
       });

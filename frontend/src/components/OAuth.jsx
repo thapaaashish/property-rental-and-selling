@@ -4,7 +4,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { app } from "../firebase";
 import { useDispatch } from "react-redux";
 import { signInSuccess, signInFailure } from "../redux/user/userSlice";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Add useLocation
 import Popup from "./common/Popup";
 
 const API_BASE = import.meta.env.VITE_API_URL;
@@ -12,8 +12,15 @@ const API_BASE = import.meta.env.VITE_API_URL;
 const OAuth = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation(); // Get current URL location
   const [errorMessage, setErrorMessage] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false); // Prevent multiple clicks
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Determine if we're on the sign-in or sign-up page based on the URL
+  const isSignInPage = location.pathname.includes("/sign-in");
+  const buttonText = isSignInPage
+    ? "Sign in with Google"
+    : "Sign up with Google";
 
   // Debounced click handler to prevent multiple simultaneous sign-in attempts
   const handleGoogleClick = useCallback(async () => {
@@ -79,18 +86,18 @@ const OAuth = () => {
     <>
       <button
         onClick={handleGoogleClick}
-        disabled={isProcessing} // Disable button while processing
+        disabled={isProcessing}
         className={`cursor-pointer hover:bg-gray-400 hover:text-white flex items-center justify-center w-full bg-gray-200 text-gray-700 p-2 rounded mb-4 ${
           isProcessing ? "opacity-50 cursor-not-allowed" : ""
         }`}
       >
-        <FcGoogle className="mr-2 text-xl" /> Sign in with Google
+        <FcGoogle className="mr-2 text-xl" /> {buttonText}
       </button>
       {errorMessage && (
         <Popup
           message={errorMessage}
           type="error"
-          duration={5000} // Show for 5 seconds
+          duration={5000}
           onClose={handleClosePopup}
         />
       )}

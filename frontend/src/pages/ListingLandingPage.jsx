@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import AddListingForm from "../components/PropertyListing/CreateListingForm";
@@ -16,7 +16,7 @@ const FeatureCard = ({ title, text, icon }) => (
 const ListingLandingPage = () => {
   const navigate = useNavigate();
   const currentUser = useSelector((state) => state.user.currentUser);
-  const isLoading = useSelector((state) => state.user.isLoading); // Assuming user state includes loading
+  const isLoading = useSelector((state) => state.user.isLoading);
   const [showForm, setShowForm] = useState(false);
 
   const handleStartHosting = () => {
@@ -41,7 +41,6 @@ const ListingLandingPage = () => {
     },
   ];
 
-  // Check if profile is completed based on existing fields
   const isProfileCompleted = (user) => {
     return (
       user.phone &&
@@ -52,7 +51,6 @@ const ListingLandingPage = () => {
     );
   };
 
-  // Render loading state
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -61,7 +59,6 @@ const ListingLandingPage = () => {
     );
   }
 
-  // Render form or error messages if showForm is true
   if (showForm) {
     if (!currentUser) {
       return (
@@ -74,6 +71,22 @@ const ListingLandingPage = () => {
             className="px-6 py-2 bg-teal-500 text-white rounded-full hover:bg-teal-600 transition-colors"
           >
             Go to Login
+          </button>
+        </div>
+      );
+    }
+
+    if (currentUser.role === "admin") {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+          <p className="text-lg text-gray-700 mb-4">
+            Admins are not allowed to create listings.
+          </p>
+          <button
+            onClick={() => navigate("/")}
+            className="px-6 py-2 bg-teal-500 text-white rounded-full hover:bg-teal-600 transition-colors"
+          >
+            Go Home
           </button>
         </div>
       );
@@ -120,7 +133,6 @@ const ListingLandingPage = () => {
     );
   }
 
-  // Render landing page content
   return (
     <div className="flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Hero Section */}
@@ -140,17 +152,19 @@ const ListingLandingPage = () => {
             HomeFinder simplifies the process, guiding you from listing to
             hosting.
           </p>
-          <button
-            onClick={handleStartHosting}
-            className="px-8 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white text-base sm:text-lg font-semibold rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-teal-300"
-            aria-label="Start hosting today"
-          >
-            Start Hosting Today
-          </button>
+          {currentUser?.role !== "admin" && (
+            <button
+              onClick={handleStartHosting}
+              className="px-8 py-3 bg-gradient-to-r from-teal-500 to-teal-600 text-white text-base sm:text-lg font-semibold rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-teal-300"
+              aria-label="Start hosting today"
+            >
+              Start Hosting Today
+            </button>
+          )}
           <button
             onClick={() => navigate("/")}
             className="mt-4 px-8 py-3 bg-gray-400 text-gray-800 text-base sm:text-lg font-semibold rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300"
-            aria-label="Start hosting today"
+            aria-label="Go back"
           >
             Go Back
           </button>

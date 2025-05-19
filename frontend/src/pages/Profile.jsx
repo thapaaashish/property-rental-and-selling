@@ -18,6 +18,7 @@ import DeleteAccount from "../components/user/DeleteAccount";
 import { updateUser } from "../redux/user/userSlice";
 import heic2any from "heic2any";
 import Popup from "../components/common/Popup";
+import ImageModal from "../components/common/ViewImage";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -40,23 +41,26 @@ const Profile = () => {
     currentUser?.kyc?.status || "not_verified"
   );
   const [kycRejectedReason, setKycRejectedReason] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false); // State for image modal
 
   // Fetch KYC status
   useEffect(() => {
     const fetchKycStatus = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/kyc/status/${currentUser._id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
+        const response = await fetch(
+          `${API_BASE}/api/kyc/status/${currentUser._id}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
         const data = await response.json();
         if (data.success) {
           setKycStatus(data.kycStatus);
           setKycRejectedReason(data.rejectedReason);
-          // Update Redux store if user data changes
           if (data.user) {
             dispatch(updateUser(data.user));
           }
@@ -90,14 +94,17 @@ const Profile = () => {
   const handleSaveProfile = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE}/api/user/update/${currentUser._id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(userProfile),
-      });
+      const response = await fetch(
+        `${API_BASE}/api/user/update/${currentUser._id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(userProfile),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -177,14 +184,17 @@ const Profile = () => {
         const result = await response.json();
         const imageUrl = result.secure_url;
 
-        const saveResponse = await fetch(`${API_BASE}/api/user/upload-profile-picture`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ imageUrl }),
-        });
+        const saveResponse = await fetch(
+          `${API_BASE}/api/user/upload-profile-picture`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ imageUrl }),
+          }
+        );
 
         if (!saveResponse.ok) {
           const errorData = await saveResponse.json();
@@ -221,7 +231,6 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type and size
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -250,7 +259,6 @@ const Profile = () => {
       setIsLoading(true);
       let uploadFile = file;
 
-      // Convert HEIC to JPEG
       if (
         file.type === "image/heic" ||
         file.name.toLowerCase().endsWith(".heic")
@@ -267,7 +275,6 @@ const Profile = () => {
         );
       }
 
-      // Upload to Cloudinary
       const formData = new FormData();
       formData.append("file", uploadFile);
       formData.append(
@@ -294,18 +301,21 @@ const Profile = () => {
       const result = await response.json();
       const documentUrl = result.secure_url;
 
-      // Send document URL to backend for KYC processing
-      const saveResponse = await fetch(`${API_BASE}/api/kyc/upload/${currentUser._id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          documentUrl,
-          documentType: uploadFile.type === "application/pdf" ? "pdf" : "image",
-        }),
-      });
+      const saveResponse = await fetch(
+        `${API_BASE}/api/kyc/upload/${currentUser._id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            documentUrl,
+            documentType:
+              uploadFile.type === "application/pdf" ? "pdf" : "image",
+          }),
+        }
+      );
 
       if (!saveResponse.ok) {
         const errorData = await saveResponse.json();
@@ -410,14 +420,30 @@ const Profile = () => {
           <div className="relative h-48 bg-blue-100">
             <div className="absolute -bottom-16 left-8 flex items-end">
               <div className="relative">
-                <img
-                  src={
-                    userProfile.avatar ||
-                    "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1741280259/default-avatar_oabgol.png"
+                <div
+                  className="relative w-32 h-32 group cursor-pointer"
+                  onClick={() => setShowImageModal(true)}
+                  role="button"
+                  aria-label="View profile picture"
+                  tabIndex={0}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && setShowImageModal(true)
                   }
-                  alt="User Avatar"
-                  className="w-32 h-32 rounded-full border-4 border-white object-cover"
-                />
+                >
+                  <img
+                    src={
+                      userProfile.avatar ||
+                      "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1741280259/default-avatar_oabgol.png"
+                    }
+                    alt="User Avatar"
+                    className="w-32 h-32 rounded-full border-4 border-white object-cover transition-opacity group-hover:opacity-80"
+                  />
+
+                  <div className="absolute bottom-[-2rem] left-1/2 -translate-x-1/2 px-3 py-1 bg-gray-800 bg-opacity-90 text-white text-sm font-medium rounded-lg shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:bottom-[-1.5rem] pointer-events-none">
+                    View Image
+                  </div>
+                </div>
+
                 {isEditing && (
                   <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer">
                     <Camera className="h-5 w-5" />
@@ -805,6 +831,16 @@ const Profile = () => {
           <DeleteAccount onClose={() => setShowDeleteAccount(false)} />
         </div>
       )}
+
+      {/* Image Modal */}
+      <ImageModal
+        isOpen={showImageModal}
+        imageUrl={
+          userProfile.avatar ||
+          "https://res.cloudinary.com/dwhsjkzrn/image/upload/v1741280259/default-avatar_oabgol.png"
+        }
+        onClose={() => setShowImageModal(false)}
+      />
 
       {/* Popup Notification */}
       {popup.show && (

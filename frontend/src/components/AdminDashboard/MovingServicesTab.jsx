@@ -6,7 +6,7 @@ import debounce from "lodash.debounce";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
-const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
+const MovingServicesTab = ({ navigate, actionLoading,currentUser, setApiError }) => {
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [formData, setFormData] = useState({
@@ -35,8 +35,9 @@ const MovingServicesTab = ({ navigate, actionLoading, setApiError }) => {
       setLoading(true);
       try {
         const res = await fetch(`${API_BASE}/api/moving-services`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
         });
         const data = await res.json();
         if (res.ok) {

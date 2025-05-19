@@ -3,9 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   addToWishlist,
   removeFromWishlist,
-} from "../redux/wishlist/wishlistSlice";
+} from "../../redux/wishlist/wishlistSlice";
 import { Heart, HeartOff } from "lucide-react";
-import Popup from "./common/Popup";
+import Popup from "./Popup";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -17,8 +17,8 @@ const AddToWishlist = ({ propertyId }) => {
   const [wishlist, setWishlist] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
+  const [popupType, setPopupType] = useState("success");
 
-  // Fetch wishlist data when user is logged in
   useEffect(() => {
     const fetchWishlist = async () => {
       if (!currentUser) return;
@@ -33,17 +33,16 @@ const AddToWishlist = ({ propertyId }) => {
         }
 
         const data = await response.json();
-        setWishlist(data || []); // Ensure wishlist is an array
+        setWishlist(data || []);
       } catch (error) {
         console.error("Error fetching wishlist:", error.message);
-        setWishlist([]); // Reset wishlist on error
+        setWishlist([]);
       }
     };
 
     fetchWishlist();
   }, [currentUser]);
 
-  // Check if property is in wishlist
   useEffect(() => {
     if (currentUser && wishlist.length > 0) {
       const exists = wishlist.some((item) => item._id === propertyId);
@@ -53,10 +52,11 @@ const AddToWishlist = ({ propertyId }) => {
     }
   }, [wishlist, propertyId, currentUser]);
 
-  // Handle adding/removing from wishlist
   const handleWishlist = async () => {
     if (!currentUser) {
-      alert("Please log in to add to wishlist");
+      setPopupMessage("Please log in to add to wishlist");
+      setPopupType("error");
+      setShowPopup(true);
       return;
     }
 
@@ -84,23 +84,25 @@ const AddToWishlist = ({ propertyId }) => {
       }
 
       if (isInWishlist) {
-        // Remove from wishlist
         setWishlist(wishlist.filter((item) => item._id !== propertyId));
         dispatch(removeFromWishlist(propertyId));
         setIsInWishlist(false);
         setPopupMessage("Removed from wishlist!");
       } else {
-        // Add to wishlist
         const newItem = { _id: propertyId, userRef: currentUser._id };
         setWishlist([...wishlist, newItem]);
         dispatch(addToWishlist(propertyId));
         setIsInWishlist(true);
         setPopupMessage("Added to wishlist!");
       }
-      setShowPopup(true);
+
+      setPopupType("success");
     } catch (error) {
       console.error("Error updating wishlist:", error.message);
+      setPopupMessage("Something went wrong while updating wishlist");
+      setPopupType("error");
     } finally {
+      setShowPopup(true);
       setLoading(false);
     }
   };
@@ -137,7 +139,7 @@ const AddToWishlist = ({ propertyId }) => {
       {showPopup && (
         <Popup
           message={popupMessage}
-          type="success"
+          type={popupType}
           duration={3000}
           onClose={() => setShowPopup(false)}
         />
