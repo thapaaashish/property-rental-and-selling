@@ -13,6 +13,7 @@ const Listings = () => {
   const [page, setPage] = useState(1); // Current page
   const [totalPages, setTotalPages] = useState(1); // Total pages from backend
   const [totalListings, setTotalListings] = useState(0); // Total listings from backend
+  const [showMap, setShowMap] = useState(false); // Mobile map visibility
   const limit = 12; // Match backend's limit or override default 9
 
   const handleFilterSubmit = useCallback(
@@ -107,6 +108,8 @@ const Listings = () => {
       listingId: property.id,
     }));
 
+  const mapWithMarkersCount = markers.length;
+
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-grow pt-5 pb-16">
@@ -157,10 +160,50 @@ const Listings = () => {
                   </p>
                 </div>
               )}
+
+              {/* Mobile Map Section */}
+              {/* Mobile Map Section - Always visible, no toggle button */}
+              <div className="mt-8 lg:hidden">
+                <div className="h-[50vh] sm:h-[60vh]">
+                  <div className="w-full h-full bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-200">
+                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          Property Locations
+                        </h3>
+                        <span className="text-sm text-gray-600 bg-white px-3 py-1 rounded-full border">
+                          {mapWithMarkersCount}{" "}
+                          {mapWithMarkersCount === 1
+                            ? "property"
+                            : "properties"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="h-[calc(100%-60px)]">
+                      <MapWithAllProperties markers={markers} />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {/* Desktop Map with Property Count Header */}
             <div className="hidden lg:block sticky top-24 h-[80vh]">
-              <div className="w-full h-full bg-gray-100 rounded-2xl overflow-hidden">
-                <MapWithAllProperties markers={markers} />
+              <div className="w-full h-full bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-200">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Map View
+                    </h3>
+                    <span className="text-sm text-gray-600 bg-white px-3 py-1 rounded-full border">
+                      {mapWithMarkersCount}{" "}
+                      {mapWithMarkersCount === 1 ? "property" : "properties"}
+                    </span>
+                  </div>
+                </div>
+                <div className="h-[calc(100%-73px)]">
+                  <MapWithAllProperties markers={markers} />
+                </div>
               </div>
             </div>
           </div>

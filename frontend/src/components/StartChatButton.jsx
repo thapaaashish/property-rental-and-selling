@@ -104,7 +104,7 @@ const StartChatButton = ({
       <button
         onClick={handleStartChat}
         disabled={isLoading}
-        className={`flex items-center justify-center px-4 py-2 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-lg hover:from-gray-900 hover:to-black transition-all text-sm disabled:bg-teal-300 disabled:cursor-not-allowed ${className}`}
+        className={`cursor-pointer flex items-center w-full justify-center px-4 py-2 bg-gradient-to-r bg-teal-500 text-white rounded-lg hover:from-teal-900 hover:to-black transition-all text-sm disabled:bg-teal-300 disabled:cursor-not-allowed ${className}`}
         aria-label={`Start chat with ${receiverEmail || "user"}`}
       >
         {isLoading ? (

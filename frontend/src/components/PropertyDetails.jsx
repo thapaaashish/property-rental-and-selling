@@ -548,7 +548,7 @@ const PropertyDetails = () => {
                   <StartChatButton
                     receiverId={agent?._id}
                     receiverEmail={agent?.email}
-                    extraClassName="w-full bg-blue-600 text-white"
+                    extraClassName="w-full bg-blue-600 text-white font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm flex justify-center items-center"
                   />
                   <button
                     className="w-full bg-gray-100 text-gray-800 font-medium px-4 py-2 rounded-md hover:bg-gray-200 transition-colors text-sm flex justify-center items-center"

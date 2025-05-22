@@ -367,7 +367,7 @@ const Header = () => {
             {/* Backdrop */}
             <div
               ref={backdropRef}
-              className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+              className="fixed top-[64px] bottom-0 left-0 right-0 bg-black bg-opacity-50 z-40 md:hidden"
             />
 
             <div
