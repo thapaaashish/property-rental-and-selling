@@ -1,4 +1,15 @@
-// ReviewSection Component
+import {
+  Wifi,
+  Layers,
+  MapPin,
+  Home,
+  DollarSign,
+  Bed,
+  Bath,
+  Ruler,
+  Calendar,
+} from "lucide-react";
+
 const ReviewSection = ({ formData }) => {
   const amenitiesIcons = {
     Wifi: <Wifi size={16} />,

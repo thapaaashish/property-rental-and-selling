@@ -18,7 +18,7 @@ import Popup from "../common/Popup";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
-const AgentBookings = () => {
+const BookingRequests = () => {
   const { currentUser } = useSelector((state) => state.user);
   const [bookings, setBookings] = useState([]);
   const [properties, setProperties] = useState([]);
@@ -31,7 +31,7 @@ const AgentBookings = () => {
   });
   const [statusFilter, setStatusFilter] = useState("all");
   const [expandedProperties, setExpandedProperties] = useState({});
-  const [processing, setProcessing] = useState({});
+  const [processing, setProcessing] = useState({}); // Now stores action strings (e.g., "confirm", "cancel") or null
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,11 +54,14 @@ const AgentBookings = () => {
         setProperties(propertiesData);
 
         const listingIds = propertiesData.map((property) => property._id);
-        const bookingsResponse = await fetch(`${API_BASE}/api/bookings/for-listings`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ listingIds }),
-        });
+        const bookingsResponse = await fetch(
+          `${API_BASE}/api/bookings/for-listings`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ listingIds }),
+          }
+        );
         const bookingsData = await bookingsResponse.json();
         if (!bookingsResponse.ok) {
           throw new Error(bookingsData.message || "Failed to fetch bookings");
@@ -92,7 +95,8 @@ const AgentBookings = () => {
   };
 
   const handleStatusChange = async (bookingId, newStatus) => {
-    setProcessing((prev) => ({ ...prev, [bookingId]: true }));
+    const action = newStatus === "confirmed" ? "confirm" : "cancel";
+    setProcessing((prev) => ({ ...prev, [bookingId]: action }));
     try {
       if (!currentUser?._id) {
         showPopup("Please sign in to modify bookings", "error");
@@ -154,7 +158,7 @@ const AgentBookings = () => {
     } catch (err) {
       showPopup(err.message, "error");
     } finally {
-      setProcessing((prev) => ({ ...prev, [bookingId]: false }));
+      setProcessing((prev) => ({ ...prev, [bookingId]: null }));
     }
   };
 
@@ -178,12 +182,15 @@ const AgentBookings = () => {
     return `Expires in ${diffDays} day${diffDays !== 1 ? "s" : ""}`;
   };
 
-  const bookingCounts = useMemo(() => ({
-    all: bookings.length,
-    pending: bookings.filter((b) => b.status === "pending").length,
-    confirmed: bookings.filter((b) => b.status === "confirmed").length,
-    cancelled: bookings.filter((b) => b.status === "cancelled").length,
-  }), [bookings]);
+  const bookingCounts = useMemo(
+    () => ({
+      all: bookings.length,
+      pending: bookings.filter((b) => b.status === "pending").length,
+      confirmed: bookings.filter((b) => b.status === "confirmed").length,
+      cancelled: bookings.filter((b) => b.status === "cancelled").length,
+    }),
+    [bookings]
+  );
 
   const filteredProperties = properties.filter((property) => {
     const propertyBookings = getPropertyBookings(property._id);
@@ -399,8 +406,8 @@ const AgentBookings = () => {
                       </h2>
                       <p className="text-sm text-gray-500">
                         {propertyBookings.length}{" "}
-                        {propertyBookings.length === 1 ? "booking" : "bookings"} •
-                        ${property.price.toLocaleString()}{" "}
+                        {propertyBookings.length === 1 ? "booking" : "bookings"}{" "}
+                        • Rs. {property.price.toLocaleString()}{" "}
                         {property.rentOrSale === "Rent" ? "/month" : ""} •
                         Status: {property.status}
                       </p>
@@ -486,13 +493,13 @@ const AgentBookings = () => {
                           </div>
                           <div className="md:col-span-2 flex flex-col gap-2">
                             <div className="flex items-center gap-2">
-                              <DollarSign className="h-4 w-4 text-teal-600" />
+                              
                               <p className="text-sm font-medium text-gray-700">
                                 Amount
                               </p>
                             </div>
-                            <p className="ml-6 text-sm text-gray-800">
-                              ${booking.totalPrice.toLocaleString()}
+                            <p className=" text-sm text-gray-800">
+                              Rs. {booking.totalPrice.toLocaleString()}
                             </p>
                           </div>
                           <div className="md:col-span-2 flex flex-col gap-2">
@@ -517,11 +524,13 @@ const AgentBookings = () => {
                                     handleStatusChange(booking._id, "confirmed")
                                   }
                                   className="flex items-center px-3 sm:px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:bg-teal-300"
-                                  disabled={processing[booking._id]}
+                                  disabled={
+                                    processing[booking._id] === "confirm"
+                                  }
                                   aria-label="Confirm booking"
                                   title="Confirm booking"
                                 >
-                                  {processing[booking._id] ? (
+                                  {processing[booking._id] === "confirm" ? (
                                     <>
                                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                       Processing...
@@ -535,11 +544,13 @@ const AgentBookings = () => {
                                     handleStatusChange(booking._id, "cancelled")
                                   }
                                   className="flex items-center px-3 sm:px-4 py-2 text-sm border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:border-gray-200 disabled:text-gray-400"
-                                  disabled={processing[booking._id]}
+                                  disabled={
+                                    processing[booking._id] === "cancel"
+                                  }
                                   aria-label="Reject booking"
                                   title="Reject booking"
                                 >
-                                  {processing[booking._id] ? (
+                                  {processing[booking._id] === "cancel" ? (
                                     <>
                                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                       Processing...
@@ -561,7 +572,10 @@ const AgentBookings = () => {
                                   )
                                 }
                                 className="flex items-center px-3 sm:px-4 py-2 text-sm border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:border-gray-200 disabled:text-gray-400"
-                                disabled={processing[booking._id]}
+                                disabled={
+                                  processing[booking._id] === "confirm" ||
+                                  processing[booking._id] === "cancel"
+                                }
                                 aria-label={
                                   booking.status === "confirmed"
                                     ? "Cancel booking"
@@ -573,7 +587,8 @@ const AgentBookings = () => {
                                     : "Reconfirm booking"
                                 }
                               >
-                                {processing[booking._id] ? (
+                                {processing[booking._id] === "confirm" ||
+                                processing[booking._id] === "cancel" ? (
                                   <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                     Processing...
@@ -624,7 +639,9 @@ const AgentBookings = () => {
                               </div>
                             </div>
                             <div className="sm:text-right">
-                              <p className="text-xs text-gray-500">Booking ID</p>
+                              <p className="text-xs text-gray-500">
+                                Booking ID
+                              </p>
                               <p className="text-sm font-mono text-gray-500 truncate">
                                 {booking._id}
                               </p>
@@ -652,4 +669,4 @@ const AgentBookings = () => {
   );
 };
 
-export default AgentBookings;
+export default BookingRequests;

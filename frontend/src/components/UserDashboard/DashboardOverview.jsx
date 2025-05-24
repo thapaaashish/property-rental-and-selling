@@ -238,64 +238,6 @@ const DashboardOverview = ({
             )}
           </div>
         </div>
-
-        {/* Right Column - Charts and Messages */}
-        <div className="space-y-4">
-          {/* Recent Messages Table */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
-              <h2 className="text-sm font-semibold text-gray-800">
-                Recent Messages
-              </h2>
-              <button
-                onClick={() => setActiveTab("messages")}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-              >
-                View All
-              </button>
-            </div>
-            {messages.length === 0 ? (
-              <EmptyState icon={MessageSquare} message="No messages yet" />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead className="bg-gray-50 text-gray-500 uppercase tracking-wider">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Sender</th>
-                      <th className="px-4 py-2 text-right">Message</th>
-                      <th className="px-4 py-2 text-right">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {messages.slice(0, MAX_TABLE_ROWS).map((message) => (
-                      <tr
-                        key={message._id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="px-4 py-2">
-                          <p className="text-xs font-medium text-gray-800 truncate max-w-[120px]">
-                            {message.sender?.fullname || "Unknown Sender"}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate max-w-[120px]">
-                            {message.sender?.email || "No email"}
-                          </p>
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <p className="text-xs text-gray-700 truncate max-w-[150px]">
-                            {message.content || "No content"}
-                          </p>
-                        </td>
-                        <td className="px-4 py-2 text-right whitespace-nowrap text-xs text-gray-500">
-                          {formatDate(message.createdAt)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );

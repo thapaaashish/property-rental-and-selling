@@ -18,6 +18,7 @@ import Popup from "../common/Popup";
 import UserCard from "./UserCard";
 import DeleteConfirmation from "../common/DeleteConfirmation";
 import ReasonInputModal from "./ReasonInputModal";
+import RefreshButton from "../common/RefreshButton";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -37,12 +38,15 @@ const UsersTab = ({
   const [kycFilter, setKycFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
-  const [loadingStates, setLoadingStates] = useState({}); // Track loading per user
+  const [loadingStates, setLoadingStates] = useState({});
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showBanReasonModal, setShowBanReasonModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const usersPerPage = 10;
+
+  // Check if user is authenticated
+  const isAuthenticated = () => !!currentUser?.refreshToken;
 
   useEffect(() => {
     setUsers(initialUsers);
@@ -70,6 +74,16 @@ const UsersTab = ({
       : { date: "N/A", time: "N/A" };
 
   const fetchUsers = async (pageNum = 1) => {
+    if (!currentUser?.refreshToken) {
+      setPopupMessage("Please log in to view users");
+      setPopupType("error");
+      setShowPopup(true);
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+      return;
+    }
+
     setLoadingStates((prev) => ({ ...prev, fetch: true }));
     try {
       const response = await axios.get(
@@ -78,22 +92,61 @@ const UsersTab = ({
           headers: {
             Authorization: `Bearer ${currentUser.refreshToken}`,
           },
+          withCredentials: true,
         }
       );
-      setUsers(response.data.users);
-      setTotalPages(Math.ceil(response.data.total / usersPerPage));
+
+      // Make sure to handle the response data properly
+      const usersData =
+        response.data?.data?.users || response.data?.users || [];
+      const totalCount =
+        response.data?.data?.total || response.data?.total || 0;
+
+      setUsers(usersData);
+      setTotalPages(Math.ceil(totalCount / usersPerPage));
       setPage(pageNum);
-    } catch (error) {
-      setPopupMessage(error.response?.data?.message || "Failed to fetch users");
-      setPopupType("error");
+      setPopupMessage("Users refreshed successfully");
+      setPopupType("success");
       setShowPopup(true);
-      console.error("Error fetching users:", error.response?.data || error);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      if (error.response?.status === 401) {
+        setPopupMessage("Session expired. Please log in again.");
+        setPopupType("error");
+        setShowPopup(true);
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      } else {
+        setPopupMessage(
+          error.response?.data?.message || "Failed to fetch users"
+        );
+        setPopupType("error");
+        setShowPopup(true);
+      }
     } finally {
       setLoadingStates((prev) => ({ ...prev, fetch: false }));
     }
   };
 
+  // Initial fetch if no users and authenticated
+  useEffect(() => {
+    if (!initialUsers.length && !users.length && isAuthenticated()) {
+      fetchUsers(page);
+    }
+  }, [initialUsers, users.length, currentUser]);
+
   const handleBanToggle = async (userId, ban) => {
+    if (!currentUser?.refreshToken) {
+      setPopupMessage("Please log in to perform this action");
+      setPopupType("error");
+      setShowPopup(true);
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+      return;
+    }
+
     if (ban) {
       setSelectedUserId(userId);
       setShowBanReasonModal(true);
@@ -107,6 +160,7 @@ const UsersTab = ({
             headers: {
               Authorization: `Bearer ${currentUser.refreshToken}`,
             },
+            withCredentials: true,
           }
         );
         setUsers((prev) =>
@@ -124,17 +178,22 @@ const UsersTab = ({
         setPopupType("success");
         setShowPopup(true);
       } catch (error) {
-        setPopupMessage(
-          error.response?.data?.message || "Failed to update ban status"
-        );
-        setPopupType("error");
-        setShowPopup(true);
-        console.error(
-          "Error in handleBanToggle:",
-          error.response?.data || error
-        );
+        console.error("Error in handleBanToggle:", error);
+        if (error.response?.status === 401) {
+          setPopupMessage("Session expired. Please log in again.");
+          setPopupType("error");
+          setShowPopup(true);
+          setTimeout(() => {
+            navigate("/login");
+          }, 2000);
+        } else {
+          setPopupMessage(
+            error.response?.data?.message || "Failed to update ban status"
+          );
+          setPopupType("error");
+          setShowPopup(true);
+        }
       } finally {
-        // Ensure loading state is visible for at least 500ms
         setTimeout(() => {
           setLoadingStates((prev) => ({ ...prev, [userId]: false }));
         }, 500);
@@ -143,6 +202,16 @@ const UsersTab = ({
   };
 
   const handleBanSubmit = async (reason) => {
+    if (!currentUser?.refreshToken) {
+      setPopupMessage("Please log in to perform this action");
+      setPopupType("error");
+      setShowPopup(true);
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+      return;
+    }
+
     setLoadingStates((prev) => ({ ...prev, [selectedUserId]: true }));
     try {
       const response = await axios.patch(
@@ -152,6 +221,7 @@ const UsersTab = ({
           headers: {
             Authorization: `Bearer ${currentUser.refreshToken}`,
           },
+          withCredentials: true,
         }
       );
       setUsers((prev) =>
@@ -169,14 +239,22 @@ const UsersTab = ({
       setPopupType("success");
       setShowPopup(true);
     } catch (error) {
-      setPopupMessage(
-        error.response?.data?.message || "Failed to update ban status"
-      );
-      setPopupType("error");
-      setShowPopup(true);
-      console.error("Error in handleBanSubmit:", error.response?.data || error);
+      console.error("Error in handleBanSubmit:", error);
+      if (error.response?.status === 401) {
+        setPopupMessage("Session expired. Please log in again.");
+        setPopupType("error");
+        setShowPopup(true);
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      } else {
+        setPopupMessage(
+          error.response?.data?.message || "Failed to update ban status"
+        );
+        setPopupType("error");
+        setShowPopup(true);
+      }
     } finally {
-      // Ensure loading state is visible for at least 500ms
       setTimeout(() => {
         setLoadingStates((prev) => ({ ...prev, [selectedUserId]: false }));
         setShowBanReasonModal(false);
@@ -293,6 +371,12 @@ const UsersTab = ({
               </select>
               <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             </div>
+            <RefreshButton
+              onRefresh={() => fetchUsers(page)}
+              disabled={
+                actionLoading || loadingStates.fetch || !isAuthenticated()
+              }
+            />
           </div>
         </div>
       </div>
@@ -305,20 +389,24 @@ const UsersTab = ({
         <div className="text-center py-16">
           <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-800 mb-2">
-            {searchTerm
-              ? "No matching users found"
-              : filter === "banned"
-              ? "No banned users"
-              : filter === "active"
-              ? "No active users"
-              : kycFilter !== "all"
-              ? `No users with ${kycFilter.replace("_", " ")} KYC status`
-              : "No users yet"}
+            {isAuthenticated()
+              ? searchTerm
+                ? "No matching users found"
+                : filter === "banned"
+                ? "No banned users"
+                : filter === "active"
+                ? "No active users"
+                : kycFilter !== "all"
+                ? `No users with ${kycFilter.replace("_", " ")} KYC status`
+                : "No users yet"
+              : "Please log in to view users"}
           </h3>
           <p className="text-gray-600">
-            {searchTerm
-              ? "Try a different search term"
-              : "There are no users matching the current filter"}
+            {isAuthenticated()
+              ? searchTerm
+                ? "Try a different search term"
+                : "There are no users matching the current filter"
+              : "Log in to manage users"}
           </p>
         </div>
       ) : (

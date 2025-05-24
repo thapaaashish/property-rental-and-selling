@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Users, X } from "lucide-react";
+import { Users, X, Search } from "lucide-react";
 import AdminCard from "./AdminCard";
 import Popup from "../common/Popup";
+import { Eye, EyeOff } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -24,6 +25,11 @@ const AdminsTab = ({
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupType, setPopupType] = useState("success");
+  const [showPassword, setShowPassword] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(""); // New state for search term
+
+  // Log users for debugging
+  console.log("Users in AdminsTab:", users);
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString("en-US", {
@@ -32,32 +38,62 @@ const AdminsTab = ({
       day: "numeric",
     });
 
-  // Filter only admins
-  const adminUsers = users.filter((user) => user.role === "admin");
+  // Filter only admins, case-insensitive, and apply search term
+  const adminUsers = users.filter(
+    (user) =>
+      user.role?.toLowerCase() === "admin" &&
+      `${user.fullname || ""} ${user.email || ""}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase().trim())
+  );
+  console.log("Filtered admin users:", adminUsers);
 
   const validateForm = () => {
     const errors = {};
+
     if (!formData.fullname.trim()) {
       errors.fullname = "Full name is required";
     }
+
     if (!formData.email.trim()) {
       errors.email = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
       errors.email = "Invalid email format";
     }
+
     if (!formData.password) {
       errors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
+    } else {
+      const password = formData.password;
+      if (password.length < 8) {
+        errors.password = "Password must be at least 8 characters";
+      } else if (!/[A-Z]/.test(password)) {
+        errors.password = "Password must include at least one uppercase letter";
+      } else if (!/[a-z]/.test(password)) {
+        errors.password = "Password must include at least one lowercase letter";
+      } else if (!/[0-9]/.test(password)) {
+        errors.password = "Password must include at least one number";
+      } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        errors.password =
+          "Password must include at least one special character";
+      }
     }
+
     return errors;
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error for field on change
     setFormErrors((prev) => ({ ...prev, [name]: null }));
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
   };
 
   const handleAddAdmin = async (e) => {
@@ -74,13 +110,14 @@ const AdminsTab = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          Authorization: `Bearer ${currentUser.refreshToken}`,
         },
         credentials: "include",
         body: JSON.stringify({ ...formData, role: "admin" }),
       });
 
       const data = await response.json();
+      console.log("Create admin response:", data);
       if (!response.ok) {
         throw new Error(data.message || "Failed to create admin");
       }
@@ -93,6 +130,7 @@ const AdminsTab = ({
       setPopupType("success");
       setShowPopup(true);
     } catch (err) {
+      console.error("Error creating admin:", err);
       setPopupMessage(err.message);
       setPopupType("error");
       setShowPopup(true);
@@ -125,32 +163,55 @@ const AdminsTab = ({
           onClose={() => setShowPopup(false)}
         />
       )}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-800 flex items-center">
           <Users className="h-6 w-6 mr-2 text-teal-600" />
           All Admins
         </h2>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center text-sm font-medium text-white bg-teal-600 py-2 px-4 rounded-xl hover:bg-teal-700 disabled:bg-teal-300 transition-colors"
-          disabled={actionLoading}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="relative flex-grow sm:w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search admins..."
+              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
+              value={searchTerm}
+              onChange={handleSearchChange}
             />
-          </svg>
-          Add Admin
-        </button>
+            {searchTerm && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center text-sm font-medium text-white bg-teal-600 py-2 px-4 rounded-xl hover:bg-teal-700 disabled:bg-teal-300 transition-colors"
+            disabled={actionLoading}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Add Admin
+          </button>
+        </div>
       </div>
 
       {/* Add Admin Modal */}
@@ -231,7 +292,7 @@ const AdminsTab = ({
                   </p>
                 )}
               </div>
-              <div>
+              <div className="relative">
                 <label
                   htmlFor="password"
                   className="block text-sm font-medium text-gray-700"
@@ -240,20 +301,32 @@ const AdminsTab = ({
                 </label>
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
                   className={`mt-1 w-full p-2 border ${
                     formErrors.password ? "border-red-500" : "border-gray-200"
-                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm`}
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm pr-10`}
                   required
-                  minLength={6}
+                  minLength={8}
                   aria-invalid={formErrors.password ? "true" : "false"}
                   aria-describedby={
                     formErrors.password ? "password-error" : undefined
                   }
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-2 top-8 text-gray-500 hover:text-gray-700 focus:outline-none"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
                 {formErrors.password && (
                   <p id="password-error" className="mt-1 text-sm text-red-600">
                     {formErrors.password}
@@ -292,10 +365,12 @@ const AdminsTab = ({
         <div className="text-center py-16">
           <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-800 mb-2">
-            No admins yet
+            {searchTerm ? "No matching admins found" : "No admins yet"}
           </h3>
           <p className="text-gray-600 mb-4">
-            There are no registered admins in the system yet.
+            {searchTerm
+              ? "Try a different search term"
+              : "There are no registered admins in the system yet."}
           </p>
         </div>
       ) : (
@@ -313,7 +388,7 @@ const AdminsTab = ({
               <tbody className="divide-y divide-gray-100">
                 {adminUsers.map((user) => (
                   <tr
-                    key={user._id}
+                    key={user._id || Math.random()} // Fallback key if _id is undefined
                     className="hover:bg-teal-50 transition-colors"
                   >
                     <td className="py-4 px-6">

@@ -99,7 +99,7 @@ const ListingLandingPage = () => {
             Please complete your profile to create a listing
           </p>
           <button
-            onClick={() => navigate("/profile/edit")}
+            onClick={() => navigate("/profile")}
             className="px-6 py-2 bg-teal-500 text-white rounded-full hover:bg-teal-600 transition-colors"
           >
             Complete Profile

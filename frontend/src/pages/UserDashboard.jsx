@@ -10,7 +10,7 @@ import EditListingForm from "./EditListingForm";
 import Wishlists from "./Wishlists";
 import Profile from "./Profile";
 import Popup from "../components/common/Popup";
-import AgentBookings from "../components/UserDashboard/AgentBookings";
+import BookingRequests from "../components/UserDashboard/BookingRequests";
 import {
   Home,
   Heart,
@@ -105,10 +105,13 @@ const UserDashboard = () => {
 
   const handleDeleteListing = async (listingId) => {
     try {
-      const response = await fetch(`${API_BASE}/api/listings/delete/${listingId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${currentUser.refreshToken}` },
-      });
+      const response = await fetch(
+        `${API_BASE}/api/listings/delete/${listingId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${currentUser.refreshToken}` },
+        }
+      );
 
       if (response.ok) {
         setListings(listings.filter((l) => l._id !== listingId));
@@ -126,10 +129,13 @@ const UserDashboard = () => {
 
   const handleRemoveSaved = async (propertyId) => {
     try {
-      const response = await fetch(`${API_BASE}/api/users/remove-saved/${propertyId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${currentUser.refreshToken}` },
-      });
+      const response = await fetch(
+        `${API_BASE}/api/users/remove-saved/${propertyId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${currentUser.refreshToken}` },
+        }
+      );
       if (response.ok) {
         setSavedProperties(savedProperties.filter((p) => p._id !== propertyId));
       } else {
@@ -346,7 +352,7 @@ const UserDashboard = () => {
 
             {activeTab === "bookings" && (
               <div className="p-4 md:p-6">
-                <AgentBookings />
+                <BookingRequests />
               </div>
             )}
 

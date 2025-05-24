@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
+import PasswordInput from "../components/common/PasswordInputValidation";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -10,6 +11,10 @@ const ForgotPasswordComponent = ({ onClose, onSuccess }) => {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [passwordValidation, setPasswordValidation] = useState({
+    isValid: false,
+    hasError: false,
+  });
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
@@ -19,7 +24,7 @@ const ForgotPasswordComponent = ({ onClose, onSuccess }) => {
       const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${currentUser.refreshToken}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ email }),
       });
@@ -141,20 +146,20 @@ const ForgotPasswordComponent = ({ onClose, onSuccess }) => {
             >
               New Password
             </label>
-            <input
+            <PasswordInput
               id="new-password"
-              type="password"
-              required
-              placeholder="Enter new password"
-              className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              onValidationChange={setPasswordValidation}
+              required
+              disabled={loading}
+              placeholder="Enter new password"
             />
           </div>
           <button
             type="submit"
             className="w-full bg-teal-500 text-white py-2 rounded-lg hover:bg-teal-400 disabled:bg-teal-300 transition-colors"
-            disabled={loading}
+            disabled={loading || !passwordValidation.isValid}
           >
             {loading ? "Resetting..." : "Reset Password"}
           </button>

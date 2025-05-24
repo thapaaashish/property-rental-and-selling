@@ -21,6 +21,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import Message from "./models/message.model.js";
 import { autoCancelExpiredBookings } from "./controllers/booking.controller.js";
+import reviewRouter from "./routes/review.route.js";
 
 dotenv.config();
 
@@ -44,7 +45,7 @@ const io = new Server(server, {
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
-    methods: "GET,POST,PUT,DELETE",
+    methods: "GET,POST,PUT,DELETE,PATCH",
     credentials: true,
     optionsSuccessStatus: 200,
   })
@@ -68,6 +69,7 @@ app.use("/api/payment", paymentRouter);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/kyc", kycRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/review", reviewRouter);
 
 // Socket.io connection
 io.on("connection", (socket) => {

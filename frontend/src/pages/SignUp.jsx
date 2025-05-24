@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FcGoogle } from "react-icons/fc";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import OAuth from "../components/OAuth";
 import { useSelector } from "react-redux";
 import Popup from "../components/common/Popup";
+import PasswordInput from "../components/common/PasswordInputValidation";
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
@@ -17,6 +16,10 @@ const Signup = () => {
   const [otp, setOtp] = useState(""); // Store OTP input
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
+  const [passwordValidation, setPasswordValidation] = useState({
+    isValid: false,
+    hasError: false,
+  });
 
   // Redirect if already logged in
   useEffect(() => {
@@ -132,8 +135,6 @@ const Signup = () => {
     }
   };
 
-  const [showPassword, setShowPassword] = useState(false);
-
   // Close popup handler
   const handleClosePopup = () => {
     setError(null);
@@ -172,29 +173,19 @@ const Signup = () => {
             />
 
             <label className="block font-medium mt-3">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                className="w-full border rounded-md p-2 mt-1 pr-10 focus:outline-sky-500"
-                id="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-gray-500"
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
+            <PasswordInput
+              id="password"
+              value={formData.password}
+              onChange={handleChange}
+              onValidationChange={setPasswordValidation}
+              required
+              disabled={loading}
+            />
 
             <button
               type="submit"
               className="w-full bg-teal-500 text-white py-2 rounded-md mt-4 hover:bg-teal-400"
-              disabled={loading}
+              disabled={loading || !passwordValidation.isValid}
             >
               {loading ? "Loading..." : "Send OTP"}
             </button>

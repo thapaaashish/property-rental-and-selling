@@ -162,7 +162,6 @@ const Listings = () => {
               )}
 
               {/* Mobile Map Section */}
-              {/* Mobile Map Section - Always visible, no toggle button */}
               <div className="mt-8 lg:hidden">
                 <div className="h-[50vh] sm:h-[60vh]">
                   <div className="w-full h-full bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-200">

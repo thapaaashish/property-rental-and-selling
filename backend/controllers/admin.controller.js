@@ -8,13 +8,26 @@ import {
   sendPropertyLockNotification,
 } from "../utils/email.js";
 
-// Get all users (Admin only)
+// Get all users with pagination (Admin only)
 export const getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find().select(
-      "-password -otp -resetPasswordOTP -refreshToken"
-    );
-    res.status(200).json(users);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const users = await User.find()
+      .select("-password -otp -resetPasswordOTP -refreshToken")
+      .skip(skip)
+      .limit(limit);
+
+    const total = await User.countDocuments();
+
+    res.status(200).json({
+      users,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    });
   } catch (error) {
     next(errorHandler(500, "Error fetching users"));
   }

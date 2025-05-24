@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import io from "socket.io-client";
-import { Send, Trash2, Paperclip, Smile, MoreVertical, Check, CheckCheck, Clock, Image, MessageSquare } from "lucide-react";
+import {
+  Send,
+  Trash2,
+  Paperclip,
+  Smile,
+  MoreVertical,
+  Check,
+  CheckCheck,
+  Clock,
+  Image,
+  MessageSquare,
+} from "lucide-react";
 import { useSelector } from "react-redux";
 
 const socket = io(import.meta.env.VITE_API_URL, {
@@ -25,12 +36,13 @@ const Chat = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [showContextMenu, setShowContextMenu] = useState(null); // Message ID for context menu
+  const [showContextMenu, setShowContextMenu] = useState(null);
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [lastReadTimestamp, setLastReadTimestamp] = useState(null);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const MAX_MESSAGE_LENGTH = 500;
 
   // Normalize senderId/receiverId to string
   const normalizeMessage = (msg) => ({
@@ -56,9 +68,9 @@ const Chat = ({
 
   // Format timestamp
   const formatMessageTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -68,23 +80,23 @@ const Chat = ({
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (date.toDateString() === today.toDateString()) {
       return "Today";
     } else if (date.toDateString() === yesterday.toDateString()) {
       return "Yesterday";
     } else {
-      return date.toLocaleDateString(undefined, { 
-        weekday: 'long', 
-        month: 'long', 
-        day: 'numeric' 
+      return date.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
       });
     }
   };
 
   // Debounce socket message handling
   const handleSocketMessage = useCallback((message) => {
-    console.log("Received socket message:", message); // Debug
+    console.log("Received socket message:", message);
     setMessages((prevMessages) => {
       const exists = prevMessages.some((msg) => msg._id === message._id);
       if (exists) return prevMessages;
@@ -94,7 +106,7 @@ const Chat = ({
 
   // Handle delete message event
   const handleDeleteMessage = useCallback(({ messageId }) => {
-    console.log("Received deleteMessage:", messageId); // Debug
+    console.log("Received deleteMessage:", messageId);
     setMessages((prevMessages) =>
       prevMessages.filter((msg) => msg._id !== messageId)
     );
@@ -104,10 +116,14 @@ const Chat = ({
   // Track if we're near the bottom of the chat
   const isNearBottom = () => {
     if (!chatContainerRef.current) return true;
-    
     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
     return scrollHeight - scrollTop - clientHeight < 100;
   };
+
+  // Scroll to bottom
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   useEffect(() => {
     if (!currentUser || !userId || userId !== currentUser._id) {
@@ -140,7 +156,7 @@ const Chat = ({
           throw new Error("Failed to fetch messages");
         }
         const messagesData = await messagesResponse.json();
-        console.log("Fetched messages:", messagesData.data); // Debug
+        console.log("Fetched messages:", messagesData.data);
         const normalizedMessages = Array.isArray(messagesData.data)
           ? messagesData.data.map(normalizeMessage)
           : [];
@@ -157,7 +173,7 @@ const Chat = ({
         );
         if (readResponse.ok) {
           const readData = await readResponse.json();
-          console.log("Marked messages as read:", readData.data); // Debug
+          console.log("Marked messages as read:", readData.data);
           if (Array.isArray(readData.data) && readData.data.length > 0) {
             setMessages(readData.data.map(normalizeMessage));
             setLastReadTimestamp(new Date());
@@ -186,28 +202,40 @@ const Chat = ({
 
     // Click outside to close context menu
     const handleClickOutside = () => setShowContextMenu(null);
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
+
+    // Scroll to bottom on initial load
+    scrollToBottom();
 
     return () => {
       socket.off("message", handleSocketMessage);
       socket.off("deleteMessage", handleDeleteMessage);
       socket.off("typing");
       socket.emit("leaveRoom", roomId);
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
-  }, [roomId, currentUser, userId, receiverId, handleSocketMessage, handleDeleteMessage]);
+  }, [
+    roomId,
+    currentUser,
+    userId,
+    receiverId,
+    handleSocketMessage,
+    handleDeleteMessage,
+    scrollToBottom,
+  ]);
 
   useEffect(() => {
-    // Only scroll to bottom if we're already near the bottom
+    // Scroll to bottom only if near bottom or new message is from current user
     const wasNearBottom = isNearBottom();
-    if (wasNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const lastMessage = messages[messages.length - 1];
+    if (wasNearBottom || (lastMessage && lastMessage.senderId === userId)) {
+      scrollToBottom();
     }
-  }, [messages]);
+  }, [messages, userId, scrollToBottom]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || newMessage.length > MAX_MESSAGE_LENGTH) return;
 
     const messageData = {
       roomId,
@@ -217,7 +245,7 @@ const Chat = ({
       timestamp: new Date(),
     };
 
-    console.log("Sending message:", messageData); // Debug
+    console.log("Sending message:", messageData);
 
     try {
       const response = await fetch(
@@ -234,7 +262,7 @@ const Chat = ({
 
       if (response.ok) {
         const savedMessage = await response.json();
-        console.log("Saved message:", savedMessage.data); // Debug
+        console.log("Saved message:", savedMessage.data);
         socket.emit("sendMessage", savedMessage.data);
         setNewMessage("");
       } else {
@@ -260,7 +288,7 @@ const Chat = ({
       );
 
       if (response.ok) {
-        console.log("Deleted message:", messageId); // Debug
+        console.log("Deleted message:", messageId);
         socket.emit("deleteMessage", { roomId, messageId });
       } else {
         throw new Error("Failed to delete message");
@@ -272,8 +300,11 @@ const Chat = ({
   };
 
   const handleInputChange = (e) => {
-    setNewMessage(e.target.value);
-    socket.emit("typing", { roomId, userId });
+    const input = e.target.value;
+    if (input.length <= MAX_MESSAGE_LENGTH) {
+      setNewMessage(input);
+      socket.emit("typing", { roomId, userId });
+    }
   };
 
   const handleContextMenu = (e, messageId) => {
@@ -311,7 +342,9 @@ const Chat = ({
               <div className="h-8 w-8 rounded-full bg-teal-500 animate-pulse"></div>
             </div>
           </div>
-          <p className="mt-4 text-teal-600 font-medium">Loading conversation...</p>
+          <p className="mt-4 text-teal-600 font-medium">
+            Loading conversation...
+          </p>
         </div>
       </div>
     );
@@ -338,12 +371,12 @@ const Chat = ({
   }
 
   const groupedMessages = groupMessagesByDate(messages);
-  const sortedDates = Object.keys(groupedMessages).sort((a, b) => 
-    new Date(a) - new Date(b)
+  const sortedDates = Object.keys(groupedMessages).sort(
+    (a, b) => new Date(a) - new Date(b)
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Header */}
       <div className="bg-white px-4 py-3 border-b border-gray-200 flex items-center justify-between shadow-sm">
         <div className="flex items-center space-x-3">
@@ -368,11 +401,11 @@ const Chat = ({
           <MoreVertical className="h-5 w-5" />
         </button>
       </div>
-      
+
       {/* Messages */}
-      <div 
+      <div
         ref={chatContainerRef}
-        className="flex-1 p-4 overflow-y-auto bg-gradient-to-br from-gray-50 to-blue-50 flex flex-col space-y-2"
+        className="flex-1 p-4 overflow-y-auto bg-gradient-to-br from-gray-50 to-blue-50 flex flex-col space-y-2 min-h-0"
       >
         {messages.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
@@ -380,9 +413,12 @@ const Chat = ({
               <div className="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MessageSquare className="h-8 w-8 text-teal-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Start Messaging</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                Start Messaging
+              </h3>
               <p className="text-gray-600">
-                No messages yet. Send your first message to {receiverName} to start the conversation!
+                No messages yet. Send your first message to {receiverName} to
+                start the conversation!
               </p>
             </div>
           </div>
@@ -394,22 +430,26 @@ const Chat = ({
                   {formatDateDivider(date)}
                 </div>
               </div>
-              
+
               {groupedMessages[date].map((msg, index) => {
                 const isSender = msg.senderId.toString() === userId.toString();
-                const showAvatar = 
-                  index === 0 || 
-                  groupedMessages[date][index - 1].senderId.toString() !== 
-                  msg.senderId.toString();
-                
-                const imageUrl = containsImageUrl(msg.content) ? extractImageUrl(msg.content) : null;
+                const showAvatar =
+                  index === 0 ||
+                  groupedMessages[date][index - 1].senderId.toString() !==
+                    msg.senderId.toString();
+
+                const imageUrl = containsImageUrl(msg.content)
+                  ? extractImageUrl(msg.content)
+                  : null;
                 const showContextMenuBtn = isSender && !imageUrl;
-                
+
                 return (
-                  <div 
-                    key={msg._id} 
+                  <div
+                    key={msg._id}
                     onContextMenu={(e) => handleContextMenu(e, msg._id)}
-                    className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-1`}
+                    className={`flex ${
+                      isSender ? "justify-end" : "justify-start"
+                    } mb-1`}
                   >
                     {!isSender && showAvatar && (
                       <img
@@ -420,55 +460,80 @@ const Chat = ({
                       />
                     )}
                     {!isSender && !showAvatar && <div className="w-8 mr-2" />}
-                    
-                    <div 
-                      className={`relative group ${showContextMenuBtn ? 'pr-8' : ''} max-w-xs lg:max-w-md`}
+
+                    <div
+                      className={`relative group ${
+                        showContextMenuBtn ? "pr-8" : ""
+                      } max-w-xs lg:max-w-md`}
                     >
                       {imageUrl ? (
-                        <div 
-                          className={`rounded-lg overflow-hidden ${isSender ? 'bg-teal-500' : 'bg-white border border-gray-200'}`}
+                        <div
+                          className={`rounded-lg overflow-hidden ${
+                            isSender
+                              ? "bg-teal-500"
+                              : "bg-white border border-gray-200"
+                          }`}
                           onClick={() => handleImageClick(imageUrl)}
                         >
-                          <img 
-                            src={imageUrl} 
-                            alt="Shared image" 
+                          <img
+                            src={imageUrl}
+                            alt="Shared image"
                             className="max-w-full cursor-pointer"
                             onError={(e) => {
-                              // Show text content if image can't load
-                              e.target.outerHTML = `<div class="p-3 text-sm ${isSender ? 'text-white' : 'text-gray-800'}">${msg.content}</div>`;
+                              e.target.outerHTML = `<div class="p-3 text-sm ${
+                                isSender ? "text-white" : "text-gray-800"
+                              }">${msg.content}</div>`;
                             }}
                           />
-                          <div className={`px-2 py-1 text-xs ${isSender ? 'text-teal-100' : 'text-gray-500'} flex justify-between items-center`}>
+                          <div
+                            className={`px-2 py-1 text-xs ${
+                              isSender ? "text-teal-100" : "text-gray-500"
+                            } flex justify-between items-center`}
+                          >
                             <span>Image</span>
                             <span className="flex items-center">
                               {formatMessageTime(msg.timestamp)}
-                              {isSender && msg.read && <CheckCheck className="h-3 w-3 ml-1" />}
-                              {isSender && !msg.read && <Check className="h-3 w-3 ml-1" />}
+                              {isSender && msg.read && (
+                                <CheckCheck className="h-3 w-3 ml-1" />
+                              )}
+                              {isSender && !msg.read && (
+                                <Check className="h-3 w-3 ml-1" />
+                              )}
                             </span>
                           </div>
                         </div>
                       ) : (
-                        <div 
+                        <div
                           className={`p-3 rounded-lg ${
-                            isSender 
-                              ? 'bg-teal-500 text-white rounded-tr-none' 
-                              : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 shadow-sm'
+                            isSender
+                              ? "bg-teal-500 text-white rounded-tr-none"
+                              : "bg-white text-gray-800 rounded-tl-none border border-gray-100 shadow-sm"
                           }`}
                         >
-                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                          <p className="whitespace-pre-wrap break-words">
+                            {msg.content}
+                          </p>
                           <div className="text-xs mt-1 flex justify-end items-center gap-1">
                             <Clock className="h-3 w-3 opacity-75" />
                             <span>{formatMessageTime(msg.timestamp)}</span>
                             {isSender && msg.read && (
-                              <CheckCheck className={`h-3 w-3 ${isSender ? 'text-teal-100' : 'text-gray-400'}`} />
+                              <CheckCheck
+                                className={`h-3 w-3 ${
+                                  isSender ? "text-teal-100" : "text-gray-400"
+                                }`}
+                              />
                             )}
                             {isSender && !msg.read && (
-                              <Check className={`h-3 w-3 ${isSender ? 'text-teal-100' : 'text-gray-400'}`} />
+                              <Check
+                                className={`h-3 w-3 ${
+                                  isSender ? "text-teal-100" : "text-gray-400"
+                                }`}
+                              />
                             )}
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Context Menu */}
                       {showContextMenu === msg._id && (
                         <div className="absolute right-0 mt-1 bg-white rounded-md shadow-lg z-10 border border-gray-100">
@@ -481,7 +546,7 @@ const Chat = ({
                           </button>
                         </div>
                       )}
-                      
+
                       {/* Delete button that appears on hover */}
                       {showContextMenuBtn && (
                         <button
@@ -492,7 +557,7 @@ const Chat = ({
                         </button>
                       )}
                     </div>
-                    
+
                     {isSender && showAvatar && (
                       <img
                         src={currentUserAvatar}
@@ -510,23 +575,23 @@ const Chat = ({
         )}
         <div ref={messagesEndRef} />
       </div>
-      
+
       {/* Image Modal */}
       {imageModalOpen && selectedImage && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
           onClick={() => setImageModalOpen(false)}
         >
           <div className="max-w-4xl max-h-[90vh] overflow-auto p-2">
-            <img 
-              src={selectedImage} 
-              alt="Full size" 
+            <img
+              src={selectedImage}
+              alt="Full size"
               className="max-w-full max-h-[90vh] object-contain"
             />
           </div>
         </div>
       )}
-      
+
       {/* Input Area */}
       <form
         onSubmit={handleSendMessage}
@@ -539,16 +604,28 @@ const Chat = ({
               value={newMessage}
               onChange={handleInputChange}
               placeholder="Type a message..."
+              maxLength={MAX_MESSAGE_LENGTH}
               className="w-full p-2 pl-3 pr-10 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
+            <div
+              className={`absolute right-3 top-2.5 text-xs ${
+                newMessage.length >= MAX_MESSAGE_LENGTH
+                  ? "text-red-500"
+                  : "text-gray-500"
+              }`}
+            >
+              {newMessage.length}/{MAX_MESSAGE_LENGTH}
+            </div>
           </div>
           <button
             type="submit"
-            disabled={!newMessage.trim()}
+            disabled={
+              !newMessage.trim() || newMessage.length > MAX_MESSAGE_LENGTH
+            }
             className={`p-3 rounded-full ${
-              newMessage.trim() 
-                ? 'bg-teal-500 text-white hover:bg-teal-600' 
-                : 'bg-gray-200 text-gray-400'
+              newMessage.trim() && newMessage.length <= MAX_MESSAGE_LENGTH
+                ? "bg-teal-500 text-white hover:bg-teal-600"
+                : "bg-gray-200 text-gray-400"
             } transition-colors`}
           >
             <Send className="h-5 w-5" />

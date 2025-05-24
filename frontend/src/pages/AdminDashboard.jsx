@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+import axios from "axios";
 import {
   signOutUserStart,
   signOutUserSuccess,
@@ -13,6 +14,7 @@ import SettingsTab from "../components/AdminDashboard/SettingsTab";
 import StatsOverview from "../components/AdminDashboard/StatsOverview";
 import UsersTab from "../components/AdminDashboard/UsersTab";
 import AdminsTab from "../components/AdminDashboard/AdminsTab";
+import ReviewsTab from "../components/AdminDashboard/ReviewsTab";
 import Popup from "../components/common/Popup";
 import {
   Home,
@@ -25,6 +27,7 @@ import {
   Car,
   Calendar,
   LogOut,
+  Star,
 } from "lucide-react";
 import MovingServicesTab from "../components/AdminDashboard/MovingServicesTab";
 import KycVerification from "../components/AdminDashboard/KycVerification";
@@ -39,6 +42,7 @@ const AdminDashboard = () => {
   const [properties, setProperties] = useState([]);
   const [users, setUsers] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [pendingVerifications, setPendingVerifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
@@ -52,6 +56,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== "admin") {
+      console.log("Redirecting: currentUser =", currentUser);
       navigate("/");
       return;
     }
@@ -60,30 +65,65 @@ const AdminDashboard = () => {
       setIsLoading(true);
       setApiError(null);
       try {
-        const listingsRes = await fetch(`${API_BASE}/api/admin/listings`, {
-          method: "GET",
-          credentials: "include",
-        });
-        const usersRes = await fetch(`${API_BASE}/api/admin/users`, {
-          method: "GET",
-          credentials: "include",
-        });
-        const bookingsRes = await fetch(
-          `${API_BASE}/api/admin/bookings?populate=listing,user`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-        const verificationsRes = await fetch(`${API_BASE}/api/kyc/pending`, {
-          method: "GET",
-          credentials: "include",
+        // Fetch listings
+        const listingsRes = await axios.get(`${API_BASE}/api/admin/listings`, {
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
+          withCredentials: true,
         });
 
-        const listingsData = await listingsRes.json();
-        const usersData = await usersRes.json();
-        const bookingsData = await bookingsRes.json();
-        const verificationsData = await verificationsRes.json();
+        // Fetch users with pagination
+        const usersRes = await axios.get(
+          `${API_BASE}/api/admin/users?page=1&limit=100`,
+          {
+            headers: {
+              Authorization: `Bearer ${currentUser.refreshToken}`,
+            },
+            withCredentials: true,
+          }
+        );
+
+        // Fetch bookings
+        const bookingsRes = await axios.get(
+          `${API_BASE}/api/admin/bookings?populate=listing,user`,
+          {
+            headers: {
+              Authorization: `Bearer ${currentUser.refreshToken}`,
+            },
+            withCredentials: true,
+          }
+        );
+
+        // Fetch verifications
+        const verificationsRes = await axios.get(
+          `${API_BASE}/api/kyc/pending`,
+          {
+            headers: {
+              Authorization: `Bearer ${currentUser.refreshToken}`,
+            },
+            withCredentials: true,
+          }
+        );
+
+        // Fetch reviews
+        const reviewsRes = await axios.get(
+          `${API_BASE}/api/review/admin/pendingReviews`,
+          {
+            headers: {
+              Authorization: `Bearer ${currentUser.refreshToken}`,
+            },
+            withCredentials: true,
+          }
+        );
+
+        const listingsData = listingsRes.data;
+        const usersData = usersRes.data;
+        const bookingsData = bookingsRes.data;
+        const verificationsData = verificationsRes.data;
+        const reviewsData = reviewsRes.data;
+
+        console.log("Users API response:", usersData);
 
         if (listingsData.success === false)
           throw new Error(listingsData.message || "Failed to fetch listings");
@@ -95,19 +135,26 @@ const AdminDashboard = () => {
           throw new Error(
             verificationsData.message || "Failed to fetch verifications"
           );
+        if (reviewsData.success === false)
+          throw new Error(reviewsData.message || "Failed to fetch reviews");
 
         setProperties(Array.isArray(listingsData) ? listingsData : []);
-        setUsers(Array.isArray(usersData) ? usersData : []);
+        setUsers(
+          Array.isArray(usersData.users) ? usersData.users : usersData || []
+        );
         setBookings(Array.isArray(bookingsData) ? bookingsData : []);
         setPendingVerifications(
           Array.isArray(verificationsData.users) ? verificationsData.users : []
         );
+        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
       } catch (err) {
+        console.error("Error fetching admin data:", err);
         setApiError(err.message);
         setProperties([]);
         setUsers([]);
         setBookings([]);
         setPendingVerifications([]);
+        setReviews([]);
       } finally {
         setIsLoading(false);
       }
@@ -119,11 +166,16 @@ const AdminDashboard = () => {
   const handleDeleteBooking = async (bookingId) => {
     setActionLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/admin/bookings/${bookingId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const data = await response.json();
+      const response = await axios.delete(
+        `${API_BASE}/api/admin/bookings/${bookingId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+      const data = response.data;
       if (data.success === false) {
         throw new Error(data.message || "Failed to cancel booking");
       }
@@ -141,11 +193,16 @@ const AdminDashboard = () => {
       return;
     setActionLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/admin/listings/${propertyId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const data = await response.json();
+      const response = await axios.delete(
+        `${API_BASE}/api/admin/listings/${propertyId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+      const data = response.data;
       if (data.success === false) {
         throw new Error(data.message || "Failed to delete listing");
       }
@@ -164,11 +221,16 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     setActionLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/user/delete/${userId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const data = await response.json();
+      const response = await axios.delete(
+        `${API_BASE}/api/user/delete/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+      const data = response.data;
       if (data.success === false) {
         throw new Error(data.message || "Failed to delete user");
       }
@@ -181,14 +243,99 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleApproveReview = async (reviewId) => {
+    setActionLoading(true);
+    try {
+      const response = await axios.patch(
+        `${API_BASE}/api/review/admin/pendingReviews/${reviewId}/approve`,
+        { status: "approved" },
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+      const data = response.data;
+      if (!response.status === 200) {
+        throw new Error(data.message || "Failed to approve review");
+      }
+      setReviews(
+        reviews.map((review) =>
+          review._id === reviewId ? { ...review, status: "approved" } : review
+        )
+      );
+    } catch (err) {
+      setApiError(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectReview = async (reviewId) => {
+    setActionLoading(true);
+    try {
+      const response = await axios.patch(
+        `${API_BASE}/api/review/admin/pendingReviews/${reviewId}/approve`,
+        { status: "rejected" },
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+      const data = response.data;
+      if (!response.status === 200) {
+        throw new Error(data.message || "Failed to reject review");
+      }
+      setReviews(reviews.filter((review) => review._id !== reviewId));
+    } catch (err) {
+      setApiError(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm("Are you sure you want to delete this review?")) return;
+    setActionLoading(true);
+    try {
+      const response = await axios.delete(
+        `${API_BASE}/api/review/admin/reviews/${reviewId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+      const data = response.data;
+      if (data.success === false) {
+        throw new Error(data.message || "Failed to delete review");
+      }
+      setReviews(reviews.filter((review) => review._id !== reviewId));
+    } catch (err) {
+      setApiError(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleSignout = async () => {
     try {
       dispatch(signOutUserStart());
-      const response = await fetch(`${API_BASE}/api/auth/signout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      const data = await response.json();
+      const response = await axios.post(
+        `${API_BASE}/api/auth/signout`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser.refreshToken}`,
+          },
+          withCredentials: true,
+        }
+      );
+      const data = response.data;
       if (data.success === false) {
         throw new Error(data.message || "Failed to sign out");
       }
@@ -203,7 +350,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar Toggle Button */}
       <button
         className={`fixed top-4 z-50 p-3 rounded-full bg-white cursor-pointer shadow-md transition-all duration-300 hover:bg-gray-100 ${
           sidebarOpen ? "left-[15rem]" : "left-4"
@@ -223,7 +369,6 @@ const AdminDashboard = () => {
         )}
       </button>
 
-      {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 ${
           sidebarCollapsed ? "w-20" : "w-64"
@@ -253,6 +398,7 @@ const AdminDashboard = () => {
             { id: "bookings", icon: Calendar, label: "Bookings" },
             { id: "moving-services", icon: Car, label: "Moving Services" },
             { id: "users", icon: Users, label: "Users" },
+            { id: "reviews", icon: Star, label: "Reviews" },
             { id: "kyc", icon: Users, label: "KYC Verification" },
             { id: "admins", icon: Shield, label: "Admins" },
             { id: "settings", icon: Settings, label: "Settings" },
@@ -282,7 +428,6 @@ const AdminDashboard = () => {
           ))}
         </nav>
 
-        {/* Sidebar Footer */}
         <div
           className={`mt-auto border-t px-4 py-3 ${
             sidebarCollapsed ? "px-3 py-4" : "px-6 py-4"
@@ -323,7 +468,6 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div
         className={`flex-1 overflow-y-auto p-4 md:p-8 transition-all duration-300 ${
           sidebarCollapsed ? "md:ml-20" : "md:ml-64"
@@ -348,6 +492,7 @@ const AdminDashboard = () => {
                 properties={properties}
                 users={users}
                 bookings={bookings}
+                reviews={reviews}
                 setActiveTab={setActiveTab}
               />
             </>
@@ -365,6 +510,7 @@ const AdminDashboard = () => {
                 properties={properties}
                 bookings={bookings}
                 users={users}
+                reviews={reviews}
                 pendingVerifications={pendingVerifications}
                 navigate={navigate}
                 setActiveTab={setActiveTab}
@@ -373,6 +519,7 @@ const AdminDashboard = () => {
             {activeTab === "properties" && (
               <PropertiesTab
                 properties={properties}
+                currentUser={currentUser}
                 handleDeleteProperty={handleDeleteProperty}
                 actionLoading={actionLoading}
                 navigate={navigate}
@@ -381,6 +528,7 @@ const AdminDashboard = () => {
             {activeTab === "bookings" && (
               <BookingsTab
                 bookings={bookings}
+                currentUser={currentUser}
                 navigate={navigate}
                 actionLoading={actionLoading}
                 handleDeleteBooking={handleDeleteBooking}
@@ -392,6 +540,16 @@ const AdminDashboard = () => {
                 currentUser={currentUser}
                 handleDeleteUser={handleDeleteUser}
                 actionLoading={actionLoading}
+                navigate={navigate}
+              />
+            )}
+            {activeTab === "reviews" && (
+              <ReviewsTab
+                reviews={reviews}
+                actionLoading={actionLoading}
+                handleApproveReview={handleApproveReview}
+                handleRejectReview={handleRejectReview}
+                handleDeleteReview={handleDeleteReview}
                 navigate={navigate}
               />
             )}

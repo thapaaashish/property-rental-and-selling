@@ -12,7 +12,6 @@ export const createReview = async (req, res, next) => {
       req.user.fullname || req.user.email?.split("@")[0] || "Anonymous";
     const avatar = req.user.avatar || null;
 
-    // Validate inputs
     if (!propertyId || !rating) {
       return next(errorHandler(400, "Property ID and rating are required"));
     }
@@ -22,19 +21,16 @@ export const createReview = async (req, res, next) => {
       );
     }
 
-    // Verify property exists
     const listing = await Listing.findById(propertyId);
     if (!listing) {
       return next(errorHandler(404, "Property not found"));
     }
 
-    // Verify user exists
     const user = await User.findById(userId);
     if (!user) {
       return next(errorHandler(404, "User not found"));
     }
 
-    // Check for a valid booking
     const booking = await Booking.findOne({
       listing: propertyId,
       user: userId,
@@ -51,19 +47,17 @@ export const createReview = async (req, res, next) => {
       ],
     });
 
-    if (!booking) {
-      return next(
-        errorHandler(403, "Only users who have stayed or purchased can review")
-      );
-    }
+    // if (!booking) {
+    //   return next(
+    //     errorHandler(403, "Only users who have stayed or purchased can review")
+    //   );
+    // }
 
-    // Check if user already reviewed this property
     const existingReview = await Review.findOne({ propertyId, userId });
     if (existingReview) {
       return next(errorHandler(400, "You have already reviewed this property"));
     }
 
-    // Create review
     const review = await Review.create({
       propertyId,
       userId,
@@ -71,6 +65,7 @@ export const createReview = async (req, res, next) => {
       avatar,
       rating,
       comment: comment || "",
+      status: "pending",
     });
 
     return res.status(201).json({ review });
@@ -83,15 +78,12 @@ export const getReviews = async (req, res, next) => {
   try {
     const { propertyId } = req.params;
 
-    // Verify property exists
-    const listing = await Listing.findById(propertyId);
-    if (!listing) {
-      return next(errorHandler(404, "Property not found"));
-    }
+    const reviews = await Review.find({
+      propertyId,
+      status: "approved", // Ensure only approved reviews are returned
+    }).sort({ createdAt: -1 });
 
-    // Fetch reviews
-    const reviews = await Review.find({ propertyId }).sort({ createdAt: -1 });
-    return res.status(200).json({ reviews });
+    return res.status(200).json(reviews);
   } catch (error) {
     next(errorHandler(500, "An unexpected error occurred"));
   }
@@ -102,23 +94,115 @@ export const deleteReview = async (req, res, next) => {
     const { reviewId } = req.params;
     const userId = req.user.id;
 
-    // Find review
     const review = await Review.findById(reviewId);
     if (!review) {
       return next(errorHandler(404, "Review not found"));
     }
 
-    // Verify user owns the review
     if (review.userId.toString() !== userId) {
       return next(
         errorHandler(403, "You are not authorized to delete this review")
       );
     }
 
-    // Delete review
     await Review.findByIdAndDelete(reviewId);
 
     return res.status(200).json({ message: "Review deleted successfully" });
+  } catch (error) {
+    next(errorHandler(500, "An unexpected error occurred"));
+  }
+};
+
+export const getAllReviews = async (req, res, next) => {
+  try {
+    if (req.user.role !== "admin") {
+      return next(
+        errorHandler(403, "You are not authorized to view all reviews")
+      );
+    }
+
+    const reviews = await Review.find()
+      .populate("propertyId", "title")
+      .populate("userId", "fullname email")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json(reviews);
+  } catch (error) {
+    next(errorHandler(500, "An unexpected error occurred"));
+  }
+};
+
+export const approveReview = async (req, res, next) => {
+  try {
+    if (req.user.role !== "admin") {
+      return next(
+        errorHandler(403, "You are not authorized to approve reviews")
+      );
+    }
+
+    const { reviewId } = req.params;
+    const { status } = req.body;
+
+    if (!["approved", "rejected"].includes(status)) {
+      return next(errorHandler(400, "Invalid status"));
+    }
+
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      return next(errorHandler(404, "Review not found"));
+    }
+
+    if (status === "approved") {
+      review.status = status;
+      await review.save();
+      return res
+        .status(200)
+        .json({ message: "Review approved successfully", review });
+    } else {
+      // When rejecting, delete the review instead of just marking it as rejected
+      await Review.findByIdAndDelete(reviewId);
+      return res
+        .status(200)
+        .json({ message: "Review rejected and deleted successfully" });
+    }
+  } catch (error) {
+    next(errorHandler(500, "An unexpected error occurred"));
+  }
+};
+
+export const deleteReviewAdmin = async (req, res, next) => {
+  try {
+    if (req.user.role !== "admin") {
+      return next(
+        errorHandler(403, "You are not authorized to delete reviews")
+      );
+    }
+
+    const { reviewId } = req.params;
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      return next(errorHandler(404, "Review not found"));
+    }
+
+    await Review.findByIdAndDelete(reviewId);
+
+    return res.status(200).json({ message: "Review deleted successfully" });
+  } catch (error) {
+    next(errorHandler(500, "An unexpected error occurred"));
+  }
+};
+
+export const getPendingReviews = async (req, res, next) => {
+  try {
+    if (req.user.role !== "admin") {
+      return next(errorHandler(403, "Unauthorized"));
+    }
+
+    const reviews = await Review.find({ status: "pending" })
+      .populate("propertyId", "title")
+      .populate("userId", "fullname email");
+
+    return res.status(200).json(reviews);
   } catch (error) {
     next(errorHandler(500, "An unexpected error occurred"));
   }
