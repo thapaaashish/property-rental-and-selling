@@ -205,7 +205,7 @@ const OverviewTab = ({
                         </td>
                         <td className="px-4 py-2 text-right whitespace-nowrap">
                           <span className="text-xs font-medium text-gray-800">
-                            {property.price ? `$${property.price}` : "N/A"}
+                            {property.price ? `Rs.${property.price}` : "N/A"}
                           </span>
                           {property.rentOrSale === "Rent" && (
                             <span className="text-xs text-gray-500 ml-1">

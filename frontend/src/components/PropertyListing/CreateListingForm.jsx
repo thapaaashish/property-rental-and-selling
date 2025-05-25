@@ -376,7 +376,7 @@ const CreateListingForm = () => {
           Step {step + 1}: {steps[step]}
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 mb-8">
           {step === 0 && (
             
             <FormInput

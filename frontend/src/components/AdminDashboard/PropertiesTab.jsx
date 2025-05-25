@@ -460,7 +460,7 @@ const PropertiesTab = ({
                         </span>
                       </td>
                       <td className="py-4 px-4 text-sm text-gray-500">
-                        ${property.price || "N/A"}
+                        Rs.{property.price || "N/A"}
                         {property.rentOrSale === "Rent" && "/mo"}
                       </td>
                       <td className="py-4 px-4 text-sm">

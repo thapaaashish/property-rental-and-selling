@@ -259,7 +259,7 @@ const BookingsTab = ({
                     </span>
                   </td>
                   <td className="py-4 px-4 text-sm text-gray-500">
-                    {booking.totalPrice ? `$${booking.totalPrice}` : "N/A"}
+                    {booking.totalPrice ? `Rs.${booking.totalPrice}` : "N/A"}
                   </td>
                   <td className="py-4 px-4 text-sm text-gray-500">
                     {formatDate(booking.createdAt)}

@@ -153,6 +153,7 @@ const LocationStep = ({
           onChange={handleAddressChange}
           error={errors.address?.city}
           required
+          disabled
           className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
         />
         <FormInput
@@ -163,6 +164,7 @@ const LocationStep = ({
           onChange={handleAddressChange}
           error={errors.address?.state}
           required
+          disabled
           className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
         />
         <FormInput
@@ -171,6 +173,7 @@ const LocationStep = ({
           type="text"
           value={formData.address.zip}
           onChange={handleAddressChange}
+          disabled
           className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
         />
         <FormInput
@@ -180,6 +183,7 @@ const LocationStep = ({
           value={formData.address.country}
           onChange={handleAddressChange}
           error={errors.address?.country}
+          disabled
           required
           className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 transition-all"
         />

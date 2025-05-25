@@ -330,7 +330,7 @@ const MyListings = ({
                       </span>
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-900 font-medium">
-                      ${Number(listing.price || 0).toLocaleString()}
+                      Rs.{Number(listing.price || 0).toLocaleString()}
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-500">
                       {listing.bedrooms || 0} BD · {listing.bathrooms || 0} BA ·{" "}

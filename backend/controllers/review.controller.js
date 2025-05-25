@@ -47,12 +47,14 @@ export const createReview = async (req, res, next) => {
       ],
     });
 
-    // if (!booking) {
-    //   return next(
-    //     errorHandler(403, "Only users who have stayed or purchased can review")
-    //   );
-    // }
+    // Check if the user has a confirmed booking or purchase for the property
+    if (!booking) {
+      return next(
+        errorHandler(403, "Only users who have stayed or purchased can review")
+      );
+    }
 
+    // Check if the user has already reviewed this property
     const existingReview = await Review.findOne({ propertyId, userId });
     if (existingReview) {
       return next(errorHandler(400, "You have already reviewed this property"));

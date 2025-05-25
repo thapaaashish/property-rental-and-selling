@@ -148,7 +148,7 @@ const FeaturedProperties = ({ properties = [] }) => {
                       {property.address.street}, {property.address.city}
                     </p>
                     <p className="text-lg font-bold text-teal-500 mt-2">
-                      ${property.price.toLocaleString()}
+                      Rs.{property.price.toLocaleString()}
                       {property.priceUnit && (
                         <span className="text-sm text-gray-500">
                           /{property.priceUnit}
